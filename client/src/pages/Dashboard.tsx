@@ -10,7 +10,7 @@ import { calculateSolarModel, defaultInputs, SolarInputs, SolarResults } from "@
 import { getSourceDetails } from '@/lib/sources';
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatNumberWithCommas } from "@/lib/formatters";
-import { AlertCircle, Info, BatteryCharging, Coins, Download, Factory, Save, Trash2, Zap, LogOut, Leaf, TrendingUp } from "lucide-react";
+import { AlertCircle, Info, BatteryCharging, Coins, Download, Factory, Save, Trash2, Zap, LogOut, Leaf, TrendingUp, MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { MetricCard } from "../components/MetricCard";
@@ -308,6 +308,12 @@ export default function Dashboard() {
               </p>
             </div>
             <div className="flex gap-2">
+              <Button asChild variant="outline" className="bg-white/10 text-white border-white/20 hover:bg-white/20">
+                <a href="/map" className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  Site Mapping
+                </a>
+              </Button>
               <Button onClick={exportCSV} variant="outline" className="bg-white/10 text-white border-white/20 hover:bg-white/20">
                 <Download className="mr-2 h-4 w-4" /> Export CSV
               </Button>

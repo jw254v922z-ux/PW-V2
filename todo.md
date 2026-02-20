@@ -160,3 +160,50 @@
 - [x] Verify application loads without errors on Replit
 - [x] Confirm all stakeholder metrics display correctly
 - [ ] Save checkpoint and push fixes to GitHub
+
+
+## Phase 19: Interactive Map Feature (Incremental Build)
+
+### Phase 1: Map Integration & Basic Display
+- [x] Create MapView page component with Google Maps integration
+- [x] Display map centered on UK (default location)
+- [x] Add map controls (zoom, pan, satellite/street view toggle)
+- [x] Create sidebar panel for map controls and results
+- [x] Checkpoint 1: Basic map displays correctly
+
+### Phase 2: Drawing Tools (Polygon & Polyline)
+- [ ] Implement polygon drawing tool for PV area
+- [ ] Implement polyline drawing tool for cable route
+- [ ] Add click listeners to map for drawing points
+- [ ] Display drawn shapes on map with styling (green for PV, blue for cable)
+- [ ] Add undo/delete last point functionality
+- [ ] Checkpoint 2: Can draw PV polygon and cable polyline
+
+### Phase 3: Geospatial Calculations (Distance & Area)
+- [x] Calculate polygon area (PV size in m²/hectares)
+- [x] Calculate polyline distance (cable length in km)
+- [x] Display results in real-time as user draws
+- [x] Add geospatial utility functions
+- [x] Checkpoint 3: Area and distance calculations working
+
+### Phase 4: Cable Sizing Algorithm
+- [ ] Implement cable sizing logic based on distance and voltage
+- [ ] Integrate with existing cable voltage selection (6kV, 11kV, 33kV, etc.)
+- [ ] Calculate cable cost based on distance and size
+- [ ] Update CAPEX automatically when cable parameters change
+- [ ] Checkpoint 4: Cable sizing and cost calculation working
+
+### Phase 5: Data Persistence & Integration
+- [ ] Save map drawings (PV area, cable route) to database
+- [ ] Link map data to existing calculator parameters
+- [ ] Auto-populate cable distance and voltage from map
+- [ ] Allow loading/editing saved map data
+- [ ] Checkpoint 5: Data persists and integrates with calculator
+
+### Phase 6: UI/UX Polish & Testing
+- [ ] Add help/tutorial tooltips
+- [ ] Implement responsive design for mobile
+- [ ] Add export map as image/PDF
+- [ ] Test with various PV sizes and cable routes
+- [ ] Performance optimization
+- [ ] Checkpoint 6: Feature complete and polished
