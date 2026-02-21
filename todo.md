@@ -171,13 +171,13 @@
 - [x] Create sidebar panel for map controls and results
 - [x] Checkpoint 1: Basic map displays correctly
 
-### Phase 2: Drawing Tools (Polygon & Polyline)
-- [ ] Implement polygon drawing tool for PV area
-- [ ] Implement polyline drawing tool for cable route
-- [ ] Add click listeners to map for drawing points
-- [ ] Display drawn shapes on map with styling (green for PV, blue for cable)
-- [ ] Add undo/delete last point functionality
-- [ ] Checkpoint 2: Can draw PV polygon and cable polyline
+### Phase 2: Drawing Tools (Polygon & Polyline) - ENHANCED
+- [x] Implement polygon drawing tool for PV area
+- [x] Implement polyline drawing tool for cable route
+- [x] Add click listeners to map for drawing points
+- [x] Render drawn shapes as proper polygons/polylines with visual lines
+- [x] Add undo/delete last point functionality
+- [x] Checkpoint 2: Can draw PV polygon and cable polyline with visual lines
 
 ### Phase 3: Geospatial Calculations (Distance & Area)
 - [x] Calculate polygon area (PV size in m²/hectares)
@@ -186,12 +186,15 @@
 - [x] Add geospatial utility functions
 - [x] Checkpoint 3: Area and distance calculations working
 
-### Phase 4: Cable Sizing Algorithm
-- [ ] Implement cable sizing logic based on distance and voltage
-- [ ] Integrate with existing cable voltage selection (6kV, 11kV, 33kV, etc.)
-- [ ] Calculate cable cost based on distance and size
-- [ ] Update CAPEX automatically when cable parameters change
-- [ ] Checkpoint 4: Cable sizing and cost calculation working
+### Phase 4: Auto-populate Parameters from Map
+- [x] Convert PV area to system size using industry standard (0.5 MW/hectare)
+- [x] Display Estimated System Size (MW) in PV Area results
+- [x] Display Cable Distance (km) in Cable Route results  
+- [x] Add "Apply to Calculator" buttons for both PV and cable
+- [ ] Implement button click handlers to auto-populate parameters
+- [ ] Show "From Map" badge on auto-populated fields
+- [ ] Allow manual override with clear indication
+- [ ] Checkpoint 4: Parameters auto-populate from map drawings
 
 ### Phase 5: Data Persistence & Integration
 - [ ] Save map drawings (PV area, cable route) to database
@@ -207,3 +210,12 @@
 - [ ] Test with various PV sizes and cable routes
 - [ ] Performance optimization
 - [ ] Checkpoint 6: Feature complete and polished
+
+
+## Phase 20: Static Webpage Export
+- [ ] Create static build configuration (vite.config for SPA)
+- [ ] Remove backend/tRPC dependencies from frontend
+- [ ] Remove authentication layer
+- [ ] Convert to client-only calculations
+- [ ] Build and test static export
+- [ ] Deploy to GitHub Pages

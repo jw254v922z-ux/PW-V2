@@ -3,9 +3,11 @@ import { MapView } from "@/components/Map";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, MapPin, Zap, Maximize2, RotateCcw, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { AlertCircle, MapPin, Zap, Maximize2, RotateCcw, Trash2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { calculatePolygonArea, calculatePolylineDistance } from "@/lib/geospatial";
+
 
 interface MapDrawing {
   pvArea: google.maps.Polygon | null;
@@ -34,6 +36,8 @@ export default function MapViewPage() {
   const [cableRouteResults, setCableRouteResults] = useState<{
     distance: number; // km
   } | null>(null);
+  const [systemSizeFromMap, setSystemSizeFromMap] = useState<number | null>(null);
+  const [cableDistanceFromMap, setCableDistanceFromMap] = useState<number | null>(null);
   const mapClickListenerRef = useRef<google.maps.MapsEventListener | null>(null);
 
   const handleMapReady = (map: google.maps.Map) => {
@@ -109,10 +113,14 @@ export default function MapViewPage() {
     if (newPoints.length >= 3) {
       redrawPVPolygon(newPoints);
       const areaM2 = calculatePolygonArea(newPoints);
+      const hectares = areaM2 / 10000;
+      // Industry standard: 0.5 MW per hectare
+      const estimatedSystemSize = hectares * 0.5;
       setPvAreaResults({
         area: areaM2,
-        hectares: areaM2 / 10000,
+        hectares: hectares,
       });
+      setSystemSizeFromMap(estimatedSystemSize);
     }
   };
 
@@ -133,6 +141,7 @@ export default function MapViewPage() {
       setCableRouteResults({
         distance: distanceKm,
       });
+      setCableDistanceFromMap(distanceKm);
     }
   };
 
@@ -418,6 +427,19 @@ export default function MapViewPage() {
                                 {pvAreaResults.hectares.toFixed(2)}
                               </p>
                             </div>
+                            {systemSizeFromMap && (
+                              <div className="border-t pt-3">
+                                <div className="mb-2">
+                                  <p className="text-xs text-muted-foreground">Estimated System Size</p>
+                                  <p className="text-lg font-semibold text-green-600">{systemSizeFromMap.toFixed(2)} MW</p>
+                                  <p className="text-xs text-muted-foreground mt-1">@ 0.5 MW/hectare</p>
+                                </div>
+                                <Button size="sm" className="w-full" variant="default">
+                                  <Check className="w-4 h-4 mr-2" />
+                                  Apply to Calculator
+                                </Button>
+                              </div>
+                            )}
                           </>
                         )}
                       </>
@@ -445,12 +467,22 @@ export default function MapViewPage() {
                           <p className="text-lg font-semibold">{drawings.cablePoints.length}</p>
                         </div>
                         {cableRouteResults && (
-                          <div>
-                            <p className="text-xs text-muted-foreground">Distance (km)</p>
-                            <p className="text-lg font-semibold">
-                              {cableRouteResults.distance.toFixed(2)}
-                            </p>
-                          </div>
+                          <>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Distance (km)</p>
+                              <p className="text-lg font-semibold">
+                                {cableRouteResults.distance.toFixed(2)}
+                              </p>
+                            </div>
+                            {cableDistanceFromMap && (
+                              <div className="border-t pt-3">
+                                <Button size="sm" className="w-full" variant="default">
+                                  <Check className="w-4 h-4 mr-2" />
+                                  Apply to Calculator
+                                </Button>
+                              </div>
+                            )}
+                          </>
                         )}
                       </>
                     ) : (
