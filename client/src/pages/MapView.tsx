@@ -1,19 +1,18 @@
+"use client";
+
 import { useRef, useState, useEffect } from "react";
 import { MapView } from "@/components/Map";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { AlertCircle, MapPin, Zap, Maximize2, RotateCcw, Trash2, Check } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { calculatePolygonArea, calculatePolylineDistance } from "@/lib/geospatial";
 
-
-interface MapDrawing {
-  pvArea: google.maps.Polygon | null;
-  cableRoute: google.maps.Polyline | null;
+interface DrawingState {
   pvPoints: google.maps.LatLngLiteral[];
   cablePoints: google.maps.LatLngLiteral[];
+  pvPolygon: google.maps.Polygon | null;
+  cablePolyline: google.maps.Polyline | null;
   pvMarkers: google.maps.marker.AdvancedMarkerElement[];
   cableMarkers: google.maps.marker.AdvancedMarkerElement[];
 }
@@ -21,63 +20,46 @@ interface MapDrawing {
 export default function MapViewPage() {
   const mapRef = useRef<google.maps.Map | null>(null);
   const [drawingMode, setDrawingMode] = useState<"view" | "pv" | "cable">("view");
-  const [drawings, setDrawings] = useState<MapDrawing>({
-    pvArea: null,
-    cableRoute: null,
+  const [state, setState] = useState<DrawingState>({
     pvPoints: [],
     cablePoints: [],
+    pvPolygon: null,
+    cablePolyline: null,
     pvMarkers: [],
     cableMarkers: [],
   });
+
   const [pvAreaResults, setPvAreaResults] = useState<{
-    area: number; // m²
+    area: number;
     hectares: number;
+    systemSize: number;
   } | null>(null);
-  const [cableRouteResults, setCableRouteResults] = useState<{
-    distance: number; // km
+
+  const [cableResults, setCableResults] = useState<{
+    distance: number;
   } | null>(null);
-  const [systemSizeFromMap, setSystemSizeFromMap] = useState<number | null>(null);
-  const [cableDistanceFromMap, setCableDistanceFromMap] = useState<number | null>(null);
-  const mapClickListenerRef = useRef<google.maps.MapsEventListener | null>(null);
 
   const handleMapReady = (map: google.maps.Map) => {
     mapRef.current = map;
   };
 
-  // Add click listener based on drawing mode
+  // Handle map clicks for drawing
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || drawingMode === "view") return;
 
-    // Remove previous listener
-    if (mapClickListenerRef.current) {
-      mapClickListenerRef.current.remove();
-      mapClickListenerRef.current = null;
-    }
+    const listener = mapRef.current.addListener("click", (e: google.maps.MapMouseEvent) => {
+      if (!e.latLng) return;
 
-    if (drawingMode === "view") return;
+      const point = { lat: e.latLng.lat(), lng: e.latLng.lng() };
 
-    // Add new listener for drawing
-    mapClickListenerRef.current = mapRef.current.addListener(
-      "click",
-      async (e: google.maps.MapMouseEvent) => {
-        if (!e.latLng) return;
-
-        const point = { lat: e.latLng.lat(), lng: e.latLng.lng() };
-
-        if (drawingMode === "pv") {
-          addPVPoint(point);
-        } else if (drawingMode === "cable") {
-          addCablePoint(point);
-        }
+      if (drawingMode === "pv") {
+        addPVPoint(point);
+      } else if (drawingMode === "cable") {
+        addCablePoint(point);
       }
-    );
+    });
 
-    return () => {
-      if (mapClickListenerRef.current) {
-        mapClickListenerRef.current.remove();
-        mapClickListenerRef.current = null;
-      }
-    };
+    return () => listener.remove();
   }, [drawingMode]);
 
   const createMarker = async (
@@ -100,180 +82,181 @@ export default function MapViewPage() {
   };
 
   const addPVPoint = async (point: google.maps.LatLngLiteral) => {
-    const newPoints = [...drawings.pvPoints, point];
-    const marker = await createMarker(point, "#22c55e"); // Green
+    const newPoints = [...state.pvPoints, point];
+    const marker = await createMarker(point, "#22c55e");
 
-    setDrawings((prev) => ({
-      ...prev,
-      pvPoints: newPoints,
-      pvMarkers: marker ? [...prev.pvMarkers, marker] : prev.pvMarkers,
-    }));
+    const newMarkers = marker ? [...state.pvMarkers, marker] : state.pvMarkers;
 
-    // Redraw polygon if we have 3+ points
+    // Create or update polygon if we have 3+ points
+    let newPolygon = state.pvPolygon;
     if (newPoints.length >= 3) {
-      redrawPVPolygon(newPoints);
+      if (newPolygon) {
+        newPolygon.setMap(null);
+      }
+
+      newPolygon = new google.maps.Polygon({
+        paths: newPoints,
+        strokeColor: "#22c55e",
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: "#22c55e",
+        fillOpacity: 0.25,
+        map: mapRef.current,
+        editable: false,
+      });
+
+      // Calculate area and system size
       const areaM2 = calculatePolygonArea(newPoints);
       const hectares = areaM2 / 10000;
-      // Industry standard: 0.5 MW per hectare
-      const estimatedSystemSize = hectares * 0.5;
+      const systemSize = hectares * 0.5; // 0.5 MW per hectare
+
       setPvAreaResults({
         area: areaM2,
         hectares: hectares,
+        systemSize: systemSize,
       });
-      setSystemSizeFromMap(estimatedSystemSize);
     }
+
+    setState({
+      ...state,
+      pvPoints: newPoints,
+      pvMarkers: newMarkers,
+      pvPolygon: newPolygon,
+    });
   };
 
   const addCablePoint = async (point: google.maps.LatLngLiteral) => {
-    const newPoints = [...drawings.cablePoints, point];
-    const marker = await createMarker(point, "#3b82f6"); // Blue
+    const newPoints = [...state.cablePoints, point];
+    const marker = await createMarker(point, "#3b82f6");
 
-    setDrawings((prev) => ({
-      ...prev,
-      cablePoints: newPoints,
-      cableMarkers: marker ? [...prev.cableMarkers, marker] : prev.cableMarkers,
-    }));
+    const newMarkers = marker ? [...state.cableMarkers, marker] : state.cableMarkers;
 
-    // Redraw polyline if we have 2+ points
+    // Create or update polyline if we have 2+ points
+    let newPolyline = state.cablePolyline;
     if (newPoints.length >= 2) {
-      redrawCablePolyline(newPoints);
+      if (newPolyline) {
+        newPolyline.setMap(null);
+      }
+
+      newPolyline = new google.maps.Polyline({
+        path: newPoints,
+        geodesic: true,
+        strokeColor: "#3b82f6",
+        strokeOpacity: 0.8,
+        strokeWeight: 3,
+        map: mapRef.current,
+      });
+
+      // Calculate distance
       const distanceKm = calculatePolylineDistance(newPoints);
-      setCableRouteResults({
+      setCableResults({
         distance: distanceKm,
       });
-      setCableDistanceFromMap(distanceKm);
-    }
-  };
-
-  const redrawPVPolygon = (points: google.maps.LatLngLiteral[]) => {
-    if (!mapRef.current) return;
-
-    // Remove old polygon
-    if (drawings.pvArea) {
-      drawings.pvArea.setMap(null);
     }
 
-    // Create new polygon
-    const polygon = new google.maps.Polygon({
-      paths: points,
-      strokeColor: "#22c55e",
-      strokeOpacity: 0.8,
-      strokeWeight: 2,
-      fillColor: "#22c55e",
-      fillOpacity: 0.2,
-      map: mapRef.current,
-      editable: false,
+    setState({
+      ...state,
+      cablePoints: newPoints,
+      cableMarkers: newMarkers,
+      cablePolyline: newPolyline,
     });
-
-    setDrawings((prev) => ({
-      ...prev,
-      pvArea: polygon,
-    }));
-  };
-
-  const redrawCablePolyline = (points: google.maps.LatLngLiteral[]) => {
-    if (!mapRef.current) return;
-
-    // Remove old polyline
-    if (drawings.cableRoute) {
-      drawings.cableRoute.setMap(null);
-    }
-
-    // Create new polyline
-    const polyline = new google.maps.Polyline({
-      path: points,
-      geodesic: true,
-      strokeColor: "#3b82f6",
-      strokeOpacity: 0.8,
-      strokeWeight: 3,
-      map: mapRef.current,
-    });
-
-    setDrawings((prev) => ({
-      ...prev,
-      cableRoute: polyline,
-    }));
   };
 
   const undoLastPoint = () => {
-    if (drawingMode === "pv" && drawings.pvPoints.length > 0) {
-      const newPoints = drawings.pvPoints.slice(0, -1);
-      const newMarkers = drawings.pvMarkers.slice(0, -1);
+    if (drawingMode === "pv" && state.pvPoints.length > 0) {
+      const newPoints = state.pvPoints.slice(0, -1);
+      const newMarkers = state.pvMarkers.slice(0, -1);
 
-      // Remove last marker from map
-      if (drawings.pvMarkers.length > 0) {
-        drawings.pvMarkers[drawings.pvMarkers.length - 1].map = null;
+      // Remove last marker
+      if (state.pvMarkers.length > 0) {
+        state.pvMarkers[state.pvMarkers.length - 1].map = null;
       }
 
-      setDrawings((prev) => ({
-        ...prev,
+      // Update or remove polygon
+      let newPolygon = state.pvPolygon;
+      if (newPoints.length >= 3) {
+        if (newPolygon) newPolygon.setMap(null);
+        newPolygon = new google.maps.Polygon({
+          paths: newPoints,
+          strokeColor: "#22c55e",
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          fillColor: "#22c55e",
+          fillOpacity: 0.25,
+          map: mapRef.current,
+        });
+      } else if (newPolygon) {
+        newPolygon.setMap(null);
+        newPolygon = null;
+      }
+
+      setState({
+        ...state,
         pvPoints: newPoints,
         pvMarkers: newMarkers,
-      }));
+        pvPolygon: newPolygon,
+      });
+    } else if (drawingMode === "cable" && state.cablePoints.length > 0) {
+      const newPoints = state.cablePoints.slice(0, -1);
+      const newMarkers = state.cableMarkers.slice(0, -1);
 
-      if (newPoints.length >= 3) {
-        redrawPVPolygon(newPoints);
-      } else if (drawings.pvArea) {
-        drawings.pvArea.setMap(null);
-        setDrawings((prev) => ({
-          ...prev,
-          pvArea: null,
-        }));
-      }
-    } else if (drawingMode === "cable" && drawings.cablePoints.length > 0) {
-      const newPoints = drawings.cablePoints.slice(0, -1);
-      const newMarkers = drawings.cableMarkers.slice(0, -1);
-
-      // Remove last marker from map
-      if (drawings.cableMarkers.length > 0) {
-        drawings.cableMarkers[drawings.cableMarkers.length - 1].map = null;
+      // Remove last marker
+      if (state.cableMarkers.length > 0) {
+        state.cableMarkers[state.cableMarkers.length - 1].map = null;
       }
 
-      setDrawings((prev) => ({
-        ...prev,
+      // Update or remove polyline
+      let newPolyline = state.cablePolyline;
+      if (newPoints.length >= 2) {
+        if (newPolyline) newPolyline.setMap(null);
+        newPolyline = new google.maps.Polyline({
+          path: newPoints,
+          geodesic: true,
+          strokeColor: "#3b82f6",
+          strokeOpacity: 0.8,
+          strokeWeight: 3,
+          map: mapRef.current,
+        });
+      } else if (newPolyline) {
+        newPolyline.setMap(null);
+        newPolyline = null;
+      }
+
+      setState({
+        ...state,
         cablePoints: newPoints,
         cableMarkers: newMarkers,
-      }));
-
-      if (newPoints.length >= 2) {
-        redrawCablePolyline(newPoints);
-      } else if (drawings.cableRoute) {
-        drawings.cableRoute.setMap(null);
-        setDrawings((prev) => ({
-          ...prev,
-          cableRoute: null,
-        }));
-      }
+        cablePolyline: newPolyline,
+      });
     }
   };
 
-  const clearDrawings = () => {
-    // Clear polygons and polylines
-    if (drawings.pvArea) {
-      drawings.pvArea.setMap(null);
-    }
-    if (drawings.cableRoute) {
-      drawings.cableRoute.setMap(null);
+  const clearAll = () => {
+    // Remove polygon
+    if (state.pvPolygon) {
+      state.pvPolygon.setMap(null);
     }
 
-    // Clear all markers
-    drawings.pvMarkers.forEach((marker) => {
-      marker.map = null;
-    });
-    drawings.cableMarkers.forEach((marker) => {
-      marker.map = null;
-    });
+    // Remove polyline
+    if (state.cablePolyline) {
+      state.cablePolyline.setMap(null);
+    }
 
-    setDrawings({
-      pvArea: null,
-      cableRoute: null,
+    // Remove all markers
+    state.pvMarkers.forEach((m) => (m.map = null));
+    state.cableMarkers.forEach((m) => (m.map = null));
+
+    setState({
       pvPoints: [],
       cablePoints: [],
+      pvPolygon: null,
+      cablePolyline: null,
       pvMarkers: [],
       cableMarkers: [],
     });
+
     setPvAreaResults(null);
-    setCableRouteResults(null);
+    setCableResults(null);
     setDrawingMode("view");
   };
 
@@ -306,8 +289,8 @@ export default function MapViewPage() {
                 <CardTitle>Interactive Map</CardTitle>
                 <CardDescription>
                   {drawingMode === "view" && "Select a drawing mode to get started"}
-                  {drawingMode === "pv" && "Click points on the map to draw your PV area polygon"}
-                  {drawingMode === "cable" && "Click points on the map to draw your cable route"}
+                  {drawingMode === "pv" && "Click points on the map to draw your PV area polygon (minimum 3 points)"}
+                  {drawingMode === "cable" && "Click points on the map to draw your cable route (minimum 2 points)"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -341,19 +324,19 @@ export default function MapViewPage() {
                     <Button
                       variant="outline"
                       onClick={undoLastPoint}
-                      disabled={drawings.pvPoints.length === 0 && drawings.cablePoints.length === 0}
+                      disabled={state.pvPoints.length === 0 && state.cablePoints.length === 0}
                       className="gap-2"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <RotateCcw className="w-4 h-4" />
                       Undo Point
                     </Button>
                     <Button
                       variant="destructive"
-                      onClick={clearDrawings}
-                      disabled={!drawings.pvArea && !drawings.cableRoute}
+                      onClick={clearAll}
+                      disabled={!state.pvPolygon && !state.cablePolyline}
                       className="gap-2 ml-auto"
                     >
-                      <RotateCcw className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" />
                       Clear All
                     </Button>
                   </div>
@@ -361,7 +344,7 @@ export default function MapViewPage() {
                   {/* Map Container */}
                   <div className="rounded-lg border overflow-hidden">
                     <MapView
-                      initialCenter={{ lat: 52.5200, lng: -1.1743 }} // UK center (Midlands)
+                      initialCenter={{ lat: 52.5200, lng: -1.1743 }}
                       initialZoom={10}
                       onMapReady={handleMapReady}
                       className="w-full h-[600px]"
@@ -375,7 +358,9 @@ export default function MapViewPage() {
                       <p className="font-semibold mb-1">How to use:</p>
                       <ul className="list-disc list-inside space-y-1 text-xs">
                         <li>Select "Draw PV Area" and click on the map to place points (minimum 3 points)</li>
+                        <li>A green polygon will appear as you place the 3rd point</li>
                         <li>Select "Draw Cable Route" and click to place points (minimum 2 points)</li>
+                        <li>A blue polyline will appear as you place the 2nd point</li>
                         <li>Green markers = PV area, Blue markers = Cable route</li>
                         <li>Use "Undo Point" to remove the last point</li>
                         <li>Use "Clear All" to reset and start over</li>
@@ -405,11 +390,11 @@ export default function MapViewPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {drawings.pvPoints.length > 0 ? (
+                    {state.pvPoints.length > 0 ? (
                       <>
                         <div>
                           <p className="text-xs text-muted-foreground">Points Placed</p>
-                          <p className="text-lg font-semibold">{drawings.pvPoints.length}</p>
+                          <p className="text-lg font-semibold">{state.pvPoints.length}</p>
                         </div>
                         {pvAreaResults && (
                           <>
@@ -427,19 +412,17 @@ export default function MapViewPage() {
                                 {pvAreaResults.hectares.toFixed(2)}
                               </p>
                             </div>
-                            {systemSizeFromMap && (
-                              <div className="border-t pt-3">
-                                <div className="mb-2">
-                                  <p className="text-xs text-muted-foreground">Estimated System Size</p>
-                                  <p className="text-lg font-semibold text-green-600">{systemSizeFromMap.toFixed(2)} MW</p>
-                                  <p className="text-xs text-muted-foreground mt-1">@ 0.5 MW/hectare</p>
-                                </div>
-                                <Button size="sm" className="w-full" variant="default">
-                                  <Check className="w-4 h-4 mr-2" />
-                                  Apply to Calculator
-                                </Button>
-                              </div>
-                            )}
+                            <div className="border-t pt-3">
+                              <p className="text-xs text-muted-foreground">Estimated System Size</p>
+                              <p className="text-lg font-semibold text-green-600">
+                                {pvAreaResults.systemSize.toFixed(2)} MW
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">@ 0.5 MW/hectare</p>
+                              <Button size="sm" className="w-full mt-3" variant="default">
+                                <Check className="w-4 h-4 mr-2" />
+                                Apply to Calculator
+                              </Button>
+                            </div>
                           </>
                         )}
                       </>
@@ -460,28 +443,26 @@ export default function MapViewPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {drawings.cablePoints.length > 0 ? (
+                    {state.cablePoints.length > 0 ? (
                       <>
                         <div>
                           <p className="text-xs text-muted-foreground">Points Placed</p>
-                          <p className="text-lg font-semibold">{drawings.cablePoints.length}</p>
+                          <p className="text-lg font-semibold">{state.cablePoints.length}</p>
                         </div>
-                        {cableRouteResults && (
+                        {cableResults && (
                           <>
                             <div>
                               <p className="text-xs text-muted-foreground">Distance (km)</p>
                               <p className="text-lg font-semibold">
-                                {cableRouteResults.distance.toFixed(2)}
+                                {cableResults.distance.toFixed(2)}
                               </p>
                             </div>
-                            {cableDistanceFromMap && (
-                              <div className="border-t pt-3">
-                                <Button size="sm" className="w-full" variant="default">
-                                  <Check className="w-4 h-4 mr-2" />
-                                  Apply to Calculator
-                                </Button>
-                              </div>
-                            )}
+                            <div className="border-t pt-3">
+                              <Button size="sm" className="w-full" variant="default">
+                                <Check className="w-4 h-4 mr-2" />
+                                Apply to Calculator
+                              </Button>
+                            </div>
                           </>
                         )}
                       </>
@@ -501,14 +482,14 @@ export default function MapViewPage() {
                   <CardContent className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">PV Area:</span>
-                      <span className={drawings.pvArea ? "text-green-600 font-semibold" : "text-gray-400"}>
-                        {drawings.pvArea ? "✓ Drawn" : drawings.pvPoints.length > 0 ? `${drawings.pvPoints.length} pts` : "—"}
+                      <span className={state.pvPolygon ? "text-green-600 font-semibold" : "text-gray-400"}>
+                        {state.pvPolygon ? "✓ Drawn" : state.pvPoints.length > 0 ? `${state.pvPoints.length} pts` : "—"}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Cable Route:</span>
-                      <span className={drawings.cableRoute ? "text-green-600 font-semibold" : "text-gray-400"}>
-                        {drawings.cableRoute ? "✓ Drawn" : drawings.cablePoints.length > 0 ? `${drawings.cablePoints.length} pts` : "—"}
+                      <span className={state.cablePolyline ? "text-green-600 font-semibold" : "text-gray-400"}>
+                        {state.cablePolyline ? "✓ Drawn" : state.cablePoints.length > 0 ? `${state.cablePoints.length} pts` : "—"}
                       </span>
                     </div>
                   </CardContent>
