@@ -1,7 +1,6 @@
 import L from "leaflet";
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { LeafletMap } from "@/components/LeafletMap";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,29 +8,21 @@ import { MapPin, Zap, Trash2, Check, ArrowRight } from "lucide-react";
 import { calculatePolygonArea, calculatePolylineDistance } from "@/lib/geospatial";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
-
-interface DrawingState {
-  pvPoints: L.LatLngExpression[];
-  cablePoints: L.LatLngExpression[];
-  pvPolygon: L.Polygon | null;
-  cablePolyline: L.Polyline | null;
-  pvMarkers: L.CircleMarker[];
-  cableMarkers: L.CircleMarker[];
-}
+import "leaflet/dist/leaflet.css";
 
 export default function MapViewPage() {
+  const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const [, setLocation] = useLocation();
+  
   const [drawingMode, setDrawingMode] = useState<"view" | "pv" | "cable">("view");
-  const [state, setState] = useState<DrawingState>({
-    pvPoints: [],
-    cablePoints: [],
-    pvPolygon: null,
-    cablePolyline: null,
-    pvMarkers: [],
-    cableMarkers: [],
-  });
-
+  const [pvPoints, setPvPoints] = useState<L.LatLng[]>([]);
+  const [cablePoints, setCablePoints] = useState<L.LatLng[]>([]);
+  const [pvMarkers, setPvMarkers] = useState<L.CircleMarker[]>([]);
+  const [cableMarkers, setCableMarkers] = useState<L.CircleMarker[]>([]);
+  const [pvPolygon, setPvPolygon] = useState<L.Polygon | null>(null);
+  const [cablePolyline, setCablePolyline] = useState<L.Polyline | null>(null);
+  
   const [pvAreaResults, setPvAreaResults] = useState<{
     area: number;
     hectares: number;
@@ -42,146 +33,140 @@ export default function MapViewPage() {
     distance: number;
   } | null>(null);
 
-  // Attach click listener when map is ready
-  const handleMapReady = (map: L.Map) => {
+  // Initialize map once on mount
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
+
+    // Create map
+    const map = L.map(mapContainerRef.current).setView([52.52, -1.17], 10);
+
+    // Add tile layer
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+    }).addTo(map);
+
     mapRef.current = map;
-    console.log("Map ready, attaching click listener");
 
-    map.on("click", (e: L.LeafletMouseEvent) => {
-      console.log("Map clicked, drawingMode:", drawingMode);
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, []);
 
-      if (drawingMode === "view") {
-        console.log("In view mode, ignoring click");
-        return;
-      }
+  // Handle map clicks for drawing
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const handleMapClick = (e: L.LeafletMouseEvent) => {
+      if (drawingMode === "view") return;
 
       const point = e.latlng;
-      console.log("Adding point:", point, "mode:", drawingMode);
 
       if (drawingMode === "pv") {
-        setState((prev) => {
-          const newPoints = [...prev.pvPoints, point];
-          console.log("PV points now:", newPoints);
-
-          // Add marker
-          if (mapRef.current) {
-            const marker = L.circleMarker(point, {
-              radius: 5,
-              fillColor: "#22c55e",
-              color: "#16a34a",
-              weight: 2,
-              opacity: 1,
-              fillOpacity: 0.8,
-            }).addTo(mapRef.current);
-
-            const newMarkers = [...prev.pvMarkers, marker];
-
-            // Create or update polygon
-            let newPolygon = prev.pvPolygon;
-            if (newPoints.length >= 3) {
-              if (prev.pvPolygon) {
-                mapRef.current.removeLayer(prev.pvPolygon);
-              }
-              newPolygon = L.polygon(newPoints, {
-                color: "#22c55e",
-                weight: 2,
-                opacity: 0.8,
-                fillColor: "#22c55e",
-                fillOpacity: 0.2,
-              }).addTo(mapRef.current);
-
-              // Calculate area
-              const area = calculatePolygonArea(newPoints);
-              const hectares = area / 10000;
-              const systemSize = hectares * 10;
-              setPvAreaResults({ area, hectares, systemSize });
-              console.log("PV area calculated:", { area, hectares, systemSize });
-            }
-
-            return {
-              ...prev,
-              pvPoints: newPoints,
-              pvMarkers: newMarkers,
-              pvPolygon: newPolygon,
-            };
-          }
-          return prev;
-        });
+        addPVPoint(point);
       } else if (drawingMode === "cable") {
-        setState((prev) => {
-          const newPoints = [...prev.cablePoints, point];
-          console.log("Cable points now:", newPoints);
-
-          // Add marker
-          if (mapRef.current) {
-            const marker = L.circleMarker(point, {
-              radius: 5,
-              fillColor: "#3b82f6",
-              color: "#1d4ed8",
-              weight: 2,
-              opacity: 1,
-              fillOpacity: 0.8,
-            }).addTo(mapRef.current);
-
-            const newMarkers = [...prev.cableMarkers, marker];
-
-            // Create or update polyline
-            let newPolyline = prev.cablePolyline;
-            if (newPoints.length >= 2) {
-              if (prev.cablePolyline) {
-                mapRef.current.removeLayer(prev.cablePolyline);
-              }
-              newPolyline = L.polyline(newPoints, {
-                color: "#3b82f6",
-                weight: 3,
-                opacity: 0.8,
-              }).addTo(mapRef.current);
-
-              // Calculate distance
-              const distance = calculatePolylineDistance(newPoints);
-              setCableResults({ distance });
-              console.log("Cable distance calculated:", distance);
-            }
-
-            return {
-              ...prev,
-              cablePoints: newPoints,
-              cableMarkers: newMarkers,
-              cablePolyline: newPolyline,
-            };
-          }
-          return prev;
-        });
+        addCablePoint(point);
       }
-    });
+    };
+
+    mapRef.current.on("click", handleMapClick);
+
+    return () => {
+      mapRef.current?.off("click", handleMapClick);
+    };
+  }, [drawingMode]);
+
+  const addPVPoint = (point: L.LatLng) => {
+    const newPoints = [...pvPoints, point];
+    setPvPoints(newPoints);
+
+    // Add marker
+    const marker = L.circleMarker(point, {
+      radius: 5,
+      fillColor: "#22c55e",
+      color: "#16a34a",
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.8,
+    }).addTo(mapRef.current!);
+
+    setPvMarkers([...pvMarkers, marker]);
+
+    // Create or update polygon
+    if (newPoints.length >= 3) {
+      if (pvPolygon) {
+        mapRef.current?.removeLayer(pvPolygon);
+      }
+      const polygon = L.polygon(newPoints, {
+        color: "#22c55e",
+        weight: 2,
+        opacity: 0.8,
+        fillColor: "#22c55e",
+        fillOpacity: 0.2,
+      }).addTo(mapRef.current!);
+
+      setPvPolygon(polygon);
+
+      // Calculate area
+      const area = calculatePolygonArea(newPoints);
+      const hectares = area / 10000;
+      const systemSize = hectares * 10;
+      setPvAreaResults({ area, hectares, systemSize });
+    }
+  };
+
+  const addCablePoint = (point: L.LatLng) => {
+    const newPoints = [...cablePoints, point];
+    setCablePoints(newPoints);
+
+    // Add marker
+    const marker = L.circleMarker(point, {
+      radius: 5,
+      fillColor: "#3b82f6",
+      color: "#1d4ed8",
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.8,
+    }).addTo(mapRef.current!);
+
+    setCableMarkers([...cableMarkers, marker]);
+
+    // Create or update polyline
+    if (newPoints.length >= 2) {
+      if (cablePolyline) {
+        mapRef.current?.removeLayer(cablePolyline);
+      }
+      const polyline = L.polyline(newPoints, {
+        color: "#3b82f6",
+        weight: 3,
+        opacity: 0.8,
+      }).addTo(mapRef.current!);
+
+      setCablePolyline(polyline);
+
+      // Calculate distance
+      const distance = calculatePolylineDistance(newPoints);
+      setCableResults({ distance });
+    }
   };
 
   const clearPVArea = () => {
-    setState((prev) => {
-      prev.pvMarkers.forEach((m) => mapRef.current?.removeLayer(m));
-      if (prev.pvPolygon) mapRef.current?.removeLayer(prev.pvPolygon);
-      return {
-        ...prev,
-        pvPoints: [],
-        pvMarkers: [],
-        pvPolygon: null,
-      };
-    });
+    pvMarkers.forEach((m) => mapRef.current?.removeLayer(m));
+    if (pvPolygon) mapRef.current?.removeLayer(pvPolygon);
+    setPvPoints([]);
+    setPvMarkers([]);
+    setPvPolygon(null);
     setPvAreaResults(null);
     toast.success("PV area cleared");
   };
 
   const clearCableRoute = () => {
-    setState((prev) => {
-      prev.cableMarkers.forEach((m) => mapRef.current?.removeLayer(m));
-      if (prev.cablePolyline) mapRef.current?.removeLayer(prev.cablePolyline);
-      return {
-        ...prev,
-        cablePoints: [],
-        cableMarkers: [],
-        cablePolyline: null,
-      };
-    });
+    cableMarkers.forEach((m) => mapRef.current?.removeLayer(m));
+    if (cablePolyline) mapRef.current?.removeLayer(cablePolyline);
+    setCablePoints([]);
+    setCableMarkers([]);
+    setCablePolyline(null);
     setCableResults(null);
     toast.success("Cable route cleared");
   };
@@ -194,9 +179,8 @@ export default function MapViewPage() {
 
     // Capture map screenshot
     try {
-      if (mapRef.current) {
-        const mapContainer = mapRef.current.getContainer();
-        const canvas = await html2canvas(mapContainer, {
+      if (mapContainerRef.current) {
+        const canvas = await html2canvas(mapContainerRef.current, {
           backgroundColor: "#ffffff",
           scale: 2,
         });
@@ -229,9 +213,8 @@ export default function MapViewPage() {
 
     // Capture map screenshot
     try {
-      if (mapRef.current) {
-        const mapContainer = mapRef.current.getContainer();
-        const canvas = await html2canvas(mapContainer, {
+      if (mapContainerRef.current) {
+        const canvas = await html2canvas(mapContainerRef.current, {
           backgroundColor: "#ffffff",
           scale: 2,
         });
@@ -264,9 +247,8 @@ export default function MapViewPage() {
 
     // Capture map screenshot
     try {
-      if (mapRef.current) {
-        const mapContainer = mapRef.current.getContainer();
-        const canvas = await html2canvas(mapContainer, {
+      if (mapContainerRef.current) {
+        const canvas = await html2canvas(mapContainerRef.current, {
           backgroundColor: "#ffffff",
           scale: 2,
         });
@@ -294,8 +276,8 @@ export default function MapViewPage() {
   return (
     <div className="flex h-screen gap-4 p-4 bg-background">
       {/* Map Container */}
-      <div className="flex-1 rounded-lg border border-border overflow-hidden" data-map-container>
-        <LeafletMap onMapReady={handleMapReady} initialCenter={[52.52, -1.17]} initialZoom={10} />
+      <div className="flex-1 rounded-lg border border-border overflow-hidden">
+        <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />
       </div>
 
       {/* Sidebar */}
