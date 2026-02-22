@@ -23,7 +23,6 @@ export default function MapViewPage() {
   const mapRef = useRef<L.Map | null>(null);
   const [, setLocation] = useLocation();
   const [drawingMode, setDrawingMode] = useState<"view" | "pv" | "cable">("view");
-  const drawingModeRef = useRef(drawingMode);
   const [state, setState] = useState<DrawingState>({
     pvPoints: [],
     cablePoints: [],
@@ -32,7 +31,6 @@ export default function MapViewPage() {
     pvMarkers: [],
     cableMarkers: [],
   });
-  const stateRef = useRef(state);
 
   const [pvAreaResults, setPvAreaResults] = useState<{
     area: number;
@@ -44,70 +42,54 @@ export default function MapViewPage() {
     distance: number;
   } | null>(null);
 
-  // Keep refs in sync with state
-  drawingModeRef.current = drawingMode;
-  stateRef.current = state;
-
-  const handleMapReady = (map: L.Map) => {
-    mapRef.current = map;
-
-    // Attach click listener that uses current refs
-    map.on("click", (e: L.LeafletMouseEvent) => {
-      if (drawingModeRef.current === "view") return;
-
-      const point = e.latlng;
-
-      if (drawingModeRef.current === "pv") {
-        addPVPoint(point);
-      } else if (drawingModeRef.current === "cable") {
-        addCablePoint(point);
-      }
-    });
-  };
-
+  // Define drawing functions that update state
   const addPVPoint = (point: L.LatLng) => {
     setState((prev) => {
       const newPoints = [...prev.pvPoints, point];
 
-      // Add marker
-      const marker = L.circleMarker(point, {
-        radius: 5,
-        fillColor: "#22c55e",
-        color: "#16a34a",
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.8,
-      }).addTo(mapRef.current!);
-
-      const newMarkers = [...prev.pvMarkers, marker];
-
-      // Create or update polygon
-      let newPolygon = prev.pvPolygon;
-      if (newPoints.length >= 3) {
-        if (prev.pvPolygon) {
-          mapRef.current!.removeLayer(prev.pvPolygon);
-        }
-        newPolygon = L.polygon(newPoints, {
-          color: "#22c55e",
-          weight: 2,
-          opacity: 0.8,
+      // Add marker to map
+      if (mapRef.current) {
+        const marker = L.circleMarker(point, {
+          radius: 5,
           fillColor: "#22c55e",
-          fillOpacity: 0.2,
-        }).addTo(mapRef.current!);
+          color: "#16a34a",
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.8,
+        }).addTo(mapRef.current);
 
-        // Calculate area
-        const area = calculatePolygonArea(newPoints);
-        const hectares = area / 10000;
-        const systemSize = hectares * 10;
-        setPvAreaResults({ area, hectares, systemSize });
+        const newMarkers = [...prev.pvMarkers, marker];
+
+        // Create or update polygon
+        let newPolygon = prev.pvPolygon;
+        if (newPoints.length >= 3) {
+          if (prev.pvPolygon) {
+            mapRef.current.removeLayer(prev.pvPolygon);
+          }
+          newPolygon = L.polygon(newPoints, {
+            color: "#22c55e",
+            weight: 2,
+            opacity: 0.8,
+            fillColor: "#22c55e",
+            fillOpacity: 0.2,
+          }).addTo(mapRef.current);
+
+          // Calculate area
+          const area = calculatePolygonArea(newPoints);
+          const hectares = area / 10000;
+          const systemSize = hectares * 10;
+          setPvAreaResults({ area, hectares, systemSize });
+        }
+
+        return {
+          ...prev,
+          pvPoints: newPoints,
+          pvMarkers: newMarkers,
+          pvPolygon: newPolygon,
+        };
       }
 
-      return {
-        ...prev,
-        pvPoints: newPoints,
-        pvMarkers: newMarkers,
-        pvPolygon: newPolygon,
-      };
+      return prev;
     });
   };
 
@@ -115,41 +97,62 @@ export default function MapViewPage() {
     setState((prev) => {
       const newPoints = [...prev.cablePoints, point];
 
-      // Add marker
-      const marker = L.circleMarker(point, {
-        radius: 5,
-        fillColor: "#3b82f6",
-        color: "#1d4ed8",
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.8,
-      }).addTo(mapRef.current!);
+      // Add marker to map
+      if (mapRef.current) {
+        const marker = L.circleMarker(point, {
+          radius: 5,
+          fillColor: "#3b82f6",
+          color: "#1d4ed8",
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.8,
+        }).addTo(mapRef.current);
 
-      const newMarkers = [...prev.cableMarkers, marker];
+        const newMarkers = [...prev.cableMarkers, marker];
 
-      // Create or update polyline
-      let newPolyline = prev.cablePolyline;
-      if (newPoints.length >= 2) {
-        if (prev.cablePolyline) {
-          mapRef.current!.removeLayer(prev.cablePolyline);
+        // Create or update polyline
+        let newPolyline = prev.cablePolyline;
+        if (newPoints.length >= 2) {
+          if (prev.cablePolyline) {
+            mapRef.current.removeLayer(prev.cablePolyline);
+          }
+          newPolyline = L.polyline(newPoints, {
+            color: "#3b82f6",
+            weight: 3,
+            opacity: 0.8,
+          }).addTo(mapRef.current);
+
+          // Calculate distance
+          const distance = calculatePolylineDistance(newPoints);
+          setCableResults({ distance });
         }
-        newPolyline = L.polyline(newPoints, {
-          color: "#3b82f6",
-          weight: 3,
-          opacity: 0.8,
-        }).addTo(mapRef.current!);
 
-        // Calculate distance
-        const distance = calculatePolylineDistance(newPoints);
-        setCableResults({ distance });
+        return {
+          ...prev,
+          cablePoints: newPoints,
+          cableMarkers: newMarkers,
+          cablePolyline: newPolyline,
+        };
       }
 
-      return {
-        ...prev,
-        cablePoints: newPoints,
-        cableMarkers: newMarkers,
-        cablePolyline: newPolyline,
-      };
+      return prev;
+    });
+  };
+
+  const handleMapReady = (map: L.Map) => {
+    mapRef.current = map;
+
+    // Attach click listener
+    map.on("click", (e: L.LeafletMouseEvent) => {
+      if (drawingMode === "view") return;
+
+      const point = e.latlng;
+
+      if (drawingMode === "pv") {
+        addPVPoint(point);
+      } else if (drawingMode === "cable") {
+        addCablePoint(point);
+      }
     });
   };
 
