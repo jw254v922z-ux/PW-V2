@@ -1,11 +1,11 @@
 import L from "leaflet";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { LeafletMap } from "@/components/LeafletMap";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, MapPin, Zap, RotateCcw, Trash2, Check, ArrowRight } from "lucide-react";
+import { MapPin, Zap, Trash2, Check, ArrowRight } from "lucide-react";
 import { calculatePolygonArea, calculatePolylineDistance } from "@/lib/geospatial";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
@@ -23,6 +23,7 @@ export default function MapViewPage() {
   const mapRef = useRef<L.Map | null>(null);
   const [, setLocation] = useLocation();
   const [drawingMode, setDrawingMode] = useState<"view" | "pv" | "cable">("view");
+  const drawingModeRef = useRef(drawingMode);
   const [state, setState] = useState<DrawingState>({
     pvPoints: [],
     cablePoints: [],
@@ -31,6 +32,7 @@ export default function MapViewPage() {
     pvMarkers: [],
     cableMarkers: [],
   });
+  const stateRef = useRef(state);
 
   const [pvAreaResults, setPvAreaResults] = useState<{
     area: number;
@@ -42,18 +44,22 @@ export default function MapViewPage() {
     distance: number;
   } | null>(null);
 
+  // Keep refs in sync with state
+  drawingModeRef.current = drawingMode;
+  stateRef.current = state;
+
   const handleMapReady = (map: L.Map) => {
     mapRef.current = map;
-    
-    // Attach click listener directly when map is ready
+
+    // Attach click listener that uses current refs
     map.on("click", (e: L.LeafletMouseEvent) => {
-      if (drawingMode === "view") return;
-      
+      if (drawingModeRef.current === "view") return;
+
       const point = e.latlng;
-      
-      if (drawingMode === "pv") {
+
+      if (drawingModeRef.current === "pv") {
         addPVPoint(point);
-      } else if (drawingMode === "cable") {
+      } else if (drawingModeRef.current === "cable") {
         addCablePoint(point);
       }
     });
@@ -62,7 +68,7 @@ export default function MapViewPage() {
   const addPVPoint = (point: L.LatLng) => {
     setState((prev) => {
       const newPoints = [...prev.pvPoints, point];
-      
+
       // Add marker
       const marker = L.circleMarker(point, {
         radius: 5,
@@ -88,13 +94,11 @@ export default function MapViewPage() {
           fillColor: "#22c55e",
           fillOpacity: 0.2,
         }).addTo(mapRef.current!);
-      }
 
-      // Calculate area
-      if (newPoints.length >= 3) {
+        // Calculate area
         const area = calculatePolygonArea(newPoints);
         const hectares = area / 10000;
-        const systemSize = hectares * 10; // MW per hectare
+        const systemSize = hectares * 10;
         setPvAreaResults({ area, hectares, systemSize });
       }
 
@@ -110,7 +114,7 @@ export default function MapViewPage() {
   const addCablePoint = (point: L.LatLng) => {
     setState((prev) => {
       const newPoints = [...prev.cablePoints, point];
-      
+
       // Add marker
       const marker = L.circleMarker(point, {
         radius: 5,
@@ -134,10 +138,8 @@ export default function MapViewPage() {
           weight: 3,
           opacity: 0.8,
         }).addTo(mapRef.current!);
-      }
 
-      // Calculate distance
-      if (newPoints.length >= 2) {
+        // Calculate distance
         const distance = calculatePolylineDistance(newPoints);
         setCableResults({ distance });
       }
