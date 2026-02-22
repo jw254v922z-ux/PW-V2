@@ -75,7 +75,7 @@ export default function MapViewPage() {
         mapRef.current.off("click", listener);
       }
     };
-  }, [drawingMode, mapReady, addPVPoint, addCablePoint]);
+  }, [drawingMode, mapReady]);
 
   const addPVPoint = useCallback((point: L.LatLng) => {
     setState((prev) => {
