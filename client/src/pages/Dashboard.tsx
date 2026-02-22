@@ -132,7 +132,7 @@ export default function Dashboard() {
           toast.success(`System size: ${mapResults.systemSize.toFixed(2)} MW from map`);
         }
         if (mapResults.cableDistance !== null && mapResults.cableDistance !== undefined) {
-          setInputs(prev => ({ ...prev, privateWireCost: mapResults.cableDistance * 1000 }));
+          setInputs(prev => ({ ...prev, distanceKm: mapResults.cableDistance }));
           toast.success(`Cable distance: ${mapResults.cableDistance.toFixed(2)} km from map`);
         }
         sessionStorage.removeItem('mapResults');

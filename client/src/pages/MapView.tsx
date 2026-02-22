@@ -418,6 +418,31 @@ export default function MapViewPage() {
               )}
             </div>
 
+            {/* Screenshot Button */}
+            {(pvCompleted || cableCompleted) && (
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={async () => {
+                  try {
+                    if (mapContainerRef.current) {
+                      const canvas = await html2canvas(mapContainerRef.current, {
+                        backgroundColor: "#ffffff",
+                        scale: 2,
+                      });
+                      sessionStorage.setItem("mapScreenshot", canvas.toDataURL("image/png"));
+                      toast.success("Map screenshot saved for PDF!");
+                    }
+                  } catch (e) {
+                    console.error("Screenshot capture failed:", e);
+                    toast.error("Failed to capture screenshot");
+                  }
+                }}
+              >
+                📸 Save Map Screenshot for PDF
+              </Button>
+            )}
+
             {/* Apply Buttons */}
             <div className="space-y-2 pt-4 border-t">
               {pvCompleted && pvAreaResults && (
