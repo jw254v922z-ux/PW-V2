@@ -226,7 +226,9 @@ export default function Dashboard() {
   const captureMapScreenshot = async (): Promise<string | undefined> => {
     try {
       const storedScreenshot = sessionStorage.getItem('mapScreenshot');
+      console.log('Checking for stored map screenshot:', !!storedScreenshot);
       if (storedScreenshot) {
+        console.log('Found stored map screenshot, using it');
         sessionStorage.removeItem('mapScreenshot');
         return storedScreenshot;
       }
@@ -248,7 +250,9 @@ export default function Dashboard() {
   };
 
   const handleExportPDF = async () => {
+    console.log('Starting PDF export...');
     const mapScreenshot = await captureMapScreenshot();
+    console.log('Map screenshot available:', !!mapScreenshot);
     generatePDFReport({ 
       inputs, 
       results, 

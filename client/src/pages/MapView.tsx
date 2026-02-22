@@ -55,9 +55,10 @@ export default function MapViewPage() {
 
   // Handle map clicks for drawing
   useEffect(() => {
-    if (!mapRef.current || drawingMode === "view") return;
+    if (!mapRef.current) return;
 
     const listener = (e: L.LeafletMouseEvent) => {
+      if (drawingMode === "view") return;
       const point = e.latlng;
 
       if (drawingMode === "pv") {
@@ -74,7 +75,7 @@ export default function MapViewPage() {
         mapRef.current.off("click", listener);
       }
     };
-  }, [drawingMode, mapReady]);
+  }, [drawingMode, mapReady, addPVPoint, addCablePoint]);
 
   const addPVPoint = useCallback((point: L.LatLng) => {
     setState((prev) => {
