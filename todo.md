@@ -219,3 +219,14 @@
 - [ ] Convert to client-only calculations
 - [ ] Build and test static export
 - [ ] Deploy to GitHub Pages
+
+
+## Phase 22: Replace Google Maps with Leaflet
+- [x] Install Leaflet dependencies (leaflet, react-leaflet, @types/leaflet)
+- [x] Create LeafletMap component with OpenStreetMap tiles
+- [x] Rewrite MapView page to use Leaflet instead of Google Maps
+- [x] Implement polygon drawing for PV areas with Leaflet
+- [x] Implement polyline drawing for cable routes with Leaflet
+- [x] Add real-time area and distance calculations
+- [ ] Test map drawing functionality on Replit
+- [ ] Save checkpoint and push to GitHub
