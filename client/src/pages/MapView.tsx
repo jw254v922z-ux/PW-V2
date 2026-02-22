@@ -213,6 +213,7 @@ export default function MapViewPage() {
   };
 
   const applyCableDistanceToCalculator = async () => {
+    console.log('[MapView] applyCableDistanceToCalculator called, cableResults:', cableResults);
     if (!cableResults) {
       toast.error("No cable route drawn yet");
       return;
@@ -232,15 +233,15 @@ export default function MapViewPage() {
     }
 
     // Store map results
-    sessionStorage.setItem(
-      "mapResults",
-      JSON.stringify({
-        systemSize: pvAreaResults?.systemSize || null,
-        cableDistance: cableResults.distance,
-      })
-    );
+    const mapData = {
+      systemSize: pvAreaResults?.systemSize || null,
+      cableDistance: cableResults.distance,
+    };
+    console.log('[MapView] Storing map results:', mapData);
+    sessionStorage.setItem("mapResults", JSON.stringify(mapData));
 
     toast.success(`Applied cable distance: ${cableResults.distance.toFixed(2)} km`);
+    console.log('[MapView] Cable distance applied:', cableResults.distance);
     setTimeout(() => {
       setLocation("/");
     }, 500);

@@ -124,20 +124,23 @@ export default function Dashboard() {
 
   useEffect(() => {
     const mapResultsStr = sessionStorage.getItem('mapResults');
+    console.log('[Dashboard] mapResults from sessionStorage:', mapResultsStr);
     if (mapResultsStr) {
       try {
         const mapResults = JSON.parse(mapResultsStr);
+        console.log('[Dashboard] Parsed mapResults:', mapResults);
         if (mapResults.systemSize !== null && mapResults.systemSize !== undefined) {
           setInputs(prev => ({ ...prev, mw: mapResults.systemSize }));
           toast.success(`System size: ${mapResults.systemSize.toFixed(2)} MW from map`);
         }
         if (mapResults.cableDistance !== null && mapResults.cableDistance !== undefined) {
+          console.log('[Dashboard] Setting cable distance to:', mapResults.cableDistance);
           setInputs(prev => ({ ...prev, distanceKm: mapResults.cableDistance }));
           toast.success(`Cable distance: ${mapResults.cableDistance.toFixed(2)} km from map`);
         }
         sessionStorage.removeItem('mapResults');
       } catch (error) {
-        console.error('Failed to parse map results:', error);
+        console.error('[Dashboard] Failed to parse map results:', error);
       }
     }
   }, []);
@@ -1002,6 +1005,7 @@ export default function Dashboard() {
               
               <TabsContent value="gridcosts">
                 <GridConnectionSliders
+                  initialDistance={inputs.distanceKm}
                   onCostsUpdate={(costs) => {
                     setGridConnectionCosts(costs);
                     const avgCost = (costs.totalCostMin + costs.totalCostMax) / 2;

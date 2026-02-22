@@ -11,6 +11,7 @@ import { calculateGridConnectionCost } from "@/lib/gridConnectionCosts";
 interface GridConnectionSliderProps {
   onCostsUpdate: (costs: GridConnectionCosts) => void;
   setShowSourceInfo?: (key: string) => void;
+  initialDistance?: number;
 }
 
 export interface GridConnectionCosts {
@@ -51,8 +52,8 @@ export interface GridConnectionCosts {
 const CABLE_VOLTAGE_OPTIONS = ["6", "11", "33", "66", "132"];
 const STEPDOWN_VOLTAGE_OPTIONS = ["0.4", "6.6", "11"];
 
-export function GridConnectionSliders({ onCostsUpdate, setShowSourceInfo }: GridConnectionSliderProps) {
-  const [distance, setDistance] = useState(3);
+export function GridConnectionSliders({ onCostsUpdate, setShowSourceInfo, initialDistance = 3 }: GridConnectionSliderProps) {
+  const [distance, setDistance] = useState(initialDistance);
   const [cableVoltage, setCableVoltage] = useState("33");
   const [stepDownVoltage, setStepDownVoltage] = useState("11");
   const [stepUpTransformerCount, setStepUpTransformerCount] = useState(1);
