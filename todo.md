@@ -239,3 +239,13 @@
 - [x] Implement map capture functionality for PDF inclusion
 - [ ] Test PDF export with all new features
 - [ ] Save checkpoint and push to GitHub
+
+
+## Phase 24: Replit Hosting Configuration
+- [x] Update environment variables for Replit compatibility
+- [x] Verify all required dependencies are installed
+- [x] Update cookies.ts for Replit iframe authentication (sameSite: "none", secure: true)
+- [x] Fix analytics script in HTML (comment out or use placeholder)
+- [x] Create .replit configuration file with npm dev command
+- [ ] Test deployment on Replit
+- [ ] Save checkpoint and push to GitHub
