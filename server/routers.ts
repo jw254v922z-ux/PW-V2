@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { getSolarModelsByUserId, getSolarModelById, createSolarModel, updateSolarModel, deleteSolarModel, getGridConnectionCost, createGridConnectionCost, updateGridConnectionCost, deleteGridConnectionCost } from "./db";
+import { InsertSolarModel, InsertGridConnectionCost } from "../drizzle/schema";
 
 const gridConnectionSchema = z.object({
   agriculturalTrenchingMin: z.number().nonnegative().optional(),
@@ -47,12 +48,12 @@ export const appRouter = router({
 
   solar: router({
     list: protectedProcedure.query(({ ctx }) =>
-      getSolarModelsByUserId(ctx.user.id)
+      getSolarModelsByUserId(Number(ctx.user.id))
     ),
     get: protectedProcedure
-      .input(z.object({ id: z.number() }))
+      .input(z.object({ id: z.coerce.number() }))
       .query(({ ctx, input }) =>
-        getSolarModelById(input.id, ctx.user.id)
+        getSolarModelById(Number(input.id), Number(ctx.user.id))
       ),
     create: protectedProcedure
       .input(z.object({
@@ -78,15 +79,15 @@ export const appRouter = router({
         paybackPeriod: z.string().optional(),
         totalNpv: z.string().optional(),
       }))
-      .mutation(({ ctx, input }) =>
-        createSolarModel({
+      .mutation(({ ctx, input }) => {
+        return createSolarModel({
           userId: ctx.user.id,
           ...input,
-        })
-      ),
+        } as InsertSolarModel);
+      }),
     update: protectedProcedure
       .input(z.object({
-        id: z.number(),
+        id: z.coerce.number(),
         name: z.string().min(1).optional(),
         description: z.string().optional(),
         mw: z.number().positive().optional(),
@@ -111,40 +112,40 @@ export const appRouter = router({
       }))
       .mutation(({ ctx, input }) => {
         const { id, ...data } = input;
-        return updateSolarModel(id, ctx.user.id, data);
+        return updateSolarModel(Number(id), Number(ctx.user.id), data as unknown as Partial<InsertSolarModel>);
       }),
     delete: protectedProcedure
-      .input(z.object({ id: z.number() }))
+      .input(z.object({ id: z.coerce.number() }))
       .mutation(({ ctx, input }) =>
-        deleteSolarModel(input.id, ctx.user.id)
+        deleteSolarModel(Number(input.id as unknown), Number(ctx.user.id))
       ),
   }),
 
   gridConnection: router({
     get: protectedProcedure
-      .input(z.object({ solarModelId: z.number() }))
+      .input(z.object({ solarModelId: z.coerce.number() }))
       .query(({ input }) =>
-        getGridConnectionCost(input.solarModelId)
+        getGridConnectionCost(input.solarModelId as number)
       ),
     create: protectedProcedure
       .input(z.object({
-        solarModelId: z.number(),
+        solarModelId: z.coerce.number(),
       }).merge(gridConnectionSchema))
       .mutation(({ input }) =>
-        createGridConnectionCost(input)
+        createGridConnectionCost({ ...input, solarModelId: input.solarModelId as number })
       ),
     update: protectedProcedure
       .input(z.object({
-        id: z.number(),
+        id: z.coerce.number(),
       }).merge(gridConnectionSchema))
       .mutation(({ input }) => {
         const { id, ...data } = input;
-        return updateGridConnectionCost(id, data);
+        return updateGridConnectionCost(id as number, data);
       }),
     delete: protectedProcedure
-      .input(z.object({ id: z.number() }))
+      .input(z.object({ id: z.coerce.number() }))
       .mutation(({ input }) =>
-        deleteGridConnectionCost(input.id)
+        deleteGridConnectionCost(input.id as number)
       ),
   }),
 });

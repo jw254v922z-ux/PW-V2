@@ -1,23 +1,32 @@
-import { useRef, useState, useEffect } from "react";
+"use client";
 import L from "leaflet";
+import { useRef, useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { LeafletMap } from "@/components/LeafletMap";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, MapPin, Zap, RotateCcw, Trash2, Check } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { AlertCircle, MapPin, Zap, RotateCcw, Trash2, Check, ArrowRight } from "lucide-react";
 import { calculatePolygonArea, calculatePolylineDistance } from "@/lib/geospatial";
+import { toast } from "sonner";
 
 interface DrawingState {
   pvPoints: L.LatLngExpression[];
   cablePoints: L.LatLngExpression[];
   pvPolygon: L.Polygon | null;
   cablePolyline: L.Polyline | null;
-  pvMarkers: L.Marker[];
-  cableMarkers: L.Marker[];
+  pvMarkers: (L.Marker | L.CircleMarker)[];
+  cableMarkers: (L.Marker | L.CircleMarker)[];
+}
+
+interface MapResults {
+  pvArea?: { area: number; hectares: number; systemSize: number };
+  cableDistance?: { distance: number };
 }
 
 export default function MapViewPage() {
   const mapRef = useRef<L.Map | null>(null);
+  const [, setLocation] = useLocation();
   const [drawingMode, setDrawingMode] = useState<"view" | "pv" | "cable">("view");
   const [state, setState] = useState<DrawingState>({
     pvPoints: [],
@@ -63,25 +72,23 @@ export default function MapViewPage() {
         mapRef.current.off("click", listener);
       }
     };
-  }, [drawingMode, state]);
+  }, [drawingMode]);
 
   const addPVPoint = (point: L.LatLng) => {
     setState((prev) => {
       const newPoints = [...prev.pvPoints, point];
-      const newMarkers = [...prev.pvMarkers];
-
-      // Add marker
-      const marker = L.marker(point, {
-        icon: L.icon({
-          iconUrl: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBmaWxsPSIjMjJjNTVlIi8+PC9zdmc+",
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
-        }),
+      const marker = L.circleMarker(point, {
+        radius: 5,
+        fillColor: "#22c55e",
+        color: "#16a34a",
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.8,
       }).addTo(mapRef.current!);
 
-      newMarkers.push(marker);
+      const newMarkers = [...prev.pvMarkers, marker];
 
-      // Draw polygon if 3+ points
+      // Create or update polygon if 3+ points
       if (newPoints.length >= 3) {
         if (prev.pvPolygon) {
           mapRef.current!.removeLayer(prev.pvPolygon);
@@ -94,12 +101,11 @@ export default function MapViewPage() {
           fillOpacity: 0.3,
         }).addTo(mapRef.current!);
 
-        // Calculate area
         const area = calculatePolygonArea(
           newPoints.map((p) => ({ lat: (p as L.LatLng).lat, lng: (p as L.LatLng).lng }))
         );
         const hectares = area / 10000;
-        const systemSize = hectares * 0.5; // 0.5 MW per hectare
+        const systemSize = hectares * 0.5;
 
         setPvAreaResults({ area, hectares, systemSize });
 
@@ -113,20 +119,18 @@ export default function MapViewPage() {
   const addCablePoint = (point: L.LatLng) => {
     setState((prev) => {
       const newPoints = [...prev.cablePoints, point];
-      const newMarkers = [...prev.cableMarkers];
-
-      // Add marker
-      const marker = L.marker(point, {
-        icon: L.icon({
-          iconUrl: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBmaWxsPSIjMzY4M2YyIi8+PC9zdmc+",
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
-        }),
+      const marker = L.circleMarker(point, {
+        radius: 5,
+        fillColor: "#3683f2",
+        color: "#1e40af",
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.8,
       }).addTo(mapRef.current!);
 
-      newMarkers.push(marker);
+      const newMarkers = [...prev.cableMarkers, marker];
 
-      // Draw polyline if 2+ points
+      // Create or update polyline if 2+ points
       if (newPoints.length >= 2) {
         if (prev.cablePolyline) {
           mapRef.current!.removeLayer(prev.cablePolyline);
@@ -138,12 +142,11 @@ export default function MapViewPage() {
           opacity: 0.8,
         }).addTo(mapRef.current!);
 
-        // Calculate distance
         let distance = 0;
         for (let i = 0; i < newPoints.length - 1; i++) {
           const p1 = newPoints[i] as L.LatLng;
           const p2 = newPoints[i + 1] as L.LatLng;
-          distance += p1.distanceTo(p2) / 1000; // Convert to km
+          distance += p1.distanceTo(p2) / 1000;
         }
 
         setCableResults({ distance });
@@ -256,6 +259,75 @@ export default function MapViewPage() {
     setDrawingMode("view");
   };
 
+  const applyPVAreaToCalculator = () => {
+    if (!pvAreaResults) {
+      toast.error("No PV area drawn yet");
+      return;
+    }
+
+    // Store map results in sessionStorage for Dashboard to pick up
+    sessionStorage.setItem(
+      "mapResults",
+      JSON.stringify({
+        systemSize: pvAreaResults.systemSize,
+        cableDistance: cableResults?.distance || null,
+      })
+    );
+
+    toast.success(`Applied PV area: ${pvAreaResults.systemSize.toFixed(2)} MW`);
+    
+    // Navigate to dashboard
+    setTimeout(() => {
+      setLocation("/");
+    }, 500);
+  };
+
+  const applyCableDistanceToCalculator = () => {
+    if (!cableResults) {
+      toast.error("No cable route drawn yet");
+      return;
+    }
+
+    // Store map results in sessionStorage for Dashboard to pick up
+    sessionStorage.setItem(
+      "mapResults",
+      JSON.stringify({
+        systemSize: pvAreaResults?.systemSize || null,
+        cableDistance: cableResults.distance,
+      })
+    );
+
+    toast.success(`Applied cable distance: ${cableResults.distance.toFixed(2)} km`);
+    
+    // Navigate to dashboard
+    setTimeout(() => {
+      setLocation("/");
+    }, 500);
+  };
+
+  const applyBothToCalculator = () => {
+    if (!pvAreaResults || !cableResults) {
+      toast.error("Please draw both PV area and cable route");
+      return;
+    }
+
+    // Store map results in sessionStorage for Dashboard to pick up
+    sessionStorage.setItem(
+      "mapResults",
+      JSON.stringify({
+        systemSize: pvAreaResults.systemSize,
+        cableDistance: cableResults.distance,
+      })
+    );
+
+    toast.success("Applied both PV area and cable distance to calculator");
+    
+    // Navigate to dashboard
+    setTimeout(() => {
+      setLocation("/");
+    }, 500);
+  };
+
   return (
     <div className="flex h-screen gap-4 p-4 bg-background">
       {/* Map Container */}
@@ -304,12 +376,15 @@ export default function MapViewPage() {
           <CardContent className="space-y-4">
             {/* PV Area */}
             <div className="space-y-2">
-              <h3 className="font-semibold text-sm flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-green-500" />
-                PV Area
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-green-500" />
+                  PV Area
+                </h3>
+                {pvAreaResults && <Badge variant="secondary" className="text-xs">From Map</Badge>}
+              </div>
               {pvAreaResults ? (
-                <div className="text-sm space-y-1 bg-green-50 p-2 rounded">
+                <div className="text-sm space-y-2 bg-green-50 p-3 rounded border border-green-200">
                   <div>
                     <span className="text-gray-600">Area:</span>
                     <span className="font-mono ml-2">
@@ -318,11 +393,19 @@ export default function MapViewPage() {
                   </div>
                   <div>
                     <span className="text-gray-600">System Size:</span>
-                    <span className="font-mono ml-2">{pvAreaResults.systemSize.toFixed(2)} MW</span>
+                    <span className="font-mono ml-2 font-bold text-green-700">{pvAreaResults.systemSize.toFixed(2)} MW</span>
                   </div>
                   <div className="text-xs text-gray-500 mt-2">
                     ✓ Drawn ({state.pvPoints.length} pts)
                   </div>
+                  <Button
+                    size="sm"
+                    className="w-full mt-2 bg-green-600 hover:bg-green-700"
+                    onClick={applyPVAreaToCalculator}
+                  >
+                    <Check className="w-4 h-4 mr-1" />
+                    Apply to Calculator
+                  </Button>
                 </div>
               ) : (
                 <div className="text-sm text-gray-500">
@@ -335,19 +418,30 @@ export default function MapViewPage() {
 
             {/* Cable Route */}
             <div className="space-y-2">
-              <h3 className="font-semibold text-sm flex items-center gap-2">
-                <Zap className="w-4 h-4 text-blue-500" />
-                Cable Route
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-blue-500" />
+                  Cable Route
+                </h3>
+                {cableResults && <Badge variant="secondary" className="text-xs">From Map</Badge>}
+              </div>
               {cableResults ? (
-                <div className="text-sm space-y-1 bg-blue-50 p-2 rounded">
+                <div className="text-sm space-y-2 bg-blue-50 p-3 rounded border border-blue-200">
                   <div>
                     <span className="text-gray-600">Distance:</span>
-                    <span className="font-mono ml-2">{cableResults.distance.toFixed(2)} km</span>
+                    <span className="font-mono ml-2 font-bold text-blue-700">{cableResults.distance.toFixed(2)} km</span>
                   </div>
                   <div className="text-xs text-gray-500 mt-2">
                     ✓ Drawn ({state.cablePoints.length} pts)
                   </div>
+                  <Button
+                    size="sm"
+                    className="w-full mt-2 bg-blue-600 hover:bg-blue-700"
+                    onClick={applyCableDistanceToCalculator}
+                  >
+                    <Check className="w-4 h-4 mr-1" />
+                    Apply to Calculator
+                  </Button>
                 </div>
               ) : (
                 <div className="text-sm text-gray-500">
@@ -357,6 +451,17 @@ export default function MapViewPage() {
                 </div>
               )}
             </div>
+
+            {/* Apply Both Button */}
+            {pvAreaResults && cableResults && (
+              <Button
+                className="w-full bg-purple-600 hover:bg-purple-700"
+                onClick={applyBothToCalculator}
+              >
+                <ArrowRight className="w-4 h-4 mr-2" />
+                Apply Both to Calculator
+              </Button>
+            )}
 
             {/* Action Buttons */}
             <div className="flex gap-2 pt-4">
@@ -387,6 +492,9 @@ export default function MapViewPage() {
             </p>
             <p>
               <strong>Draw Cable Route:</strong> Click 2+ points to create a polyline
+            </p>
+            <p>
+              <strong>Apply:</strong> Send results to calculator with "From Map" badge
             </p>
             <p>
               <strong>Undo:</strong> Remove the last point

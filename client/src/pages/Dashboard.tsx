@@ -122,6 +122,26 @@ export default function Dashboard() {
   }, [loadModel.data]);
 
   useEffect(() => {
+    const mapResultsStr = sessionStorage.getItem('mapResults');
+    if (mapResultsStr) {
+      try {
+        const mapResults = JSON.parse(mapResultsStr);
+        if (mapResults.systemSize !== null && mapResults.systemSize !== undefined) {
+          setInputs(prev => ({ ...prev, mw: mapResults.systemSize }));
+          toast.success(`System size: ${mapResults.systemSize.toFixed(2)} MW from map`);
+        }
+        if (mapResults.cableDistance !== null && mapResults.cableDistance !== undefined) {
+          setInputs(prev => ({ ...prev, privateWireCost: mapResults.cableDistance * 1000 }));
+          toast.success(`Cable distance: ${mapResults.cableDistance.toFixed(2)} km from map`);
+        }
+        sessionStorage.removeItem('mapResults');
+      } catch (error) {
+        console.error('Failed to parse map results:', error);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     setResults(calculateSolarModel(inputs));
     setSensitivityMatrix(calculateSensitivityMatrix(inputs));
   }, [inputs]);
