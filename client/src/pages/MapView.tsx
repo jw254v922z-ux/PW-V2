@@ -1,5 +1,5 @@
 import L from "leaflet";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,9 @@ export default function MapViewPage() {
   const [cableResults, setCableResults] = useState<{
     distance: number;
   } | null>(null);
+
+  const [pvCompleted, setPvCompleted] = useState(false);
+  const [cableCompleted, setCableCompleted] = useState(false);
 
   // Initialize map once on mount
   useEffect(() => {
@@ -75,81 +78,85 @@ export default function MapViewPage() {
     return () => {
       mapRef.current?.off("click", handleMapClick);
     };
-  }, [drawingMode]);
+  }, [drawingMode, addPVPoint, addCablePoint]);
 
-  const addPVPoint = (point: L.LatLng) => {
-    const newPoints = [...pvPoints, point];
-    setPvPoints(newPoints);
+  const addPVPoint = useCallback((point: L.LatLng) => {
+    setPvPoints((prev) => {
+      const newPoints = [...prev, point];
 
-    // Add marker
-    const marker = L.circleMarker(point, {
-      radius: 5,
-      fillColor: "#22c55e",
-      color: "#16a34a",
-      weight: 2,
-      opacity: 1,
-      fillOpacity: 0.8,
-    }).addTo(mapRef.current!);
-
-    setPvMarkers([...pvMarkers, marker]);
-
-    // Create or update polygon
-    if (newPoints.length >= 3) {
-      if (pvPolygon) {
-        mapRef.current?.removeLayer(pvPolygon);
-      }
-      const polygon = L.polygon(newPoints, {
-        color: "#22c55e",
-        weight: 2,
-        opacity: 0.8,
+      // Add marker
+      const marker = L.circleMarker(point, {
+        radius: 5,
         fillColor: "#22c55e",
-        fillOpacity: 0.2,
+        color: "#16a34a",
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.8,
       }).addTo(mapRef.current!);
 
-      setPvPolygon(polygon);
+      setPvMarkers((prevMarkers) => [...prevMarkers, marker]);
 
-      // Calculate area
-      const area = calculatePolygonArea(newPoints);
-      const hectares = area / 10000;
-      const systemSize = hectares * 10;
-      setPvAreaResults({ area, hectares, systemSize });
-    }
-  };
+      // Create or update polygon
+      if (newPoints.length >= 3) {
+        if (pvPolygon) {
+          mapRef.current?.removeLayer(pvPolygon);
+        }
+        const polygon = L.polygon(newPoints, {
+          color: "#22c55e",
+          weight: 2,
+          opacity: 0.8,
+          fillColor: "#22c55e",
+          fillOpacity: 0.2,
+        }).addTo(mapRef.current!);
 
-  const addCablePoint = (point: L.LatLng) => {
-    const newPoints = [...cablePoints, point];
-    setCablePoints(newPoints);
+        setPvPolygon(polygon);
 
-    // Add marker
-    const marker = L.circleMarker(point, {
-      radius: 5,
-      fillColor: "#3b82f6",
-      color: "#1d4ed8",
-      weight: 2,
-      opacity: 1,
-      fillOpacity: 0.8,
-    }).addTo(mapRef.current!);
-
-    setCableMarkers([...cableMarkers, marker]);
-
-    // Create or update polyline
-    if (newPoints.length >= 2) {
-      if (cablePolyline) {
-        mapRef.current?.removeLayer(cablePolyline);
+        // Calculate area
+        const area = calculatePolygonArea(newPoints);
+        const hectares = area / 10000;
+        const systemSize = hectares * 10;
+        setPvAreaResults({ area, hectares, systemSize });
       }
-      const polyline = L.polyline(newPoints, {
-        color: "#3b82f6",
-        weight: 3,
-        opacity: 0.8,
+      return newPoints;
+    });
+  }, [pvPolygon, pvMarkers]);
+
+  const addCablePoint = useCallback((point: L.LatLng) => {
+    setCablePoints((prev) => {
+      const newPoints = [...prev, point];
+
+      // Add marker
+      const marker = L.circleMarker(point, {
+        radius: 5,
+        fillColor: "#3b82f6",
+        color: "#1d4ed8",
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.8,
       }).addTo(mapRef.current!);
 
-      setCablePolyline(polyline);
+      setCableMarkers((prevMarkers) => [...prevMarkers, marker]);
 
-      // Calculate distance
-      const distance = calculatePolylineDistance(newPoints);
-      setCableResults({ distance });
-    }
-  };
+      // Create or update polyline
+      if (newPoints.length >= 2) {
+        if (cablePolyline) {
+          mapRef.current?.removeLayer(cablePolyline);
+        }
+        const polyline = L.polyline(newPoints, {
+          color: "#3b82f6",
+          weight: 3,
+          opacity: 0.8,
+        }).addTo(mapRef.current!);
+
+        setCablePolyline(polyline);
+
+        // Calculate distance
+        const distance = calculatePolylineDistance(newPoints);
+        setCableResults({ distance });
+      }
+      return newPoints;
+    });
+  }, [cablePolyline, cableMarkers]);
 
   const clearPVArea = () => {
     pvMarkers.forEach((m) => mapRef.current?.removeLayer(m));
@@ -310,6 +317,30 @@ export default function MapViewPage() {
             >
               Draw Cable Route
             </Button>
+            {drawingMode === "pv" && pvPoints.length >= 3 && !pvCompleted && (
+              <Button
+                className="w-full bg-green-600 hover:bg-green-700"
+                onClick={() => {
+                  setPvCompleted(true);
+                  setDrawingMode("view");
+                  toast.success("PV area completed!");
+                }}
+              >
+                <Check className="w-4 h-4 mr-2" /> Complete PV Area
+              </Button>
+            )}
+            {drawingMode === "cable" && cablePoints.length >= 2 && !cableCompleted && (
+              <Button
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                onClick={() => {
+                  setCableCompleted(true);
+                  setDrawingMode("view");
+                  toast.success("Cable route completed!");
+                }}
+              >
+                <Check className="w-4 h-4 mr-2" /> Complete Cable Route
+              </Button>
+            )}
           </CardContent>
         </Card>
 
@@ -328,7 +359,20 @@ export default function MapViewPage() {
                 </div>
                 {pvAreaResults && <Badge variant="secondary">✓ Drawn</Badge>}
               </div>
-              {pvAreaResults ? (
+              {pvCompleted && pvAreaResults ? (
+                <div className="text-sm space-y-1 bg-green-50 p-2 rounded border-2 border-green-500">
+                  <p className="font-semibold text-green-700">✓ Completed</p>
+                  <p>Area: {pvAreaResults.area.toFixed(0)} m²</p>
+                  <p>Hectares: {pvAreaResults.hectares.toFixed(2)} ha</p>
+                  <p className="font-semibold">System Size: {pvAreaResults.systemSize.toFixed(2)} MW</p>
+                  <Button size="sm" variant="outline" className="w-full mt-2" onClick={() => {
+                    clearPVArea();
+                    setPvCompleted(false);
+                  }}>
+                    <Trash2 className="w-3 h-3 mr-1" /> Clear
+                  </Button>
+                </div>
+              ) : pvAreaResults ? (
                 <div className="text-sm space-y-1 bg-green-50 p-2 rounded">
                   <p>Area: {pvAreaResults.area.toFixed(0)} m²</p>
                   <p>Hectares: {pvAreaResults.hectares.toFixed(2)} ha</p>
@@ -351,7 +395,18 @@ export default function MapViewPage() {
                 </div>
                 {cableResults && <Badge variant="secondary">✓ Drawn</Badge>}
               </div>
-              {cableResults ? (
+              {cableCompleted && cableResults ? (
+                <div className="text-sm space-y-1 bg-blue-50 p-2 rounded border-2 border-blue-500">
+                  <p className="font-semibold text-blue-700">✓ Completed</p>
+                  <p className="font-semibold">Distance: {cableResults.distance.toFixed(2)} km</p>
+                  <Button size="sm" variant="outline" className="w-full mt-2" onClick={() => {
+                    clearCableRoute();
+                    setCableCompleted(false);
+                  }}>
+                    <Trash2 className="w-3 h-3 mr-1" /> Clear
+                  </Button>
+                </div>
+              ) : cableResults ? (
                 <div className="text-sm space-y-1 bg-blue-50 p-2 rounded">
                   <p className="font-semibold">Distance: {cableResults.distance.toFixed(2)} km</p>
                   <Button size="sm" variant="outline" className="w-full mt-2" onClick={clearCableRoute}>
@@ -365,17 +420,17 @@ export default function MapViewPage() {
 
             {/* Apply Buttons */}
             <div className="space-y-2 pt-4 border-t">
-              {pvAreaResults && (
+              {pvCompleted && pvAreaResults && (
                 <Button className="w-full" onClick={applyPVAreaToCalculator}>
                   <Check className="w-4 h-4 mr-2" /> Apply PV Area
                 </Button>
               )}
-              {cableResults && (
+              {cableCompleted && cableResults && (
                 <Button className="w-full" onClick={applyCableDistanceToCalculator}>
                   <Check className="w-4 h-4 mr-2" /> Apply Cable Distance
                 </Button>
               )}
-              {pvAreaResults && cableResults && (
+              {pvCompleted && cableCompleted && pvAreaResults && cableResults && (
                 <Button className="w-full bg-green-600 hover:bg-green-700" onClick={applyBothToCalculator}>
                   <Check className="w-4 h-4 mr-2" /> Apply Both
                 </Button>
