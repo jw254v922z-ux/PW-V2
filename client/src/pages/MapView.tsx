@@ -1,5 +1,5 @@
 import L from "leaflet";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { LeafletMap } from "@/components/LeafletMap";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,116 +42,116 @@ export default function MapViewPage() {
     distance: number;
   } | null>(null);
 
-  // Define drawing functions that update state
-  const addPVPoint = (point: L.LatLng) => {
-    setState((prev) => {
-      const newPoints = [...prev.pvPoints, point];
-
-      // Add marker to map
-      if (mapRef.current) {
-        const marker = L.circleMarker(point, {
-          radius: 5,
-          fillColor: "#22c55e",
-          color: "#16a34a",
-          weight: 2,
-          opacity: 1,
-          fillOpacity: 0.8,
-        }).addTo(mapRef.current);
-
-        const newMarkers = [...prev.pvMarkers, marker];
-
-        // Create or update polygon
-        let newPolygon = prev.pvPolygon;
-        if (newPoints.length >= 3) {
-          if (prev.pvPolygon) {
-            mapRef.current.removeLayer(prev.pvPolygon);
-          }
-          newPolygon = L.polygon(newPoints, {
-            color: "#22c55e",
-            weight: 2,
-            opacity: 0.8,
-            fillColor: "#22c55e",
-            fillOpacity: 0.2,
-          }).addTo(mapRef.current);
-
-          // Calculate area
-          const area = calculatePolygonArea(newPoints);
-          const hectares = area / 10000;
-          const systemSize = hectares * 10;
-          setPvAreaResults({ area, hectares, systemSize });
-        }
-
-        return {
-          ...prev,
-          pvPoints: newPoints,
-          pvMarkers: newMarkers,
-          pvPolygon: newPolygon,
-        };
-      }
-
-      return prev;
-    });
-  };
-
-  const addCablePoint = (point: L.LatLng) => {
-    setState((prev) => {
-      const newPoints = [...prev.cablePoints, point];
-
-      // Add marker to map
-      if (mapRef.current) {
-        const marker = L.circleMarker(point, {
-          radius: 5,
-          fillColor: "#3b82f6",
-          color: "#1d4ed8",
-          weight: 2,
-          opacity: 1,
-          fillOpacity: 0.8,
-        }).addTo(mapRef.current);
-
-        const newMarkers = [...prev.cableMarkers, marker];
-
-        // Create or update polyline
-        let newPolyline = prev.cablePolyline;
-        if (newPoints.length >= 2) {
-          if (prev.cablePolyline) {
-            mapRef.current.removeLayer(prev.cablePolyline);
-          }
-          newPolyline = L.polyline(newPoints, {
-            color: "#3b82f6",
-            weight: 3,
-            opacity: 0.8,
-          }).addTo(mapRef.current);
-
-          // Calculate distance
-          const distance = calculatePolylineDistance(newPoints);
-          setCableResults({ distance });
-        }
-
-        return {
-          ...prev,
-          cablePoints: newPoints,
-          cableMarkers: newMarkers,
-          cablePolyline: newPolyline,
-        };
-      }
-
-      return prev;
-    });
-  };
-
+  // Attach click listener when map is ready
   const handleMapReady = (map: L.Map) => {
     mapRef.current = map;
+    console.log("Map ready, attaching click listener");
 
-    // Attach click listener
     map.on("click", (e: L.LeafletMouseEvent) => {
-      if (drawingMode === "view") return;
+      console.log("Map clicked, drawingMode:", drawingMode);
+
+      if (drawingMode === "view") {
+        console.log("In view mode, ignoring click");
+        return;
+      }
 
       const point = e.latlng;
+      console.log("Adding point:", point, "mode:", drawingMode);
 
       if (drawingMode === "pv") {
-        addPVPoint(point);
+        setState((prev) => {
+          const newPoints = [...prev.pvPoints, point];
+          console.log("PV points now:", newPoints);
+
+          // Add marker
+          if (mapRef.current) {
+            const marker = L.circleMarker(point, {
+              radius: 5,
+              fillColor: "#22c55e",
+              color: "#16a34a",
+              weight: 2,
+              opacity: 1,
+              fillOpacity: 0.8,
+            }).addTo(mapRef.current);
+
+            const newMarkers = [...prev.pvMarkers, marker];
+
+            // Create or update polygon
+            let newPolygon = prev.pvPolygon;
+            if (newPoints.length >= 3) {
+              if (prev.pvPolygon) {
+                mapRef.current.removeLayer(prev.pvPolygon);
+              }
+              newPolygon = L.polygon(newPoints, {
+                color: "#22c55e",
+                weight: 2,
+                opacity: 0.8,
+                fillColor: "#22c55e",
+                fillOpacity: 0.2,
+              }).addTo(mapRef.current);
+
+              // Calculate area
+              const area = calculatePolygonArea(newPoints);
+              const hectares = area / 10000;
+              const systemSize = hectares * 10;
+              setPvAreaResults({ area, hectares, systemSize });
+              console.log("PV area calculated:", { area, hectares, systemSize });
+            }
+
+            return {
+              ...prev,
+              pvPoints: newPoints,
+              pvMarkers: newMarkers,
+              pvPolygon: newPolygon,
+            };
+          }
+          return prev;
+        });
       } else if (drawingMode === "cable") {
-        addCablePoint(point);
+        setState((prev) => {
+          const newPoints = [...prev.cablePoints, point];
+          console.log("Cable points now:", newPoints);
+
+          // Add marker
+          if (mapRef.current) {
+            const marker = L.circleMarker(point, {
+              radius: 5,
+              fillColor: "#3b82f6",
+              color: "#1d4ed8",
+              weight: 2,
+              opacity: 1,
+              fillOpacity: 0.8,
+            }).addTo(mapRef.current);
+
+            const newMarkers = [...prev.cableMarkers, marker];
+
+            // Create or update polyline
+            let newPolyline = prev.cablePolyline;
+            if (newPoints.length >= 2) {
+              if (prev.cablePolyline) {
+                mapRef.current.removeLayer(prev.cablePolyline);
+              }
+              newPolyline = L.polyline(newPoints, {
+                color: "#3b82f6",
+                weight: 3,
+                opacity: 0.8,
+              }).addTo(mapRef.current);
+
+              // Calculate distance
+              const distance = calculatePolylineDistance(newPoints);
+              setCableResults({ distance });
+              console.log("Cable distance calculated:", distance);
+            }
+
+            return {
+              ...prev,
+              cablePoints: newPoints,
+              cableMarkers: newMarkers,
+              cablePolyline: newPolyline,
+            };
+          }
+          return prev;
+        });
       }
     });
   };
