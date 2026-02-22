@@ -62,6 +62,11 @@ export function GridConnectionSliders({ onCostsUpdate, setShowSourceInfo, initia
   const [roadCrossings, setRoadCrossings] = useState(2);
   const [includeStepDownInstallation, setIncludeStepDownInstallation] = useState(false);
 
+  // Update distance when initialDistance prop changes
+  useEffect(() => {
+    setDistance(initialDistance);
+  }, [initialDistance]);
+
   // Calculate costs based on current parameters
   const costs = calculateGridConnectionCost({
     distance,

@@ -22,6 +22,9 @@ import { StakeholderValueChart } from "../components/StakeholderValueChart";
 import LandownerPage from "./Landowner";
 import { calculateSensitivityMatrix } from "@/lib/sensitivity";
 import { generatePDFReport } from "@/lib/pdfReport";
+import { exportSimplePDF } from "@/lib/simplePdfExport";
+import { exportDashboardPDF } from "@/lib/pdfExportWorking";
+import { exportMinimalPDF } from "@/lib/minimalPdfExport";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -252,17 +255,14 @@ export default function Dashboard() {
     }
   };
 
-  const handleExportPDF = async () => {
-    console.log('Starting PDF export...');
-    const mapScreenshot = await captureMapScreenshot();
-    console.log('Map screenshot available:', !!mapScreenshot);
-    generatePDFReport({ 
-      inputs, 
-      results, 
-      projectName: modelName || "Solar Project", 
-      description: modelDescription,
-      mapScreenshot
-    });
+  const handleExportPDF = () => {
+    try {
+      exportMinimalPDF(modelName || 'Solar Project', inputs, results);
+      toast.success('PDF exported successfully!');
+    } catch (error) {
+      console.error('PDF export failed:', error);
+      toast.error('Failed to export PDF: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
   };
 
   const exportCSV = () => {
