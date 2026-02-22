@@ -26,6 +26,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { toast } from "sonner";
+import html2canvas from "html2canvas";
 
 export default function Dashboard() {
   const { user, logout, isAuthenticated } = useAuth();
@@ -222,6 +223,35 @@ export default function Dashboard() {
     return new Intl.NumberFormat('en-GB', { maximumFractionDigits: decimals }).format(val);
   };
 
+  const captureMapScreenshot = async (): Promise<string | undefined> => {
+    try {
+      const mapElement = document.querySelector('[data-map-container]');
+      if (!mapElement) {
+        console.log('Map element not found - PDF will be generated without map screenshot');
+        return undefined;
+      }
+      const canvas = await html2canvas(mapElement as HTMLElement, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+      });
+      return canvas.toDataURL('image/png');
+    } catch (error) {
+      console.error('Failed to capture map screenshot:', error);
+      return undefined;
+    }
+  };
+
+  const handleExportPDF = async () => {
+    const mapScreenshot = await captureMapScreenshot();
+    generatePDFReport({ 
+      inputs, 
+      results, 
+      projectName: modelName || "Solar Project", 
+      description: modelDescription,
+      mapScreenshot
+    });
+  };
+
   const exportCSV = () => {
     const headers = [
       "Year", "Capex", "Opex", "Generation (MWh)", "Revenue", "Cash Flow", 
@@ -337,7 +367,7 @@ export default function Dashboard() {
               <Button onClick={exportCSV} variant="outline" className="bg-white/10 text-white border-white/20 hover:bg-white/20">
                 <Download className="mr-2 h-4 w-4" /> Export CSV
               </Button>
-              <Button onClick={() => generatePDFReport({ inputs, results, projectName: modelName || "Solar Project", description: modelDescription })} variant="outline" className="bg-white/10 text-white border-white/20 hover:bg-white/20">
+              <Button onClick={handleExportPDF} variant="outline" className="bg-white/10 text-white border-white/20 hover:bg-white/20">
                 <Download className="mr-2 h-4 w-4" /> Export PDF
               </Button>
               {isAuthenticated && (

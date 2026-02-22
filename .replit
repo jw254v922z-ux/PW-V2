@@ -21,20 +21,31 @@ args = "Start application"
 name = "Start application"
 author = "agent"
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm dev"
-waitForPort = 3000
-
-[workflows.workflow.metadata]
-outputType = "webview"
+waitForPort = 5000
 
 [[ports]]
 localPort = 3000
 externalPort = 80
 
+[[ports]]
+localPort = 5000
+externalPort = 80
+
 [deployment]
 deploymentTarget = "autoscale"
-run = ["pnpm", "run", "start"]
-build = ["pnpm", "run", "build"]
+run = ["node", "./dist/index.cjs"]
+build = ["npm", "run", "build"]
 publicDir = "dist/public"
+
+[userenv]
+
+[userenv.shared]
+OAUTH_SERVER_URL = "https://7e0a224b-685c-445f-baab-6c48fcab0ad6-00-27zsvf9br2k7k.picard.replit.dev/api/oauth/callback"
+VITE_ANALYTICS_WEBSITE_ID = "your-website-id"
+VITE_ANALYTICS_ENDPOINT = "https://analytics.example.com"

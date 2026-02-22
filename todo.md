@@ -230,3 +230,12 @@
 - [x] Add real-time area and distance calculations
 - [ ] Test map drawing functionality on Replit
 - [ ] Save checkpoint and push to GitHub
+
+
+## Phase 23: PDF Export Enhancements
+- [x] Add map view screenshot (PV area and private wire) to PDF export
+- [x] Standardize stakeholder title font sizes in PDF (consistent sizing)
+- [x] Add full project cash flow table on yearly basis to PDF
+- [x] Implement map capture functionality for PDF inclusion
+- [ ] Test PDF export with all new features
+- [ ] Save checkpoint and push to GitHub

@@ -9,6 +9,7 @@ interface PDFReportOptions {
   projectName: string;
   description?: string;
   generatedDate?: Date;
+  mapScreenshot?: string; // Base64 encoded image or data URL
 }
 
 export function generatePDFReport(options: PDFReportOptions) {
@@ -18,6 +19,7 @@ export function generatePDFReport(options: PDFReportOptions) {
     projectName,
     description = "",
     generatedDate = new Date(),
+    mapScreenshot,
   } = options;
 
   const doc = new jsPDF();
@@ -242,16 +244,21 @@ export function generatePDFReport(options: PDFReportOptions) {
   // ===== STAKEHOLDER METRICS =====
   addSection("Stakeholder Metrics");
 
+  // Helper function for stakeholder title
+  const addStakeholderTitle = (title: string, color: number[]) => {
+    doc.setFillColor(color[0], color[1], color[2]);
+    doc.rect(20, yPosition, pageWidth - 40, 8, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11); // Consistent font size for all stakeholder titles
+    doc.text(title, 25, yPosition + 5.5);
+    doc.setTextColor(0, 0, 0);
+    yPosition += 8;
+  };
+
   // Project
   const projectColor = [139, 92, 246]; // Purple
-  doc.setFillColor(projectColor[0], projectColor[1], projectColor[2]);
-  doc.rect(20, yPosition, pageWidth - 40, 8, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.text("Project", 25, yPosition + 5.5);
-  doc.setTextColor(0, 0, 0);
-  yPosition += 8;
-  
+  addStakeholderTitle("Project", projectColor);
   const projectMetrics = [
     ["Metric", "Value"],
     ["Total CAPEX", formatCurrency(results.summary.totalCapex)],
@@ -265,13 +272,7 @@ export function generatePDFReport(options: PDFReportOptions) {
   checkPageBreak(40);
   // Offtaker
   const offtakerColor = [16, 185, 129]; // Green
-  doc.setFillColor(offtakerColor[0], offtakerColor[1], offtakerColor[2]);
-  doc.rect(20, yPosition, pageWidth - 40, 8, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.text("Offtaker", 25, yPosition + 5.5);
-  doc.setTextColor(0, 0, 0);
-  yPosition += 8;
+  addStakeholderTitle("Offtaker", offtakerColor);
   
   const offtakerMetrics = [
     ["Metric", "Value"],
@@ -283,13 +284,7 @@ export function generatePDFReport(options: PDFReportOptions) {
   checkPageBreak(40);
   // Landowner
   const landownerColor = [245, 158, 11]; // Amber
-  doc.setFillColor(landownerColor[0], landownerColor[1], landownerColor[2]);
-  doc.rect(20, yPosition, pageWidth - 40, 8, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.text("Landowner", 25, yPosition + 5.5);
-  doc.setTextColor(0, 0, 0);
-  yPosition += 8;
+  addStakeholderTitle("Landowner", landownerColor);
   
   const landownerMetrics = [
     ["Metric", "Value"],
@@ -302,13 +297,7 @@ export function generatePDFReport(options: PDFReportOptions) {
   checkPageBreak(40);
   // Developer
   const developerColor = [236, 72, 153]; // Pink
-  doc.setFillColor(developerColor[0], developerColor[1], developerColor[2]);
-  doc.rect(20, yPosition, pageWidth - 40, 8, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.text("Developer", 25, yPosition + 5.5);
-  doc.setTextColor(0, 0, 0);
-  yPosition += 8;
+  addStakeholderTitle("Developer", developerColor);
   
   const developerMetrics = [
     ["Metric", "Value"],
@@ -376,7 +365,44 @@ export function generatePDFReport(options: PDFReportOptions) {
 
   addSimpleTable(opexBreakdown[0] as string[], opexBreakdown.slice(1) as (string | number)[][]);
 
+  if (mapScreenshot) {
+    checkPageBreak(100);
+    addSection("SITE MAP - PV AREA & PRIVATE WIRE ROUTE");
+    try {
+      const mapWidth = pageWidth - 40;
+      const mapHeight = 80;
+      doc.addImage(mapScreenshot, "PNG", 20, yPosition, mapWidth, mapHeight);
+      yPosition += mapHeight + 10;
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.text("Map showing PV area (green polygon) and private wire cable route (blue polyline)", 20, yPosition);
+      yPosition += 5;
+    } catch (error) {
+      console.error("Failed to add map screenshot to PDF:", error);
+      yPosition += 10;
+    }
+  }
+
   // ===== CASH FLOW TABLE (Stakeholder Breakdown) =====
+  checkPageBreak(60);
+  addSection("FULL PROJECT CASH FLOW (YEARLY BASIS)");
+
+  const fullCashFlowTableData = [
+    ["Year", "Generation\n(MWh)", "Revenue\n(GBP)", "Opex\n(GBP)", "Cash Flow\n(GBP)", "Disc CF\n(GBP)", "Cum CF\n(GBP)"],
+    ...results.yearlyData.map((year) => [
+      year.year.toString(),
+      year.generation.toFixed(0),
+      formatCurrency(year.revenue),
+      formatCurrency(year.opex),
+      formatCurrency(year.cashFlow),
+      formatCurrency(year.discountedCashFlow),
+      formatCurrency(year.cumulativeCashFlow),
+    ]),
+  ];
+
+  addSimpleTable(fullCashFlowTableData[0] as string[], fullCashFlowTableData.slice(1) as (string | number)[][], [12, 15, 18, 15, 18, 18, 18]);
+
+  // ===== CASH FLOW SUMMARY (STAKEHOLDER BREAKDOWN) =====
   checkPageBreak(60);
   addSection("CASH FLOW SUMMARY (STAKEHOLDER BREAKDOWN)");
 
