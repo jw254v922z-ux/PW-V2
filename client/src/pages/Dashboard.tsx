@@ -22,9 +22,7 @@ import { StakeholderValueChart } from "../components/StakeholderValueChart";
 import LandownerPage from "./Landowner";
 import { calculateSensitivityMatrix } from "@/lib/sensitivity";
 import { generatePDFReport } from "@/lib/pdfReport";
-import { exportSimplePDF } from "@/lib/simplePdfExport";
-import { exportDashboardPDF } from "@/lib/pdfExportWorking";
-import { exportSimplePDFNoMap } from "@/lib/simplePdfExportNoMap";
+import { captureMapScreenshotWithTimeout } from "@/lib/mapScreenshotWithTimeout";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -229,35 +227,19 @@ export default function Dashboard() {
     return new Intl.NumberFormat('en-GB', { maximumFractionDigits: decimals }).format(val);
   };
 
-  const captureMapScreenshot = async (): Promise<string | undefined> => {
-    try {
-      const storedScreenshot = sessionStorage.getItem('mapScreenshot');
-      console.log('Checking for stored map screenshot:', !!storedScreenshot);
-      if (storedScreenshot) {
-        console.log('Found stored map screenshot, using it');
-        sessionStorage.removeItem('mapScreenshot');
-        return storedScreenshot;
-      }
-      
-      const mapElement = document.querySelector('[data-map-container]');
-      if (!mapElement) {
-        console.log('Map element not found - PDF will be generated without map screenshot');
-        return undefined;
-      }
-      const canvas = await html2canvas(mapElement as HTMLElement, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-      });
-      return canvas.toDataURL('image/png');
-    } catch (error) {
-      console.error('Failed to capture map screenshot:', error);
-      return undefined;
-    }
-  };
 
-  const handleExportPDF = () => {
+
+  const handleExportPDF = async () => {
     try {
-      exportSimplePDFNoMap(modelName || 'Solar Project', inputs, results);
+      toast.loading('Generating PDF...');
+      const mapScreenshot = await captureMapScreenshotWithTimeout(3000);
+      generatePDFReport({ 
+        inputs, 
+        results, 
+        projectName: modelName || 'Solar Project', 
+        description: modelDescription,
+        mapScreenshot
+      });
       toast.success('PDF exported successfully!');
     } catch (error) {
       console.error('PDF export failed:', error);

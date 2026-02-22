@@ -84,10 +84,10 @@ export function generatePDFReport(options: PDFReportOptions) {
     doc.setTextColor(0, 0, 0);
     
     const metrics = [
-      [`System Size: ${inputs.systemSizeMW} MW`, `LCOE: £${results.lcoe.toFixed(0)}/MWh`],
-      [`Project Life: ${inputs.projectLifeYears} years`, `IRR: ${(results.irr * 100).toFixed(2)}%`],
-      [`Total CAPEX: ${formatCurrency(results.totalCapex)}`, `Total NPV: ${formatCurrency(results.totalNPV)}`],
-      [`Payback Period: ${results.paybackPeriod > inputs.projectLifeYears ? '> Project Life' : results.paybackPeriod.toFixed(1) + ' years'}`, `Discount Rate: ${(inputs.discountRate * 100).toFixed(1)}%`]
+      [`System Size: ${inputs.mw} MW`, `LCOE: £${results.summary.lcoe.toFixed(0)}/MWh`],
+      [`Project Life: ${inputs.projectLife} years`, `IRR: ${(results.summary.irr * 100).toFixed(2)}%`],
+      [`Total CAPEX: ${formatCurrency(results.summary.totalCapex)}`, `Total NPV: ${formatCurrency(results.summary.totalDiscountedCashFlow)}`],
+      [`Payback Period: ${results.summary.paybackPeriod > inputs.projectLife ? '> Project Life' : results.summary.paybackPeriod.toFixed(1) + ' years'}`, `Discount Rate: ${(inputs.discountRate * 100).toFixed(1)}%`]
     ];
 
     metrics.forEach(([left, right]) => {
@@ -110,9 +110,9 @@ export function generatePDFReport(options: PDFReportOptions) {
     doc.setTextColor(0, 0, 0);
 
     const stakeholders = [
-      [`Offtaker Savings: ${formatCurrency(results.offtakerTotalSavings)}`, `Yearly: ${formatCurrency(results.offtakerYearlySavings)}`],
-      [`Landowner Income: ${formatCurrency(results.landownerTotalRentalIncome)}`, `Yearly: ${formatCurrency(results.landownerYearlyRentalIncome)}`],
-      [`Developer Premium: ${formatCurrency(inputs.devPremiumPerMW * inputs.systemSizeMW)}`, ``]
+      [`Offtaker Savings: ${formatCurrency(results.summary.totalSavings)}`, `Yearly: ${formatCurrency(results.summary.yearlySavings)}`],
+      [`Landowner Income: ${formatCurrency(results.summary.totalLandOptionIncome)}`, `Yearly: ${formatCurrency(results.summary.yearlyRentalIncome)}`],
+      [`Developer Premium: ${formatCurrency(results.summary.totalDeveloperPremium)}`, ``]
     ];
 
     stakeholders.forEach(([left, right]) => {
@@ -135,8 +135,7 @@ export function generatePDFReport(options: PDFReportOptions) {
     doc.setTextColor(0, 0, 0);
 
     const cableParams = [
-      [`Cable Voltage: ${inputs.cableVoltageKv} kV`, `Cable Distance: ${inputs.distanceKm} km`],
-      [`Road Percentage: ${inputs.roadPercentage}%`, `Major Road Crossings: ${inputs.majorRoadCrossings}`]
+      [`Cable Voltage: ${inputs.cableVoltageKV || 'N/A'} kV`, `Cable Distance: ${inputs.distanceKm || 'N/A'} km`]
     ];
 
     cableParams.forEach(([left, right]) => {
