@@ -24,7 +24,7 @@ import { calculateSensitivityMatrix } from "@/lib/sensitivity";
 import { generatePDFReport } from "@/lib/pdfReport";
 import { exportSimplePDF } from "@/lib/simplePdfExport";
 import { exportDashboardPDF } from "@/lib/pdfExportWorking";
-import { exportMinimalPDF } from "@/lib/minimalPdfExport";
+import { exportSimplePDFNoMap } from "@/lib/simplePdfExportNoMap";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -257,11 +257,11 @@ export default function Dashboard() {
 
   const handleExportPDF = () => {
     try {
-      exportMinimalPDF(modelName || 'Solar Project', inputs, results);
+      exportSimplePDFNoMap(modelName || 'Solar Project', inputs, results);
       toast.success('PDF exported successfully!');
     } catch (error) {
       console.error('PDF export failed:', error);
-      toast.error('Failed to export PDF: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      toast.error('Failed to export PDF');
     }
   };
 

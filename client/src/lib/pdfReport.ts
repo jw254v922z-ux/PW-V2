@@ -1,4 +1,4 @@
-import { jsPDF } from "jspdf";
+import { jsPDF } from 'jspdf';
 import { SolarInputs, SolarResults } from "./calculator";
 import { formatCurrency, formatNumberWithCommas } from "./formatters";
 
