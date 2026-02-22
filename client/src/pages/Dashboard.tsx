@@ -225,6 +225,12 @@ export default function Dashboard() {
 
   const captureMapScreenshot = async (): Promise<string | undefined> => {
     try {
+      const storedScreenshot = sessionStorage.getItem('mapScreenshot');
+      if (storedScreenshot) {
+        sessionStorage.removeItem('mapScreenshot');
+        return storedScreenshot;
+      }
+      
       const mapElement = document.querySelector('[data-map-container]');
       if (!mapElement) {
         console.log('Map element not found - PDF will be generated without map screenshot');

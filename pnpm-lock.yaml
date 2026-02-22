@@ -140,7 +140,7 @@ importers:
         specifier: ^17.2.2
         version: 17.2.3
       drizzle-orm:
-        specifier: ^0.44.5
+        specifier: ^0.44.7
         version: 0.44.7(mysql2@3.16.1)(pg@8.18.0)(postgres@3.4.8)
       embla-carousel-react:
         specifier: ^8.6.0

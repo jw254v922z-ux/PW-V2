@@ -1,6 +1,6 @@
 "use client";
 import L from "leaflet";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { LeafletMap } from "@/components/LeafletMap";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +28,7 @@ export default function MapViewPage() {
   const mapRef = useRef<L.Map | null>(null);
   const [, setLocation] = useLocation();
   const [drawingMode, setDrawingMode] = useState<"view" | "pv" | "cable">("view");
+  const [mapReady, setMapReady] = useState(false);
   const [state, setState] = useState<DrawingState>({
     pvPoints: [],
     cablePoints: [],
@@ -49,6 +50,7 @@ export default function MapViewPage() {
 
   const handleMapReady = (map: L.Map) => {
     mapRef.current = map;
+    setMapReady(true);
   };
 
   // Handle map clicks for drawing
@@ -72,9 +74,9 @@ export default function MapViewPage() {
         mapRef.current.off("click", listener);
       }
     };
-  }, [drawingMode]);
+  }, [drawingMode, mapReady]);
 
-  const addPVPoint = (point: L.LatLng) => {
+  const addPVPoint = useCallback((point: L.LatLng) => {
     setState((prev) => {
       const newPoints = [...prev.pvPoints, point];
       const marker = L.circleMarker(point, {
@@ -114,9 +116,9 @@ export default function MapViewPage() {
 
       return { ...prev, pvPoints: newPoints, pvMarkers: newMarkers };
     });
-  };
+  }, []);
 
-  const addCablePoint = (point: L.LatLng) => {
+  const addCablePoint = useCallback((point: L.LatLng) => {
     setState((prev) => {
       const newPoints = [...prev.cablePoints, point];
       const marker = L.circleMarker(point, {
@@ -156,7 +158,7 @@ export default function MapViewPage() {
 
       return { ...prev, cablePoints: newPoints, cableMarkers: newMarkers };
     });
-  };
+  }, []);
 
   const undoPoint = () => {
     setState((prev) => {
@@ -259,7 +261,7 @@ export default function MapViewPage() {
     setDrawingMode("view");
   };
 
-  const applyPVAreaToCalculator = () => {
+  const applyPVAreaToCalculator = async () => {
     if (!pvAreaResults) {
       toast.error("No PV area drawn yet");
       return;
@@ -276,13 +278,23 @@ export default function MapViewPage() {
 
     toast.success(`Applied PV area: ${pvAreaResults.systemSize.toFixed(2)} MW`);
     
-    // Navigate to dashboard
+    try {
+      if (mapRef.current) {
+        const mapContainer = mapRef.current.getContainer();
+        const html2canvas = (await import('html2canvas')).default;
+        const canvas = await html2canvas(mapContainer, { backgroundColor: '#ffffff', scale: 2 });
+        sessionStorage.setItem('mapScreenshot', canvas.toDataURL('image/png'));
+      }
+    } catch (e) {
+      console.error('Map screenshot capture failed:', e);
+    }
+    
     setTimeout(() => {
       setLocation("/");
     }, 500);
   };
 
-  const applyCableDistanceToCalculator = () => {
+  const applyCableDistanceToCalculator = async () => {
     if (!cableResults) {
       toast.error("No cable route drawn yet");
       return;
@@ -299,13 +311,23 @@ export default function MapViewPage() {
 
     toast.success(`Applied cable distance: ${cableResults.distance.toFixed(2)} km`);
     
-    // Navigate to dashboard
+    try {
+      if (mapRef.current) {
+        const mapContainer = mapRef.current.getContainer();
+        const html2canvas = (await import('html2canvas')).default;
+        const canvas = await html2canvas(mapContainer, { backgroundColor: '#ffffff', scale: 2 });
+        sessionStorage.setItem('mapScreenshot', canvas.toDataURL('image/png'));
+      }
+    } catch (e) {
+      console.error('Map screenshot capture failed:', e);
+    }
+    
     setTimeout(() => {
       setLocation("/");
     }, 500);
   };
 
-  const applyBothToCalculator = () => {
+  const applyBothToCalculator = async () => {
     if (!pvAreaResults || !cableResults) {
       toast.error("Please draw both PV area and cable route");
       return;
@@ -322,7 +344,17 @@ export default function MapViewPage() {
 
     toast.success("Applied both PV area and cable distance to calculator");
     
-    // Navigate to dashboard
+    try {
+      if (mapRef.current) {
+        const mapContainer = mapRef.current.getContainer();
+        const html2canvas = (await import('html2canvas')).default;
+        const canvas = await html2canvas(mapContainer, { backgroundColor: '#ffffff', scale: 2 });
+        sessionStorage.setItem('mapScreenshot', canvas.toDataURL('image/png'));
+      }
+    } catch (e) {
+      console.error('Map screenshot capture failed:', e);
+    }
+    
     setTimeout(() => {
       setLocation("/");
     }, 500);
@@ -331,7 +363,7 @@ export default function MapViewPage() {
   return (
     <div className="flex h-screen gap-4 p-4 bg-background">
       {/* Map Container */}
-      <div className="flex-1 rounded-lg border border-border overflow-hidden">
+      <div className="flex-1 rounded-lg border border-border overflow-hidden" data-map-container>
         <LeafletMap onMapReady={handleMapReady} initialCenter={[52.52, -1.17]} initialZoom={10} />
       </div>
 
