@@ -78,7 +78,7 @@ export default function MapViewPage() {
     return () => {
       mapRef.current?.off("click", handleMapClick);
     };
-  }, [drawingMode, addPVPoint, addCablePoint]);
+  }, [drawingMode]);
 
   const addPVPoint = useCallback((point: L.LatLng) => {
     setPvPoints((prev) => {
