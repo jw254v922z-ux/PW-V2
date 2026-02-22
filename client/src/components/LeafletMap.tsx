@@ -32,17 +32,20 @@ export function LeafletMap({
 
     setIsReady(true);
 
-    if (onMapReady && map.current) {
-      onMapReady(map.current);
-    }
-
     return () => {
       if (map.current) {
         map.current.remove();
         map.current = null;
       }
     };
-  }, [onMapReady, initialCenter, initialZoom]);
+  }, [initialCenter, initialZoom]);
+
+  // Call onMapReady only once when map is ready
+  useEffect(() => {
+    if (isReady && map.current && onMapReady) {
+      onMapReady(map.current);
+    }
+  }, [isReady, onMapReady]);
 
   return (
     <div
