@@ -31,25 +31,29 @@ export function StakeholderValueChart({ results }: StakeholderValueChartProps) {
       name: 'Project',
       value: projectValue,
       percentage: totalValue > 0 ? ((projectValue / totalValue) * 100).toFixed(1) : 0,
+      color: '#808080',
     },
     {
       name: 'Offtaker',
       value: offtakerValue,
       percentage: totalValue > 0 ? ((offtakerValue / totalValue) * 100).toFixed(1) : 0,
+      color: '#2D8659',
     },
     {
       name: 'Landowner',
       value: landownerValue,
       percentage: totalValue > 0 ? ((landownerValue / totalValue) * 100).toFixed(1) : 0,
+      color: '#FFD700',
     },
     {
       name: 'Developer',
       value: developerValue,
       percentage: totalValue > 0 ? ((developerValue / totalValue) * 100).toFixed(1) : 0,
+      color: '#001F3F',
     },
   ];
   
-  const COLORS = ['#8b5cf6', '#10b981', '#f59e0b', '#ec4899'];
+  const COLORS = ['#808080', '#2D8659', '#FFD700', '#001F3F']; // Gray (Project), Green (Offtaker), Yellow (Landowner), Navy (Developer)
   
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {

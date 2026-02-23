@@ -1,6 +1,108 @@
 import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import { SolarInputs, SolarResults } from "./calculator";
 import { formatCurrency, formatNumberWithCommas } from "./formatters";
+
+// Function to create a pie chart SVG and convert to image
+async function generatePieChartImage(
+  data: Array<{ label: string; value: number; color: string }>,
+  width: number = 300,
+  height: number = 300
+): Promise<string> {
+  return new Promise((resolve) => {
+    const total = data.reduce((sum, item) => sum + item.value, 0);
+    if (total === 0) {
+      resolve("");
+      return;
+    }
+
+    // Create SVG
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("width", width.toString());
+    svg.setAttribute("height", height.toString());
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = Math.min(width, height) / 2 - 40;
+
+    let currentAngle = -Math.PI / 2;
+
+    // Draw pie slices
+    data.forEach((item) => {
+      const sliceAngle = (item.value / total) * 2 * Math.PI;
+      const startX = centerX + radius * Math.cos(currentAngle);
+      const startY = centerY + radius * Math.sin(currentAngle);
+      const endAngle = currentAngle + sliceAngle;
+      const endX = centerX + radius * Math.cos(endAngle);
+      const endY = centerY + radius * Math.sin(endAngle);
+
+      const largeArc = sliceAngle > Math.PI ? 1 : 0;
+
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      const pathData = [
+        `M ${centerX} ${centerY}`,
+        `L ${startX} ${startY}`,
+        `A ${radius} ${radius} 0 ${largeArc} 1 ${endX} ${endY}`,
+        "Z",
+      ].join(" ");
+
+      path.setAttribute("d", pathData);
+      path.setAttribute("fill", item.color);
+      path.setAttribute("stroke", "#fff");
+      path.setAttribute("stroke-width", "2");
+      svg.appendChild(path);
+
+      currentAngle = endAngle;
+    });
+
+    // Add legend
+    let legendY = height - 60;
+    data.forEach((item, idx) => {
+      const percentage = ((item.value / total) * 100).toFixed(0);
+
+      // Color box
+      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      rect.setAttribute("x", "20");
+      rect.setAttribute("y", (legendY + idx * 18).toString());
+      rect.setAttribute("width", "12");
+      rect.setAttribute("height", "12");
+      rect.setAttribute("fill", item.color);
+      svg.appendChild(rect);
+
+      // Label
+      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      text.setAttribute("x", "40");
+      text.setAttribute("y", (legendY + idx * 18 + 10).toString());
+      text.setAttribute("font-family", "Arial");
+      text.setAttribute("font-size", "12");
+      text.setAttribute("fill", "#333");
+      text.textContent = `${item.label}: ${percentage}%`;
+      svg.appendChild(text);
+    });
+
+    // Convert SVG to canvas to image
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      resolve("");
+      return;
+    }
+
+    const svgString = new XMLSerializer().serializeToString(svg);
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => {
+      resolve("");
+    };
+    img.src = "data:image/svg+xml;base64," + btoa(svgString);
+  });
+}
 
 export async function generatePDFReport(params: {
   inputs: SolarInputs;
@@ -26,6 +128,13 @@ export async function generatePDFReport(params: {
     white: [255, 255, 255],
   };
 
+  const hexColors = {
+    project: "#808080",
+    offtaker: "#2D8659",
+    landowner: "#FFD700",
+    developer: "#001F3F",
+  };
+
   // Helper: Add branded header
   const addBrandedHeader = (title: string, subtitle?: string) => {
     doc.setFillColor(...rgbColors.yellow);
@@ -46,8 +155,8 @@ export async function generatePDFReport(params: {
     yPosition += 22;
   };
 
-  // Helper: Add card/box with background - using simple text without special characters
-  const addCard = (title: string, content: string[]) => {
+  // Helper: Add card with color-coded heading
+  const addColoredCard = (title: string, content: string[], color: string) => {
     const cardHeight = 6 + content.length * 5;
     doc.setFillColor(...rgbColors.lightGray);
     doc.rect(15, yPosition - 2, pageWidth - 30, cardHeight, "F");
@@ -55,10 +164,14 @@ export async function generatePDFReport(params: {
     doc.setLineWidth(0.5);
     doc.rect(15, yPosition - 2, pageWidth - 30, cardHeight);
 
+    // Parse hex color to RGB
+    const r = parseInt(color.substring(1, 3), 16);
+    const g = parseInt(color.substring(3, 5), 16);
+    const b = parseInt(color.substring(5, 7), 16);
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.setTextColor(...rgbColors.green);
-    // Use simple ASCII text only - no special characters
+    doc.setTextColor(r, g, b);
     doc.text(title, 20, yPosition + 2);
 
     doc.setFont("helvetica", "normal");
@@ -99,7 +212,7 @@ export async function generatePDFReport(params: {
   doc.text("Financial Analysis Report", 15, 35);
 
   yPosition = 65;
-  
+
   // Project name and description
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
@@ -177,59 +290,81 @@ export async function generatePDFReport(params: {
 
   addBrandedHeader("Stakeholder Value Distribution", projectName + " - Financial Benefits Breakdown");
 
-  const offtakerSavings = results.summary.totalSavings || 0;
-  const landownerIncome = results.summary.totalLandOptionIncome || 0;
-  const developerPremium = results.summary.totalDeveloperPremium || 0;
-  const totalValue = offtakerSavings + landownerIncome + developerPremium;
+  const projectValue = Math.max(0, results.summary.totalDiscountedCashFlow);
+  const offtakerSavings = Math.max(0, results.summary.totalSavings || 0);
+  const landownerIncome = Math.max(0, results.summary.totalLandOptionIncome || 0);
+  const developerPremium = Math.max(0, results.summary.totalDeveloperPremium || 0);
+  const totalValue = projectValue + offtakerSavings + landownerIncome + developerPremium;
 
-  // Stakeholder cards - no pie chart
+  // Generate and add pie chart
+  const pieChartData = [
+    { label: "Project", value: projectValue, color: hexColors.project },
+    { label: "Offtaker", value: offtakerSavings, color: hexColors.offtaker },
+    { label: "Landowner", value: landownerIncome, color: hexColors.landowner },
+    { label: "Developer", value: developerPremium, color: hexColors.developer },
+  ];
+
+  const pieChartImage = await generatePieChartImage(pieChartData);
+
+  if (pieChartImage) {
+    const chartWidth = 80;
+    const chartHeight = 80;
+    const chartX = (pageWidth - chartWidth) / 2;
+    doc.addImage(pieChartImage, "PNG", chartX, yPosition, chartWidth, chartHeight);
+    yPosition += chartHeight + 10;
+  }
+
+  checkPageBreak(80);
+
+  // Stakeholder cards with color-coded headings
+  const projectPct = totalValue > 0 ? ((projectValue / totalValue) * 100).toFixed(1) : "0";
+  addColoredCard(
+    "Project Investor",
+    [
+      "Total: " + formatCurrency(projectValue),
+      "Share: " + projectPct + "% of total value",
+      "NPV: " + formatCurrency(projectValue),
+    ],
+    hexColors.project
+  );
+
   checkPageBreak(30);
 
   const offtakerPct = totalValue > 0 ? ((offtakerSavings / totalValue) * 100).toFixed(1) : "0";
-  addCard(
+  addColoredCard(
     "Offtaker Savings",
     [
       "Total: " + formatCurrency(offtakerSavings),
       "Share: " + offtakerPct + "% of total value",
       "Yearly: " + formatCurrency(offtakerSavings / inputs.projectLife) + "/year",
-    ]
+    ],
+    hexColors.offtaker
   );
 
   checkPageBreak(30);
 
   const landownerPct = totalValue > 0 ? ((landownerIncome / totalValue) * 100).toFixed(1) : "0";
-  addCard(
+  addColoredCard(
     "Landowner Income",
     [
       "Total: " + formatCurrency(landownerIncome),
       "Share: " + landownerPct + "% of total value",
       "Yearly: " + formatCurrency(landownerIncome / inputs.projectLife) + "/year",
-    ]
+    ],
+    hexColors.landowner
   );
 
   checkPageBreak(30);
 
   const developerPct = totalValue > 0 ? ((developerPremium / totalValue) * 100).toFixed(1) : "0";
-  addCard(
+  addColoredCard(
     "Developer Premium",
     [
       "Total: " + formatCurrency(developerPremium),
       "Share: " + developerPct + "% of total value",
       "Per MW: " + formatCurrency(developerPremium / inputs.mw) + "/MW",
-    ]
-  );
-
-  checkPageBreak(30);
-
-  // Project/Investor stakeholder
-  const projectValue = results.summary.totalDiscountedCashFlow;
-  addCard(
-    "Project Investor",
-    [
-      "NPV: " + formatCurrency(projectValue),
-      "IRR: " + (results.summary.irr * 100).toFixed(2) + "%",
-      "Payback: " + results.summary.paybackPeriod.toFixed(1) + " years",
-    ]
+    ],
+    hexColors.developer
   );
 
   // ============ PAGE 3: FINANCIAL METRICS ============
@@ -237,6 +372,32 @@ export async function generatePDFReport(params: {
   yPosition = 15;
 
   addBrandedHeader("Financial Metrics", "Key Results and Analysis");
+
+  const addCard = (title: string, content: string[]) => {
+    const cardHeight = 6 + content.length * 5;
+    doc.setFillColor(...rgbColors.lightGray);
+    doc.rect(15, yPosition - 2, pageWidth - 30, cardHeight, "F");
+    doc.setDrawColor(...rgbColors.darkGray);
+    doc.setLineWidth(0.5);
+    doc.rect(15, yPosition - 2, pageWidth - 30, cardHeight);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...rgbColors.green);
+    doc.text(title, 20, yPosition + 2);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...rgbColors.darkGray);
+
+    let contentY = yPosition + 6;
+    content.forEach((line) => {
+      doc.text(line, 20, contentY);
+      contentY += 5;
+    });
+
+    yPosition += cardHeight + 6;
+  };
 
   addCard("Key Indicators", [
     "LCOE: GBP " + results.summary.lcoe.toFixed(2) + "/MWh",

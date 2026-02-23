@@ -423,7 +423,7 @@ export default function Dashboard() {
 
           {/* Offtaker Banner */}
           <div className="mt-4">
-            <h3 className="text-sm font-semibold text-gray-400 mb-3">Offtaker</h3>
+            <h3 className="text-sm font-semibold mb-3" style={{ color: '#2D8659' }}>Offtaker</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
               <MetricCard 
                 title="Yearly Savings" 
@@ -442,7 +442,7 @@ export default function Dashboard() {
 
           {/* Landowner Banner */}
           <div className="mt-4">
-            <h3 className="text-sm font-semibold text-gray-400 mb-3">Landowner</h3>
+            <h3 className="text-sm font-semibold mb-3" style={{ color: '#FFD700' }}>Landowner</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
             <MetricCard 
               title="Yearly Rental Income" 
@@ -467,7 +467,7 @@ export default function Dashboard() {
 
           {/* Developer Banner */}
           <div className="mt-4">
-            <h3 className="text-sm font-semibold text-gray-400 mb-3">Developer</h3>
+            <h3 className="text-sm font-semibold mb-3" style={{ color: '#001F3F' }}>Developer</h3>
             <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-4">
             <MetricCard 
               title="Developer Premium" 
