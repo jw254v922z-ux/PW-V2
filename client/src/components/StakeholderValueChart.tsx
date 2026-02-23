@@ -55,6 +55,29 @@ export function StakeholderValueChart({ results }: StakeholderValueChartProps) {
   
   const COLORS = ['#808080', '#2D8659', '#FFD700', '#001F3F']; // Gray (Project), Green (Offtaker), Yellow (Landowner), Navy (Developer)
   
+  const renderCustomLabel = (entry: any) => {
+    if (entry.value === 0) return null;
+    const { cx, cy, midAngle, innerRadius, outerRadius, percentage } = entry;
+    const RADIAN = Math.PI / 180;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    
+    return (
+      <text
+        x={x}
+        y={y}
+        fill="#000000"
+        textAnchor={x > cx ? 'start' : 'end'}
+        dominantBaseline="central"
+        fontSize="13"
+        fontWeight="bold"
+      >
+        {entry.name} ({percentage}%)
+      </text>
+    );
+  };
+  
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -98,13 +121,9 @@ export function StakeholderValueChart({ results }: StakeholderValueChartProps) {
                   data={data}
                   cx="50%"
                   cy="50%"
-                  labelLine={false}
-                  label={({ name, percentage, value }) => value > 0 ? `${name} (${percentage}%)` : ''}
                   outerRadius={100}
                   fill="#8884d8"
                   dataKey="value"
-                  labelPosition="outside"
-                  labelStyle={{ fill: '#000000', fontSize: '14px', fontWeight: 'bold' }}
                 >
                   {data.map((entry, index) => (
                     <Cell 
@@ -125,16 +144,16 @@ export function StakeholderValueChart({ results }: StakeholderValueChartProps) {
         {/* Value breakdown table */}
         <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
           {data.map((item, index) => (
-            <div key={item.name} className="p-3 rounded bg-white/5 border border-white/10">
+            <div key={item.name} className="p-4 rounded bg-white border border-gray-200 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
                 <div 
                   className="w-3 h-3 rounded-full" 
                   style={{ backgroundColor: COLORS[index] }}
                 />
-                <p className="text-sm font-semibold text-white">{item.name}</p>
+                <p className="text-sm font-semibold text-slate-900">{item.name}</p>
               </div>
-              <p className="text-lg font-bold text-white">{formatCurrency(item.value)}</p>
-              <p className="text-xs text-gray-400">{item.percentage}% of total</p>
+              <p className="text-lg font-bold text-slate-900">{formatCurrency(item.value)}</p>
+              <p className="text-xs text-slate-600">{item.percentage}% of total</p>
             </div>
           ))}
         </div>
