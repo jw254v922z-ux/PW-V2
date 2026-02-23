@@ -300,7 +300,7 @@ export async function generatePDFReport(params: {
 
   // Generate and add pie chart
   const pieChartData = [
-    { label: "Project", value: projectValue, color: hexColors.project },
+    { label: "Operator", value: projectValue, color: hexColors.project },
     { label: "Offtaker", value: offtakerSavings, color: hexColors.offtaker },
     { label: "Landowner", value: landownerIncome, color: hexColors.landowner },
     { label: "Developer", value: developerPremium, color: hexColors.developer },
@@ -321,7 +321,7 @@ export async function generatePDFReport(params: {
   // Stakeholder cards with color-coded headings
   const projectPct = totalValue > 0 ? ((projectValue / totalValue) * 100).toFixed(1) : "0";
   addColoredCard(
-    "Project Investor",
+    "Operator",
     [
       "Total: " + formatCurrency(projectValue),
       "Share: " + projectPct + "% of total value",

@@ -28,7 +28,7 @@ export function StakeholderValueChart({ results }: StakeholderValueChartProps) {
   
   const data = [
     {
-      name: 'Project',
+      name: 'Operator',
       value: projectValue,
       percentage: totalValue > 0 ? ((projectValue / totalValue) * 100).toFixed(1) : 0,
       color: '#808080',
@@ -53,7 +53,7 @@ export function StakeholderValueChart({ results }: StakeholderValueChartProps) {
     },
   ];
   
-  const COLORS = ['#808080', '#2D8659', '#FFD700', '#001F3F']; // Gray (Project), Green (Offtaker), Yellow (Landowner), Navy (Developer)
+  const COLORS = ['#808080', '#2D8659', '#FFD700', '#001F3F']; // Gray (Operator), Green (Offtaker), Yellow (Landowner), Navy (Developer)
   
   const renderCustomLabel = (entry: any) => {
     if (entry.value === 0) return null;
