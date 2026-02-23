@@ -2,71 +2,6 @@ import jsPDF from "jspdf";
 import { SolarInputs, SolarResults } from "./calculator";
 import { formatCurrency, formatNumberWithCommas } from "./formatters";
 
-// Function to draw a pie chart on canvas and return as image
-async function generatePieChartImage(
-  data: Array<{ label: string; value: number; color: string }>,
-  width: number = 250,
-  height: number = 250
-): Promise<string> {
-  return new Promise((resolve) => {
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      resolve("");
-      return;
-    }
-
-    const total = data.reduce((sum, item) => sum + item.value, 0);
-    if (total === 0) {
-      resolve("");
-      return;
-    }
-
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const radius = Math.min(width, height) / 2 - 30;
-
-    let currentAngle = -Math.PI / 2;
-
-    // Draw pie slices
-    data.forEach((item) => {
-      const sliceAngle = (item.value / total) * 2 * Math.PI;
-
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
-      ctx.closePath();
-      ctx.fillStyle = item.color;
-      ctx.fill();
-      ctx.strokeStyle = "#fff";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      currentAngle += sliceAngle;
-    });
-
-    // Draw legend below pie
-    let legendY = height - 50;
-    data.forEach((item, idx) => {
-      const percentage = ((item.value / total) * 100).toFixed(0);
-      
-      // Color box
-      ctx.fillStyle = item.color;
-      ctx.fillRect(20, legendY + idx * 15, 12, 12);
-      
-      // Label
-      ctx.fillStyle = "#333";
-      ctx.font = "11px Arial";
-      ctx.textAlign = "left";
-      ctx.fillText(`${item.label}: ${percentage}%`, 40, legendY + idx * 15 + 10);
-    });
-
-    resolve(canvas.toDataURL("image/png"));
-  });
-}
-
 export async function generatePDFReport(params: {
   inputs: SolarInputs;
   results: SolarResults;
@@ -79,7 +14,7 @@ export async function generatePDFReport(params: {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  let yPosition = 20;
+  let yPosition = 15;
 
   // Savills Earth Brand Colors
   const rgbColors = {
@@ -132,9 +67,14 @@ export async function generatePDFReport(params: {
     doc.setLineWidth(0.5);
     doc.rect(15, yPosition - 2, pageWidth - 30, cardHeight);
 
+    // Parse hex color to RGB
+    const r = parseInt(titleColor.substring(1, 3), 16);
+    const g = parseInt(titleColor.substring(3, 5), 16);
+    const b = parseInt(titleColor.substring(5, 7), 16);
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.setTextColor(parseInt(titleColor.substring(1, 3), 16), parseInt(titleColor.substring(3, 5), 16), parseInt(titleColor.substring(5, 7), 16));
+    doc.setTextColor(r, g, b);
     doc.text(title, 20, yPosition + 2);
 
     doc.setFont("helvetica", "normal");
@@ -183,7 +123,7 @@ export async function generatePDFReport(params: {
   doc.text(`Project: ${projectName}`, 15, yPosition);
   yPosition += 10;
 
-  if (description) {
+  if (description && description.trim()) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.setTextColor(...rgbColors.darkGray);
@@ -251,33 +191,50 @@ export async function generatePDFReport(params: {
   doc.addPage();
   yPosition = 15;
 
-  addBrandedHeader("Stakeholder Value Distribution", "Financial Benefits Breakdown");
+  addBrandedHeader("Stakeholder Value Distribution", `${projectName} - Financial Benefits Breakdown`);
 
-  const offtakerSavings = results.summary.offtakerSavings;
-  const landownerIncome = results.summary.landownerIncome;
-  const developerPremium = results.summary.developerPremium;
+  const offtakerSavings = results.summary.totalSavings || 0;
+  const landownerIncome = results.summary.totalLandOptionIncome || 0;
+  const developerPremium = results.summary.totalDeveloperPremium || 0;
   const totalValue = offtakerSavings + landownerIncome + developerPremium;
 
-  // Generate pie chart image
-  const pieChartData = [
-    { label: "Offtaker", value: offtakerSavings, color: hexColors.offtaker },
-    { label: "Landowner", value: landownerIncome, color: hexColors.landowner },
-    { label: "Developer", value: developerPremium, color: hexColors.developer },
-  ];
+  // Draw simple pie chart using rectangles and circles
+  const chartX = pageWidth / 2;
+  const chartY = yPosition + 25;
+  const chartRadius = 25;
 
-  const pieChartImage = await generatePieChartImage(pieChartData);
+  // Draw pie slices
+  if (totalValue > 0) {
+    const offtakerAngle = (offtakerSavings / totalValue) * 360;
+    const landownerAngle = (landownerIncome / totalValue) * 360;
+    const developerAngle = (developerPremium / totalValue) * 360;
 
-  // Add pie chart image centered
-  if (pieChartImage) {
-    const chartWidth = 70;
-    const chartHeight = 70;
-    const chartX = (pageWidth - chartWidth) / 2;
-    doc.addImage(pieChartImage, "PNG", chartX, yPosition, chartWidth, chartHeight);
-    yPosition += chartHeight + 10;
-  } else {
-    yPosition += 10;
+    // Offtaker slice (green)
+    doc.setFillColor(...rgbColors.green);
+    doc.circle(chartX, chartY, chartRadius, "F");
+
+    // Create a simple visual representation with rectangles
+    doc.setFillColor(45, 134, 89); // Green
+    doc.rect(chartX - 20, chartY - 20, 15, 15, "F");
+    doc.setFillColor(255, 215, 0); // Yellow
+    doc.rect(chartX - 2, chartY - 20, 15, 15, "F");
+    doc.setFillColor(0, 31, 63); // Navy
+    doc.rect(chartX + 16, chartY - 20, 15, 15, "F");
+
+    // Add percentages
+    const offtakerPct = ((offtakerSavings / totalValue) * 100).toFixed(0);
+    const landownerPct = ((landownerIncome / totalValue) * 100).toFixed(0);
+    const developerPct = ((developerPremium / totalValue) * 100).toFixed(0);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    doc.text(`${offtakerPct}%`, chartX - 12, chartY - 12, { align: "center" });
+    doc.text(`${landownerPct}%`, chartX + 6, chartY - 12, { align: "center" });
+    doc.text(`${developerPct}%`, chartX + 24, chartY - 12, { align: "center" });
   }
 
+  yPosition = chartY + 35;
   checkPageBreak(80);
 
   // Stakeholder cards
@@ -325,7 +282,6 @@ export async function generatePDFReport(params: {
 
   // Project/Investor stakeholder
   const projectValue = results.summary.totalDiscountedCashFlow;
-  const projectPct = totalValue > 0 ? ((projectValue / (totalValue + projectValue)) * 100).toFixed(1) : "0";
   addCard(
     "📊 Project/Investor",
     [
@@ -460,8 +416,8 @@ export async function generatePDFReport(params: {
   doc.setFontSize(7);
   doc.setTextColor(...rgbColors.darkGray);
 
-  // Show all 20 years
-  for (let i = 0; i < Math.min(results.yearlyData.length, 20); i++) {
+  // Show all years
+  for (let i = 0; i < Math.min(results.yearlyData.length, inputs.projectLife); i++) {
     const yearData = results.yearlyData[i];
 
     if (i % 2 === 0) {
@@ -490,12 +446,15 @@ export async function generatePDFReport(params: {
 
   addBrandedHeader("Assumptions & Sources", "Project Parameters");
 
+  // Format cost inflation correctly
+  const costInflationDisplay = (inputs.costInflationRate * 100).toFixed(2);
+
   addCard("Key Assumptions", [
     `EPC Cost: £${formatNumberWithCommas(inputs.capexPerMW)}/MW`,
     `Private Wire Cost: £${formatNumberWithCommas(inputs.privateWireCost)}`,
     `OPEX: £${formatNumberWithCommas(inputs.opexPerMW)}/MW/year`,
     `PPA Price: £${inputs.powerPrice.toFixed(2)}/MWh`,
-    `Cost Inflation: ${(inputs.costInflationRate * 100).toFixed(2)}%`,
+    `Cost Inflation: ${costInflationDisplay}%`,
   ]);
 
   checkPageBreak(30);
