@@ -266,14 +266,15 @@
 - [x] Create auth utility functions (hashPassword, verifyPassword, generateToken, createSessionToken)
 - [x] Create auth database helpers (findUserByEmail, createUser, markEmailAsVerified, etc.)
 - [x] Install bcrypt and jose packages
-- [ ] Integrate auth procedures into main routers.ts
-- [ ] Implement `auth.signup(email, password)` with email validation
-- [ ] Implement `auth.login(email, password)` with password verification
-- [ ] Implement `auth.logout()` to clear session
-- [ ] Implement `auth.me()` to get current user
-- [ ] Implement `auth.requestPasswordReset(email)` with token generation
-- [ ] Implement `auth.resetPassword(token, newPassword)` with token validation
-- [ ] Implement `auth.verifyEmail(token)` for email confirmation
+- [x] Integrate auth procedures into main routers.ts
+- [x] Implement `auth.signup(email, password)` with email validation
+- [x] Implement `auth.login(email, password)` with password verification
+- [x] Implement `auth.logout()` to clear session
+- [x] Implement `auth.me()` to get current user
+- [x] Implement `auth.requestPasswordReset(email)` with token generation
+- [x] Implement `auth.resetPassword(token, newPassword)` with token validation
+- [x] Implement `auth.verifyEmail(token)` for email confirmation
+- [x] Create vitest tests for auth utilities (all 10 tests passing)
 - [ ] Add rate limiting for login attempts (prevent brute force)
 - [ ] Add domain whitelist validation in signup
 

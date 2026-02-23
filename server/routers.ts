@@ -5,6 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { getSolarModelsByUserId, getSolarModelById, createSolarModel, updateSolarModel, deleteSolarModel, getGridConnectionCost, createGridConnectionCost, updateGridConnectionCost, deleteGridConnectionCost } from "./db";
 import { InsertSolarModel, InsertGridConnectionCost } from "../drizzle/schema";
+import { customAuthRouter } from "./auth/router";
 
 const gridConnectionSchema = z.object({
   agriculturalTrenchingMin: z.number().nonnegative().optional(),
@@ -36,6 +37,11 @@ const gridConnectionSchema = z.object({
 export const appRouter = router({
   system: systemRouter,
   auth: router({
+    signup: customAuthRouter._def.procedures.signup,
+    login: customAuthRouter._def.procedures.login,
+    verifyEmail: customAuthRouter._def.procedures.verifyEmail,
+    requestPasswordReset: customAuthRouter._def.procedures.requestPasswordReset,
+    resetPassword: customAuthRouter._def.procedures.resetPassword,
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
