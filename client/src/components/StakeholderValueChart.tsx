@@ -99,18 +99,11 @@ export function StakeholderValueChart({ results }: StakeholderValueChartProps) {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percentage, value, fill }) => {
-                    // Use dark text on light colors (yellow), light text on dark colors
-                    const isDarkColor = fill === '#FFD700' ? false : true;
-                    return value > 0 ? (
-                      <text fill={isDarkColor ? '#ffffff' : '#000000'} fontSize={12} fontWeight="bold">
-                        {name} ({percentage}%)
-                      </text>
-                    ) : null;
-                  }}
+                  label={({ name, percentage, value }) => value > 0 ? `${name} (${percentage}%)` : ''}
                   outerRadius={100}
                   fill="#8884d8"
                   dataKey="value"
+                  labelPosition="outside"
                 >
                   {data.map((entry, index) => (
                     <Cell 
