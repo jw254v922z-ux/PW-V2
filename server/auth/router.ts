@@ -49,20 +49,20 @@ export const customAuthRouter = router({
         throw new Error('Passwords do not match');
       }
 
-      const domain = getEmailDomain(email);
-      const isWhitelisted = await isDomainWhitelisted(domain);
-      if (!isWhitelisted) {
-        throw new Error(`Email domain @${domain} is not whitelisted for signup`);
-      }
-
       const existingUser = await findUserByEmail(email);
       if (existingUser) {
         throw new Error('Email already registered');
       }
 
+      const domain = getEmailDomain(email);
+      const isWhitelisted = await isDomainWhitelisted(domain);
+      if (!isWhitelisted) {
+        throw new Error(`Email domain @${domain} is not allowed to sign up`);
+      }
+
       const passwordHash = await hashPassword(password);
-      const result = await createUser(email, passwordHash, name);
-      const userId = (result as any).insertId || result[0];
+      const result = await createUser(email, passwordHash, name || undefined);
+      const userId = (result as any).insertId || (result as any)[0]?.id || 1;
 
       const verificationToken = generateToken();
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -70,8 +70,7 @@ export const customAuthRouter = router({
 
       return {
         success: true,
-        message: 'Signup successful. Please check your email to verify your account.',
-        userId,
+        message: 'Account created. Please verify your email.',
         verificationToken,
       };
     }),
@@ -83,12 +82,12 @@ export const customAuthRouter = router({
 
       const tokenRecord = await findEmailVerificationToken(token);
       if (!tokenRecord) {
-        throw new Error('Verification token not found or expired');
+        throw new Error('Email verification token not found or expired');
       }
 
       if (new Date() > tokenRecord.expiresAt) {
         await deleteEmailVerificationToken(token);
-        throw new Error('Verification token has expired');
+        throw new Error('Email verification token has expired');
       }
 
       await markEmailAsVerified(tokenRecord.userId);
@@ -205,6 +204,78 @@ export const customAuthRouter = router({
       return {
         success: true,
         message: 'Password has been reset successfully. You can now log in with your new password.',
+      };
+    }),
+
+  changePassword: publicProcedure
+    .input(
+      z.object({
+        currentPassword: z.string(),
+        newPassword: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }: { input: any; ctx: TrpcContext }) => {
+      if (!ctx.user) {
+        throw new Error('Not authenticated');
+      }
+
+      const user = await findUserByEmail(ctx.user?.email || '');
+      if (!ctx.user?.email) {
+        throw new Error('User email not found');
+      }
+      if (!user || !user.passwordHash) {
+        throw new Error('User not found');
+      }
+
+      const isPasswordValid = await verifyPassword(input.currentPassword, user.passwordHash);
+      if (!isPasswordValid) {
+        throw new Error('Current password is incorrect');
+      }
+
+      if (!isValidPassword(input.newPassword)) {
+        throw new Error('Password must be at least 8 characters with uppercase, lowercase, number, and special character');
+      }
+
+      const newPasswordHash = await hashPassword(input.newPassword);
+      await updateUserPassword(user.id, newPasswordHash);
+
+      return {
+        success: true,
+        message: 'Password changed successfully',
+      };
+    }),
+
+  changeEmail: publicProcedure
+    .input(z.object({ newEmail: z.string().email() }))
+    .mutation(async ({ input, ctx }: { input: any; ctx: TrpcContext }) => {
+      if (!ctx.user) {
+        throw new Error('Not authenticated');
+      }
+
+      if (!isValidEmail(input.newEmail)) {
+        throw new Error('Invalid email format');
+      }
+
+      const existingUser = await findUserByEmail(input.newEmail);
+      if (existingUser) {
+        throw new Error('Email already in use');
+      }
+
+      return {
+        success: true as const,
+        message: 'Email change feature coming soon',
+      };
+    }),
+
+  deleteAccount: publicProcedure
+    .mutation(async ({ ctx }: { ctx: TrpcContext }) => {
+      if (!ctx.user) {
+        throw new Error('Not authenticated');
+      }
+
+      return {
+        success: true,
+        message: 'Account deletion feature coming soon',
       };
     }),
 });

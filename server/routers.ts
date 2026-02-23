@@ -44,6 +44,9 @@ export const appRouter = router({
     verifyEmail: customAuthRouter._def.procedures.verifyEmail,
     requestPasswordReset: customAuthRouter._def.procedures.requestPasswordReset,
     resetPassword: customAuthRouter._def.procedures.resetPassword,
+    changePassword: customAuthRouter._def.procedures.changePassword,
+    changeEmail: customAuthRouter._def.procedures.changeEmail,
+    deleteAccount: customAuthRouter._def.procedures.deleteAccount,
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
