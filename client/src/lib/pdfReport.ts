@@ -6,8 +6,8 @@ import { formatCurrency, formatNumberWithCommas } from "./formatters";
 // Function to create a pie chart SVG and convert to image
 async function generatePieChartImage(
   data: Array<{ label: string; value: number; color: string }>,
-  width: number = 300,
-  height: number = 300
+  width: number = 600,
+  height: number = 600
 ): Promise<string> {
   return new Promise((resolve) => {
     const total = data.reduce((sum, item) => sum + item.value, 0);
@@ -81,10 +81,12 @@ async function generatePieChartImage(
       svg.appendChild(text);
     });
 
-    // Convert SVG to canvas to image
+    // Convert SVG to canvas to image with 2x resolution for better quality
     const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width = width * 2;
+    canvas.height = height * 2;
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
     const ctx = canvas.getContext("2d");
     if (!ctx) {
       resolve("");

@@ -333,7 +333,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-100 pb-12">
+    <div className="min-h-screen bg-white pb-12">
       {/* Disclaimer Banner - Top */}
       <div className="bg-amber-50 dark:bg-amber-950 border-b-2 border-amber-400 p-3">
         <div className="container">
@@ -350,10 +350,10 @@ export default function Dashboard() {
       </div>
 
       {/* Hero Header */}
-      <div className="relative bg-slate-100 text-slate-900 pb-24 pt-12 overflow-hidden">
+      <div className="relative bg-white text-slate-900 pb-24 pt-12 overflow-hidden border-b-4 border-yellow-400">
         <div className="absolute inset-0 z-0 opacity-40">
            <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663312201571/FyKDbvLKydspiJJE.jpg" alt="Solar Farm" className="w-full h-full object-cover" />
-           <div className="absolute inset-0 bg-gradient-to-b from-slate-100/60 to-slate-100/80" />
+           <div className="absolute inset-0 bg-gradient-to-b from-white/40 to-white/60" />
         </div>
         
         <div className="container relative z-10">
@@ -422,7 +422,7 @@ export default function Dashboard() {
           </div>
 
           {/* Offtaker Banner */}
-          <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: 'rgba(45, 134, 89, 0.1)', borderLeft: '4px solid #2D8659' }}>
+          <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: '#F0F8F4', borderLeft: '4px solid #2D8659' }}>
             <h3 className="text-sm font-semibold mb-3" style={{ color: '#2D8659' }}>Offtaker</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
               <MetricCard 
@@ -441,7 +441,7 @@ export default function Dashboard() {
           </div>
 
           {/* Landowner Banner */}
-          <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: 'rgba(255, 215, 0, 0.1)', borderLeft: '4px solid #FFD700' }}>
+          <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: '#FFFBF0', borderLeft: '4px solid #FFD700' }}>
             <h3 className="text-sm font-semibold mb-3" style={{ color: '#FFD700' }}>Landowner</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
             <MetricCard 
@@ -466,7 +466,7 @@ export default function Dashboard() {
           </div>
 
           {/* Developer Banner */}
-          <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: 'rgba(0, 31, 63, 0.1)', borderLeft: '4px solid #001F3F' }}>
+          <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: '#F0F4F8', borderLeft: '4px solid #001F3F' }}>
             <h3 className="text-sm font-semibold mb-3" style={{ color: '#001F3F' }}>Developer</h3>
             <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-4">
             <MetricCard 
