@@ -363,3 +363,15 @@
 - [ ] Test full application end-to-end
 - [ ] Save checkpoint with complete auth system
 - [ ] Document authentication flow for future reference
+
+
+## Phase 26: PDF Brand Redesign (Savills Earth)
+- [ ] Redesign PDF with Savills Earth yellow/green color scheme
+- [ ] Add yellow highlight boxes for key metrics (LCOE, IRR, NPV)
+- [ ] Add green accent bar on right side of pages
+- [ ] Update pie chart colors to match brand (green, lime green, gray)
+- [ ] Create color-coded stakeholder sections (Offtaker=blue, Landowner=teal, Developer=slate)
+- [ ] Format headings with bold sans-serif typography
+- [ ] Add professional footer with "SAVILLS EARTH 2026" and page numbers
+- [ ] Improve layout spacing and white space for professional appearance
+- [ ] Test PDF generation and verify brand consistency
