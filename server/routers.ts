@@ -121,6 +121,7 @@ export const appRouter = router({
       ),
   }),
 
+
   gridConnection: router({
     get: protectedProcedure
       .input(z.object({ solarModelId: z.coerce.number() }))
