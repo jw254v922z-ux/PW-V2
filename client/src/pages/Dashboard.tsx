@@ -351,11 +351,6 @@ export default function Dashboard() {
 
       {/* Hero Header */}
       <div className="relative bg-white text-slate-900 pb-24 pt-12 overflow-hidden border-b-4 border-yellow-400">
-        <div className="absolute inset-0 z-0 opacity-40">
-           <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663312201571/FyKDbvLKydspiJJE.jpg" alt="Solar Farm" className="w-full h-full object-cover" />
-           <div className="absolute inset-0 bg-gradient-to-b from-white/40 to-white/60" />
-        </div>
-        
         <div className="container relative z-10">
           <div className="flex justify-between items-start">
             <div>
