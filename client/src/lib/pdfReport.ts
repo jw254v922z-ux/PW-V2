@@ -26,13 +26,6 @@ export async function generatePDFReport(params: {
     white: [255, 255, 255],
   };
 
-  const hexColors = {
-    offtaker: "#2D8659",
-    landowner: "#FFD700",
-    developer: "#001F3F",
-    project: "#808080",
-  };
-
   // Helper: Add branded header
   const addBrandedHeader = (title: string, subtitle?: string) => {
     doc.setFillColor(...rgbColors.yellow);
@@ -53,28 +46,19 @@ export async function generatePDFReport(params: {
     yPosition += 22;
   };
 
-  // Helper: Add card/box with background
-  const addCard = (
-    title: string,
-    content: string[],
-    bgColor: [number, number, number] = rgbColors.lightGray,
-    titleColor: string = "#001F3F"
-  ) => {
+  // Helper: Add card/box with background - using simple text without special characters
+  const addCard = (title: string, content: string[]) => {
     const cardHeight = 6 + content.length * 5;
-    doc.setFillColor(...bgColor);
+    doc.setFillColor(...rgbColors.lightGray);
     doc.rect(15, yPosition - 2, pageWidth - 30, cardHeight, "F");
     doc.setDrawColor(...rgbColors.darkGray);
     doc.setLineWidth(0.5);
     doc.rect(15, yPosition - 2, pageWidth - 30, cardHeight);
 
-    // Parse hex color to RGB
-    const r = parseInt(titleColor.substring(1, 3), 16);
-    const g = parseInt(titleColor.substring(3, 5), 16);
-    const b = parseInt(titleColor.substring(5, 7), 16);
-
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.setTextColor(r, g, b);
+    doc.setTextColor(...rgbColors.green);
+    // Use simple ASCII text only - no special characters
     doc.text(title, 20, yPosition + 2);
 
     doc.setFont("helvetica", "normal");
@@ -120,7 +104,7 @@ export async function generatePDFReport(params: {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
   doc.setTextColor(...rgbColors.navy);
-  doc.text(`Project: ${projectName}`, 15, yPosition);
+  doc.text("Project: " + projectName, 15, yPosition);
   yPosition += 10;
 
   if (description && description.trim()) {
@@ -136,12 +120,12 @@ export async function generatePDFReport(params: {
 
   // Key metrics in 2x3 grid
   const metrics = [
-    { label: "System Size", value: `${inputs.mw.toFixed(2)} MW` },
-    { label: "LCOE", value: `£${results.summary.lcoe.toFixed(2)}/MWh` },
-    { label: "IRR", value: `${(results.summary.irr * 100).toFixed(2)}%` },
-    { label: "Payback Period", value: `${results.summary.paybackPeriod.toFixed(1)} years` },
+    { label: "System Size", value: inputs.mw.toFixed(2) + " MW" },
+    { label: "LCOE", value: "GBP " + results.summary.lcoe.toFixed(2) + "/MWh" },
+    { label: "IRR", value: (results.summary.irr * 100).toFixed(2) + "%" },
+    { label: "Payback Period", value: results.summary.paybackPeriod.toFixed(1) + " years" },
     { label: "Total NPV", value: formatCurrency(results.summary.totalDiscountedCashFlow) },
-    { label: "Project Life", value: `${inputs.projectLife} years` },
+    { label: "Project Life", value: inputs.projectLife + " years" },
   ];
 
   for (let i = 0; i < metrics.length; i += 2) {
@@ -191,91 +175,48 @@ export async function generatePDFReport(params: {
   doc.addPage();
   yPosition = 15;
 
-  addBrandedHeader("Stakeholder Value Distribution", `${projectName} - Financial Benefits Breakdown`);
+  addBrandedHeader("Stakeholder Value Distribution", projectName + " - Financial Benefits Breakdown");
 
   const offtakerSavings = results.summary.totalSavings || 0;
   const landownerIncome = results.summary.totalLandOptionIncome || 0;
   const developerPremium = results.summary.totalDeveloperPremium || 0;
   const totalValue = offtakerSavings + landownerIncome + developerPremium;
 
-  // Draw simple pie chart using rectangles and circles
-  const chartX = pageWidth / 2;
-  const chartY = yPosition + 25;
-  const chartRadius = 25;
+  // Stakeholder cards - no pie chart
+  checkPageBreak(30);
 
-  // Draw pie slices
-  if (totalValue > 0) {
-    const offtakerAngle = (offtakerSavings / totalValue) * 360;
-    const landownerAngle = (landownerIncome / totalValue) * 360;
-    const developerAngle = (developerPremium / totalValue) * 360;
-
-    // Offtaker slice (green)
-    doc.setFillColor(...rgbColors.green);
-    doc.circle(chartX, chartY, chartRadius, "F");
-
-    // Create a simple visual representation with rectangles
-    doc.setFillColor(45, 134, 89); // Green
-    doc.rect(chartX - 20, chartY - 20, 15, 15, "F");
-    doc.setFillColor(255, 215, 0); // Yellow
-    doc.rect(chartX - 2, chartY - 20, 15, 15, "F");
-    doc.setFillColor(0, 31, 63); // Navy
-    doc.rect(chartX + 16, chartY - 20, 15, 15, "F");
-
-    // Add percentages
-    const offtakerPct = ((offtakerSavings / totalValue) * 100).toFixed(0);
-    const landownerPct = ((landownerIncome / totalValue) * 100).toFixed(0);
-    const developerPct = ((developerPremium / totalValue) * 100).toFixed(0);
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(255, 255, 255);
-    doc.text(`${offtakerPct}%`, chartX - 12, chartY - 12, { align: "center" });
-    doc.text(`${landownerPct}%`, chartX + 6, chartY - 12, { align: "center" });
-    doc.text(`${developerPct}%`, chartX + 24, chartY - 12, { align: "center" });
-  }
-
-  yPosition = chartY + 35;
-  checkPageBreak(80);
-
-  // Stakeholder cards
   const offtakerPct = totalValue > 0 ? ((offtakerSavings / totalValue) * 100).toFixed(1) : "0";
   addCard(
-    "🔋 Offtaker Savings",
+    "Offtaker Savings",
     [
-      `Total: ${formatCurrency(offtakerSavings)}`,
-      `Share: ${offtakerPct}% of total value`,
-      `Yearly: ${formatCurrency(offtakerSavings / inputs.projectLife)}/year`,
-    ],
-    rgbColors.lightGray,
-    hexColors.offtaker
+      "Total: " + formatCurrency(offtakerSavings),
+      "Share: " + offtakerPct + "% of total value",
+      "Yearly: " + formatCurrency(offtakerSavings / inputs.projectLife) + "/year",
+    ]
   );
 
   checkPageBreak(30);
 
   const landownerPct = totalValue > 0 ? ((landownerIncome / totalValue) * 100).toFixed(1) : "0";
   addCard(
-    "🌾 Landowner Income",
+    "Landowner Income",
     [
-      `Total: ${formatCurrency(landownerIncome)}`,
-      `Share: ${landownerPct}% of total value`,
-      `Yearly: ${formatCurrency(landownerIncome / inputs.projectLife)}/year`,
-    ],
-    rgbColors.lightGray,
-    hexColors.landowner
+      "Total: " + formatCurrency(landownerIncome),
+      "Share: " + landownerPct + "% of total value",
+      "Yearly: " + formatCurrency(landownerIncome / inputs.projectLife) + "/year",
+    ]
   );
 
   checkPageBreak(30);
 
   const developerPct = totalValue > 0 ? ((developerPremium / totalValue) * 100).toFixed(1) : "0";
   addCard(
-    "💼 Developer Premium",
+    "Developer Premium",
     [
-      `Total: ${formatCurrency(developerPremium)}`,
-      `Share: ${developerPct}% of total value`,
-      `Per MW: ${formatCurrency(developerPremium / inputs.mw)}/MW`,
-    ],
-    rgbColors.lightGray,
-    hexColors.developer
+      "Total: " + formatCurrency(developerPremium),
+      "Share: " + developerPct + "% of total value",
+      "Per MW: " + formatCurrency(developerPremium / inputs.mw) + "/MW",
+    ]
   );
 
   checkPageBreak(30);
@@ -283,33 +224,31 @@ export async function generatePDFReport(params: {
   // Project/Investor stakeholder
   const projectValue = results.summary.totalDiscountedCashFlow;
   addCard(
-    "📊 Project/Investor",
+    "Project Investor",
     [
-      `NPV: ${formatCurrency(projectValue)}`,
-      `IRR: ${(results.summary.irr * 100).toFixed(2)}%`,
-      `Payback: ${results.summary.paybackPeriod.toFixed(1)} years`,
-    ],
-    rgbColors.lightGray,
-    hexColors.project
+      "NPV: " + formatCurrency(projectValue),
+      "IRR: " + (results.summary.irr * 100).toFixed(2) + "%",
+      "Payback: " + results.summary.paybackPeriod.toFixed(1) + " years",
+    ]
   );
 
   // ============ PAGE 3: FINANCIAL METRICS ============
   doc.addPage();
   yPosition = 15;
 
-  addBrandedHeader("Financial Metrics", "Key Results & Analysis");
+  addBrandedHeader("Financial Metrics", "Key Results and Analysis");
 
   addCard("Key Indicators", [
-    `LCOE: £${results.summary.lcoe.toFixed(2)}/MWh`,
-    `IRR: ${(results.summary.irr * 100).toFixed(2)}%`,
-    `Payback Period: ${results.summary.paybackPeriod.toFixed(1)} years`,
-    `Project Life: ${inputs.projectLife} years`,
-    `Discount Rate: ${(inputs.discountRate * 100).toFixed(2)}%`,
+    "LCOE: GBP " + results.summary.lcoe.toFixed(2) + "/MWh",
+    "IRR: " + (results.summary.irr * 100).toFixed(2) + "%",
+    "Payback Period: " + results.summary.paybackPeriod.toFixed(1) + " years",
+    "Project Life: " + inputs.projectLife + " years",
+    "Discount Rate: " + (inputs.discountRate * 100).toFixed(2) + "%",
   ]);
 
   checkPageBreak(50);
 
-  // Cost breakdown - smaller font and narrower columns
+  // Cost breakdown table
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(...rgbColors.green);
@@ -321,11 +260,11 @@ export async function generatePDFReport(params: {
     ["Private Wire", formatCurrency(inputs.privateWireCost)],
     ["Grid Connection", formatCurrency(inputs.gridConnectionCost)],
     ["Total Capex", formatCurrency(results.summary.totalCapex)],
-    ["Annual Opex (Y1)", formatCurrency(inputs.mw * inputs.opexPerMW)],
-    [`Opex Escalation`, `${(inputs.opexEscalation * 100).toFixed(2)}%`],
+    ["Annual Opex Y1", formatCurrency(inputs.mw * inputs.opexPerMW)],
+    ["Opex Escalation", (inputs.opexEscalation * 100).toFixed(2) + "%"],
   ];
 
-  // Draw cost table with smaller columns
+  // Draw cost table
   doc.setFillColor(...rgbColors.navy);
   doc.rect(15, yPosition - 3, pageWidth - 30, 6, "F");
   doc.setFont("helvetica", "bold");
@@ -356,16 +295,16 @@ export async function generatePDFReport(params: {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(...rgbColors.green);
-  doc.text("Generation & Revenue", 15, yPosition);
+  doc.text("Generation and Revenue", 15, yPosition);
   yPosition += 7;
 
   const genData = [
-    ["System Size", `${inputs.mw.toFixed(2)} MW`],
-    ["Generation/MW", `${inputs.generationPerMW.toFixed(0)} MWh/year`],
-    ["Total Generation (Y1)", `${(inputs.mw * inputs.generationPerMW).toFixed(0)} MWh`],
-    ["Panel Degradation", `${(inputs.degradationRate * 100).toFixed(2)}%/year`],
-    ["PPA Price", `£${inputs.powerPrice.toFixed(2)}/MWh`],
-    ["Export Price", `£${inputs.exportPrice.toFixed(2)}/MWh`],
+    ["System Size", inputs.mw.toFixed(2) + " MW"],
+    ["Generation per MW", inputs.generationPerMW.toFixed(0) + " MWh/year"],
+    ["Total Generation Y1", (inputs.mw * inputs.generationPerMW).toFixed(0) + " MWh"],
+    ["Panel Degradation", (inputs.degradationRate * 100).toFixed(2) + "%/year"],
+    ["PPA Price", "GBP " + inputs.powerPrice.toFixed(2) + "/MWh"],
+    ["Export Price", "GBP " + inputs.exportPrice.toFixed(2) + "/MWh"],
   ];
 
   doc.setFillColor(...rgbColors.navy);
@@ -405,7 +344,7 @@ export async function generatePDFReport(params: {
   doc.setTextColor(...rgbColors.white);
 
   doc.text("Year", 18, yPosition);
-  doc.text("Gen (MWh)", 35, yPosition);
+  doc.text("Gen MWh", 35, yPosition);
   doc.text("Revenue", 60, yPosition);
   doc.text("Opex", 85, yPosition);
   doc.text("Cash Flow", 105, yPosition);
@@ -444,36 +383,36 @@ export async function generatePDFReport(params: {
   doc.addPage();
   yPosition = 15;
 
-  addBrandedHeader("Assumptions & Sources", "Project Parameters");
+  addBrandedHeader("Assumptions and Sources", "Project Parameters");
 
-  // Format cost inflation correctly
-  const costInflationDisplay = (inputs.costInflationRate * 100).toFixed(2);
+  // Cost inflation is already a percentage value (e.g., 2.5 means 2.5%)
+  const costInflationDisplay = inputs.costInflationRate.toFixed(2) + "%";
 
   addCard("Key Assumptions", [
-    `EPC Cost: £${formatNumberWithCommas(inputs.capexPerMW)}/MW`,
-    `Private Wire Cost: £${formatNumberWithCommas(inputs.privateWireCost)}`,
-    `OPEX: £${formatNumberWithCommas(inputs.opexPerMW)}/MW/year`,
-    `PPA Price: £${inputs.powerPrice.toFixed(2)}/MWh`,
-    `Cost Inflation: ${costInflationDisplay}%`,
+    "EPC Cost: GBP " + formatNumberWithCommas(inputs.capexPerMW) + "/MW",
+    "Private Wire Cost: GBP " + formatNumberWithCommas(inputs.privateWireCost),
+    "OPEX: GBP " + formatNumberWithCommas(inputs.opexPerMW) + "/MW/year",
+    "PPA Price: GBP " + inputs.powerPrice.toFixed(2) + "/MWh",
+    "Cost Inflation: " + costInflationDisplay,
   ]);
 
   checkPageBreak(30);
 
   addCard("Grid Connection Parameters", [
-    `Cable Voltage: ${inputs.cableVoltageKV || "N/A"} kV`,
-    `Cable Distance: ${inputs.distanceKm || "N/A"} km`,
-    `Generation/MW: ${inputs.generationPerMW.toFixed(0)} MWh/year`,
-    `OPEX Escalation: ${(inputs.opexEscalation * 100).toFixed(2)}%/year`,
-    `Panel Degradation: ${(inputs.degradationRate * 100).toFixed(2)}%/year`,
+    "Cable Voltage: " + (inputs.cableVoltageKV || "N/A") + " kV",
+    "Cable Distance: " + (inputs.distanceKm || "N/A") + " km",
+    "Generation per MW: " + inputs.generationPerMW.toFixed(0) + " MWh/year",
+    "OPEX Escalation: " + (inputs.opexEscalation * 100).toFixed(2) + "%/year",
+    "Panel Degradation: " + (inputs.degradationRate * 100).toFixed(2) + "%/year",
   ]);
 
   checkPageBreak(30);
 
   addCard("Data Sources", [
-    "• SSEN Charging Statements (2024-25)",
-    "• ENA Wayleave Rates",
-    "• UK Meteorological Data (PVGIS)",
-    "• Industry Standard Assumptions",
+    "SSEN Charging Statements 2024-25",
+    "ENA Wayleave Rates",
+    "UK Meteorological Data PVGIS",
+    "Industry Standard Assumptions",
   ]);
 
   // Footer on all pages
@@ -484,7 +423,7 @@ export async function generatePDFReport(params: {
   for (let i = 1; i <= doc.getNumberOfPages(); i++) {
     doc.setPage(i);
     doc.text(
-      `Page ${i} of ${doc.getNumberOfPages()} | Generated: ${new Date().toLocaleDateString()} | Savills Earth`,
+      "Page " + i + " of " + doc.getNumberOfPages() + " | Generated: " + new Date().toLocaleDateString() + " | Savills Earth",
       pageWidth / 2,
       pageHeight - 10,
       { align: "center" }
