@@ -233,7 +233,7 @@ export default function Dashboard() {
     try {
       const toastId = toast.loading('Generating PDF...');
       // Generate PDF and trigger download
-      const doc = generatePDFReport({ 
+      const doc = await generatePDFReport({ 
         inputs, 
         results, 
         projectName: modelName || 'Solar Project', 

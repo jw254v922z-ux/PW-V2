@@ -2,173 +2,242 @@ import jsPDF from "jspdf";
 import { SolarInputs, SolarResults } from "./calculator";
 import { formatCurrency, formatNumberWithCommas } from "./formatters";
 
-// Function to draw a pie chart in the PDF
-function drawPieChart(
-  doc: jsPDF,
-  x: number,
-  y: number,
-  radius: number,
-  data: Array<{ label: string; value: number; color: [number, number, number] }>
-) {
-  const total = data.reduce((sum, item) => sum + item.value, 0);
-  let currentAngle = -Math.PI / 2; // Start from top
-
-  data.forEach((item) => {
-    const sliceAngle = (item.value / total) * 2 * Math.PI;
-
-    // Draw slice
-    doc.setFillColor(...item.color);
-    doc.setDrawColor(...item.color);
-
-    // Draw pie slice
-    const startX = x + radius * Math.cos(currentAngle);
-    const startY = y + radius * Math.sin(currentAngle);
-
-    doc.beginPath();
-    doc.moveTo(x, y);
-    doc.lineTo(startX, startY);
-
-    // Draw arc
-    const steps = Math.max(1, Math.ceil(Math.abs(sliceAngle) * 20));
-    for (let i = 1; i <= steps; i++) {
-      const angle = currentAngle + (sliceAngle * i) / steps;
-      const px = x + radius * Math.cos(angle);
-      const py = y + radius * Math.sin(angle);
-      doc.lineTo(px, py);
+// Function to draw a pie chart on canvas and return as image
+async function generatePieChartImage(
+  data: Array<{ label: string; value: number; color: string }>,
+  width: number = 300,
+  height: number = 300
+): Promise<string> {
+  return new Promise((resolve) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      resolve("");
+      return;
     }
 
-    doc.lineTo(x, y);
-    doc.fill();
+    const total = data.reduce((sum, item) => sum + item.value, 0);
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = Math.min(width, height) / 2 - 20;
 
-    currentAngle += sliceAngle;
+    let currentAngle = -Math.PI / 2;
+
+    data.forEach((item) => {
+      const sliceAngle = (item.value / total) * 2 * Math.PI;
+
+      // Draw slice
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+      ctx.closePath();
+      ctx.fillStyle = item.color;
+      ctx.fill();
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Draw label
+      const labelAngle = currentAngle + sliceAngle / 2;
+      const labelX = centerX + Math.cos(labelAngle) * (radius * 0.65);
+      const labelY = centerY + Math.sin(labelAngle) * (radius * 0.65);
+
+      const percentage = ((item.value / total) * 100).toFixed(0);
+      ctx.fillStyle = "#fff";
+      ctx.font = "bold 12px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(`${percentage}%`, labelX, labelY);
+
+      currentAngle += sliceAngle;
+    });
+
+    resolve(canvas.toDataURL("image/png"));
   });
 }
 
-export function generatePDFReport(params: {
+export async function generatePDFReport(params: {
   inputs: SolarInputs;
   results: SolarResults;
   projectName: string;
   description?: string;
   mapScreenshot?: string;
-}): jsPDF {
-  const { inputs, results, projectName, description, mapScreenshot } = params;
+}): Promise<jsPDF> {
+  const { inputs, results, projectName, description } = params;
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   let yPosition = 20;
-  let currentPage = 1;
 
   // Savills Earth Brand Colors
   const colors = {
-    yellow: [255, 215, 0],      // #FFD700
-    green: [45, 134, 89],       // #2D8659
-    navy: [0, 31, 63],          // #001F3F
+    yellow: "#FFD700",
+    green: "#2D8659",
+    navy: "#001F3F",
+    lightGray: "#F0F0F0",
+    darkGray: "#505050",
+    white: "#FFFFFF",
+    offtaker: "#2D8659",
+    landowner: "#FFD700",
+    developer: "#001F3F",
+  };
+
+  const rgbColors = {
+    yellow: [255, 215, 0],
+    green: [45, 134, 89],
+    navy: [0, 31, 63],
     lightGray: [240, 240, 240],
     darkGray: [80, 80, 80],
     white: [255, 255, 255],
   };
 
-  // Stakeholder colors
-  const stakeholderColors = {
-    offtaker: colors.green,
-    landowner: colors.yellow,
-    developer: colors.navy,
-  };
-
-  // Helper functions
+  // Helper: Add branded header
   const addBrandedHeader = (title: string, subtitle?: string) => {
-    // Yellow bar
-    doc.setFillColor(...colors.yellow);
+    doc.setFillColor(...rgbColors.yellow);
     doc.rect(0, yPosition - 5, pageWidth, 15, "F");
 
-    // Title
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
-    doc.setTextColor(...colors.navy);
+    doc.setTextColor(...rgbColors.navy);
     doc.text(title, 20, yPosition + 5);
 
-    // Subtitle
     if (subtitle) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
-      doc.setTextColor(...colors.green);
+      doc.setTextColor(...rgbColors.green);
       doc.text(subtitle, 20, yPosition + 10);
     }
 
-    yPosition += 20;
+    yPosition += 22;
   };
 
-  const addSection = (title: string) => {
+  // Helper: Add card/box with background
+  const addCard = (
+    title: string,
+    content: string[],
+    bgColor: [number, number, number] = rgbColors.lightGray,
+    textColor: [number, number, number] = rgbColors.darkGray,
+    titleColor: [number, number, number] = rgbColors.navy
+  ) => {
+    const cardHeight = 8 + content.length * 6;
+    doc.setFillColor(...bgColor);
+    doc.rect(20, yPosition - 3, pageWidth - 40, cardHeight, "F");
+    doc.setDrawColor(...rgbColors.darkGray);
+    doc.setLineWidth(0.5);
+    doc.rect(20, yPosition - 3, pageWidth - 40, cardHeight);
+
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.setTextColor(...colors.green);
-    doc.text(title, 20, yPosition);
-    yPosition += 8;
+    doc.setFontSize(11);
+    doc.setTextColor(...titleColor);
+    doc.text(title, 25, yPosition + 2);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...textColor);
+
+    let contentY = yPosition + 7;
+    content.forEach((line) => {
+      doc.text(line, 25, contentY);
+      contentY += 5;
+    });
+
+    yPosition += cardHeight + 8;
   };
 
-  const addText = (text: string, fontSize: number = 10, color = colors.darkGray) => {
+  // Helper: Add table
+  const addTable = (
+    headers: string[],
+    rows: string[][],
+    colWidths: number[]
+  ) => {
+    const headerHeight = 8;
+    const rowHeight = 6;
+
+    // Header
+    doc.setFillColor(...rgbColors.navy);
+    doc.rect(20, yPosition - 3, pageWidth - 40, headerHeight, "F");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...rgbColors.white);
+
+    let xPos = 20;
+    headers.forEach((header, i) => {
+      doc.text(header, xPos + colWidths[i] / 2, yPosition + 2, { align: "center" });
+      xPos += colWidths[i];
+    });
+
+    yPosition += headerHeight + 2;
+
+    // Rows
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(fontSize);
-    doc.setTextColor(...color);
-    const lines = doc.splitTextToSize(text, pageWidth - 40);
-    doc.text(lines, 20, yPosition);
-    yPosition += lines.length * (fontSize / 2.5) + 2;
+    doc.setFontSize(8);
+    doc.setTextColor(...rgbColors.darkGray);
+
+    rows.forEach((row, rowIdx) => {
+      xPos = 20;
+      row.forEach((cell, colIdx) => {
+        doc.text(cell, xPos + colWidths[colIdx] / 2, yPosition + 2, { align: "center" });
+        xPos += colWidths[colIdx];
+      });
+
+      // Alternate row colors
+      if (rowIdx % 2 === 0) {
+        doc.setFillColor(...rgbColors.lightGray);
+        doc.rect(20, yPosition - 3, pageWidth - 40, rowHeight, "F");
+      }
+
+      yPosition += rowHeight + 1;
+    });
+
+    yPosition += 5;
   };
 
   const checkPageBreak = (requiredSpace: number = 30) => {
-    if (yPosition + requiredSpace > pageHeight - 10) {
+    if (yPosition + requiredSpace > pageHeight - 15) {
       doc.addPage();
       yPosition = 20;
-      currentPage++;
     }
   };
 
-  // PAGE 1: COVER PAGE
-  // Header with brand colors
-  doc.setFillColor(...colors.navy);
+  // ============ PAGE 1: COVER PAGE ============
+  doc.setFillColor(...rgbColors.navy);
   doc.rect(0, 0, pageWidth, 60, "F");
 
-  doc.setFillColor(...colors.yellow);
+  doc.setFillColor(...rgbColors.yellow);
   doc.rect(0, 50, pageWidth, 10, "F");
 
-  // Title
   doc.setFont("helvetica", "bold");
   doc.setFontSize(28);
-  doc.setTextColor(...colors.white);
+  doc.setTextColor(...rgbColors.white);
   doc.text("Private Wire Solar Calculator", 20, 30);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(14);
-  doc.setTextColor(...colors.white);
+  doc.setTextColor(...rgbColors.white);
   doc.text("Financial Analysis Report", 20, 40);
 
-  // Project name
   yPosition = 75;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
-  doc.setTextColor(...colors.navy);
+  doc.setTextColor(...rgbColors.navy);
   doc.text(projectName, 20, yPosition);
 
   yPosition += 15;
   if (description) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
-    doc.setTextColor(...colors.darkGray);
+    doc.setTextColor(...rgbColors.darkGray);
     const lines = doc.splitTextToSize(description, pageWidth - 40);
     doc.text(lines, 20, yPosition);
     yPosition += lines.length * 5 + 10;
   }
 
-  // Key metrics on cover
+  // Key metrics cards
   yPosition += 10;
-  doc.setFillColor(...colors.lightGray);
-  doc.rect(20, yPosition - 5, pageWidth - 40, 60, "F");
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(...colors.navy);
-
   const metrics = [
     { label: "System Size", value: `${inputs.mw.toFixed(2)} MW` },
     { label: "LCOE", value: `£${results.summary.lcoe.toFixed(2)}/MWh` },
@@ -177,267 +246,232 @@ export function generatePDFReport(params: {
     { label: "Total NPV", value: formatCurrency(results.summary.totalDiscountedCashFlow) },
   ];
 
-  let metricY = yPosition;
-  metrics.forEach((metric, idx) => {
-    if (idx % 2 === 0) {
-      doc.text(`${metric.label}:`, 25, metricY);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(...colors.green);
-      doc.text(metric.value, 85, metricY);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(...colors.navy);
-    } else {
-      doc.text(`${metric.label}:`, pageWidth / 2 + 5, metricY);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(...colors.green);
-      doc.text(metric.value, pageWidth / 2 + 65, metricY);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(...colors.navy);
-      metricY += 10;
-    }
-  });
+  // 2x3 grid of metrics
+  for (let i = 0; i < metrics.length; i += 2) {
+    const metric1 = metrics[i];
+    const metric2 = metrics[i + 1];
 
-  // PAGE 2: STAKEHOLDER VALUE WITH PIE CHART
+    // Left card
+    doc.setFillColor(...rgbColors.lightGray);
+    doc.rect(20, yPosition - 3, (pageWidth - 50) / 2, 18, "F");
+    doc.setDrawColor(...rgbColors.darkGray);
+    doc.setLineWidth(0.5);
+    doc.rect(20, yPosition - 3, (pageWidth - 50) / 2, 18);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...rgbColors.green);
+    doc.text(metric1.label, 25, yPosition + 2);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(...rgbColors.navy);
+    doc.text(metric1.value, 25, yPosition + 9);
+
+    // Right card
+    if (metric2) {
+      doc.setFillColor(...rgbColors.lightGray);
+      doc.rect(pageWidth / 2 + 5, yPosition - 3, (pageWidth - 50) / 2, 18, "F");
+      doc.setDrawColor(...rgbColors.darkGray);
+      doc.setLineWidth(0.5);
+      doc.rect(pageWidth / 2 + 5, yPosition - 3, (pageWidth - 50) / 2, 18);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(...rgbColors.green);
+      doc.text(metric2.label, pageWidth / 2 + 10, yPosition + 2);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(...rgbColors.navy);
+      doc.text(metric2.value, pageWidth / 2 + 10, yPosition + 9);
+    }
+
+    yPosition += 22;
+  }
+
+  // ============ PAGE 2: STAKEHOLDER VALUE ============
   doc.addPage();
   yPosition = 20;
-  currentPage++;
 
   addBrandedHeader("Stakeholder Value Distribution", "Financial Benefits Breakdown");
 
-  // Get stakeholder values
   const offtakerSavings = results.summary.offtakerSavings;
   const landownerIncome = results.summary.landownerIncome;
   const developerPremium = results.summary.developerPremium;
   const totalValue = offtakerSavings + landownerIncome + developerPremium;
 
-  // Create pie chart data
-  const pieData = [
-    { label: "Offtaker Savings", value: offtakerSavings, color: stakeholderColors.offtaker },
-    { label: "Landowner Income", value: landownerIncome, color: stakeholderColors.landowner },
-    { label: "Developer Premium", value: developerPremium, color: stakeholderColors.developer },
+  // Generate pie chart image
+  const pieChartData = [
+    { label: "Offtaker Savings", value: offtakerSavings, color: colors.offtaker },
+    { label: "Landowner Income", value: landownerIncome, color: colors.landowner },
+    { label: "Developer Premium", value: developerPremium, color: colors.developer },
   ];
 
-  // Draw pie chart
-  const chartX = pageWidth / 2;
-  const chartY = yPosition + 35;
-  const chartRadius = 30;
+  const pieChartImage = await generatePieChartImage(pieChartData);
 
-  // Simple pie chart using rectangles and circles for visualization
-  doc.setFillColor(...colors.lightGray);
-  doc.circle(chartX, chartY, chartRadius, "F");
+  // Add pie chart image
+  if (pieChartImage) {
+    doc.addImage(pieChartImage, "PNG", 30, yPosition, 60, 60);
+    yPosition += 65;
+  }
 
-  // Draw pie slices with simple approach
-  let currentAngle = -Math.PI / 2;
-  pieData.forEach((item) => {
-    const sliceAngle = (item.value / totalValue) * 2 * Math.PI;
-    const midAngle = currentAngle + sliceAngle / 2;
+  checkPageBreak(80);
 
-    // Draw colored rectangle as legend indicator
-    const legendX = 25;
-    const legendY = yPosition + 10 + pieData.indexOf(item) * 12;
+  // Stakeholder cards
+  const offtakerPct = totalValue > 0 ? ((offtakerSavings / totalValue) * 100).toFixed(1) : "0";
+  addCard(
+    "🔋 Offtaker",
+    [
+      `Total Savings: ${formatCurrency(offtakerSavings)}`,
+      `Share: ${offtakerPct}% of total value`,
+      `Yearly Savings: ${formatCurrency(offtakerSavings / inputs.projectLife)}/year`,
+    ],
+    rgbColors.lightGray,
+    rgbColors.darkGray,
+    rgbColors.green
+  );
 
-    doc.setFillColor(...item.color);
-    doc.rect(legendX, legendY - 3, 4, 4, "F");
+  checkPageBreak(30);
 
-    // Add legend text
-    const percentage = ((item.value / totalValue) * 100).toFixed(1);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(...colors.darkGray);
-    doc.text(`${item.label}: ${percentage}%`, legendX + 8, legendY);
+  const landownerPct = totalValue > 0 ? ((landownerIncome / totalValue) * 100).toFixed(1) : "0";
+  addCard(
+    "🌾 Landowner",
+    [
+      `Total Rental Income: ${formatCurrency(landownerIncome)}`,
+      `Share: ${landownerPct}% of total value`,
+      `Yearly Rental Income: ${formatCurrency(landownerIncome / inputs.projectLife)}/year`,
+    ],
+    rgbColors.lightGray,
+    rgbColors.darkGray,
+    rgbColors.yellow
+  );
 
-    currentAngle += sliceAngle;
-  });
+  checkPageBreak(30);
 
-  yPosition = chartY + chartRadius + 20;
+  const developerPct = totalValue > 0 ? ((developerPremium / totalValue) * 100).toFixed(1) : "0";
+  addCard(
+    "💼 Developer",
+    [
+      `Total Premium: ${formatCurrency(developerPremium)}`,
+      `Share: ${developerPct}% of total value`,
+      `Premium per MW: ${formatCurrency(developerPremium / inputs.mw)}/MW`,
+    ],
+    rgbColors.lightGray,
+    rgbColors.darkGray,
+    rgbColors.navy
+  );
 
-  checkPageBreak(60);
-
-  // Detailed stakeholder breakdown
-  addSection("Detailed Stakeholder Analysis");
-
-  // Offtaker section
-  doc.setFillColor(...stakeholderColors.offtaker);
-  doc.rect(20, yPosition - 3, 4, 4, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(...stakeholderColors.offtaker);
-  doc.text("Offtaker", 26, yPosition);
-  yPosition += 8;
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(...colors.darkGray);
-  const offtakerPercentage = totalValue > 0 ? ((offtakerSavings / totalValue) * 100).toFixed(1) : "0";
-  addText(`Total Savings: ${formatCurrency(offtakerSavings)} (${offtakerPercentage}%)`, 10);
-  addText(`Yearly Savings: ${formatCurrency(offtakerSavings / inputs.projectLife)}/year`, 10);
-
-  checkPageBreak(40);
-
-  // Landowner section
-  doc.setFillColor(...stakeholderColors.landowner);
-  doc.rect(20, yPosition - 3, 4, 4, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(...stakeholderColors.landowner);
-  doc.text("Landowner", 26, yPosition);
-  yPosition += 8;
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(...colors.darkGray);
-  const landownerPercentage = totalValue > 0 ? ((landownerIncome / totalValue) * 100).toFixed(1) : "0";
-  addText(`Total Rental Income: ${formatCurrency(landownerIncome)} (${landownerPercentage}%)`, 10);
-  addText(`Yearly Rental Income: ${formatCurrency(landownerIncome / inputs.projectLife)}/year`, 10);
-
-  checkPageBreak(40);
-
-  // Developer section
-  doc.setFillColor(...stakeholderColors.developer);
-  doc.rect(20, yPosition - 3, 4, 4, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(...stakeholderColors.developer);
-  doc.text("Developer", 26, yPosition);
-  yPosition += 8;
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(...colors.darkGray);
-  const developerPercentage = totalValue > 0 ? ((developerPremium / totalValue) * 100).toFixed(1) : "0";
-  addText(`Total Premium: ${formatCurrency(developerPremium)} (${developerPercentage}%)`, 10);
-  addText(`Premium per MW: ${formatCurrency(developerPremium / inputs.mw)}/MW`, 10);
-
-  // PAGE 3: FINANCIAL SUMMARY
+  // ============ PAGE 3: FINANCIAL METRICS ============
   doc.addPage();
   yPosition = 20;
-  currentPage++;
 
   addBrandedHeader("Financial Metrics", "Key Results & Analysis");
 
-  addSection("Key Financial Indicators");
-  addText(`Levelized Cost of Energy (LCOE): £${results.summary.lcoe.toFixed(2)}/MWh`, 11);
-  addText(`Internal Rate of Return (IRR): ${(results.summary.irr * 100).toFixed(2)}%`, 11);
-  addText(`Payback Period: ${results.summary.paybackPeriod.toFixed(1)} years`, 11);
-  addText(`Total NPV (Discounted): ${formatCurrency(results.summary.totalDiscountedCashFlow)}`, 11);
-  addText(`Project Life: ${inputs.projectLife} years`, 11);
-  addText(`Discount Rate: ${(inputs.discountRate * 100).toFixed(2)}%`, 11);
+  // Financial metrics cards
+  addCard("Key Indicators", [
+    `LCOE: £${results.summary.lcoe.toFixed(2)}/MWh`,
+    `IRR: ${(results.summary.irr * 100).toFixed(2)}%`,
+    `Payback Period: ${results.summary.paybackPeriod.toFixed(1)} years`,
+    `Project Life: ${inputs.projectLife} years`,
+    `Discount Rate: ${(inputs.discountRate * 100).toFixed(2)}%`,
+  ]);
 
   checkPageBreak(40);
 
-  // Cost breakdown
-  addSection("Cost Breakdown");
-  addText(`Total Capex: ${formatCurrency(results.summary.totalCapex)}`, 11);
-  addText(`  - EPC Cost: ${formatCurrency(inputs.mw * inputs.capexPerMW)}`, 10);
-  addText(`  - Private Wire Cost: ${formatCurrency(inputs.privateWireCost)}`, 10);
-  addText(`  - Grid Connection Cost: ${formatCurrency(inputs.gridConnectionCost)}`, 10);
-  addText(`Annual Opex (Year 1): ${formatCurrency(inputs.mw * inputs.opexPerMW)}`, 11);
-  addText(`Opex Escalation: ${(inputs.opexEscalation * 100).toFixed(2)}%/year`, 11);
+  // Cost breakdown table
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...rgbColors.green);
+  doc.text("Cost Breakdown", 20, yPosition);
+  yPosition += 8;
+
+  const costRows = [
+    ["EPC Cost", formatCurrency(inputs.mw * inputs.capexPerMW)],
+    ["Private Wire", formatCurrency(inputs.privateWireCost)],
+    ["Grid Connection", formatCurrency(inputs.gridConnectionCost)],
+    ["Total Capex", formatCurrency(results.summary.totalCapex)],
+    ["Annual Opex (Y1)", formatCurrency(inputs.mw * inputs.opexPerMW)],
+    ["Opex Escalation", `${(inputs.opexEscalation * 100).toFixed(2)}%/year`],
+  ];
+
+  addTable(["Cost Item", "Amount"], costRows, [pageWidth - 60, 40]);
 
   checkPageBreak(40);
 
   // Generation & Revenue
-  addSection("Generation & Revenue");
-  addText(`System Size: ${inputs.mw.toFixed(2)} MW`, 11);
-  addText(`Generation per MW: ${inputs.generationPerMW.toFixed(0)} MWh/year`, 11);
-  addText(`Total Year 1 Generation: ${(inputs.mw * inputs.generationPerMW).toFixed(0)} MWh`, 11);
-  addText(`Panel Degradation: ${(inputs.degradationRate * 100).toFixed(2)}%/year`, 11);
-  addText(`PPA Price: £${inputs.powerPrice.toFixed(2)}/MWh`, 11);
-  addText(`Export Price: £${inputs.exportPrice.toFixed(2)}/MWh`, 11);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...rgbColors.green);
+  doc.text("Generation & Revenue", 20, yPosition);
+  yPosition += 8;
 
-  // PAGE 4: CASH FLOW TABLE
+  const genRows = [
+    ["System Size", `${inputs.mw.toFixed(2)} MW`],
+    ["Generation/MW", `${inputs.generationPerMW.toFixed(0)} MWh/year`],
+    ["Total Generation (Y1)", `${(inputs.mw * inputs.generationPerMW).toFixed(0)} MWh`],
+    ["Panel Degradation", `${(inputs.degradationRate * 100).toFixed(2)}%/year`],
+    ["PPA Price", `£${inputs.powerPrice.toFixed(2)}/MWh`],
+    ["Export Price", `£${inputs.exportPrice.toFixed(2)}/MWh`],
+  ];
+
+  addTable(["Parameter", "Value"], genRows, [pageWidth - 60, 40]);
+
+  // ============ PAGE 4: CASH FLOW TABLE ============
   doc.addPage();
   yPosition = 20;
-  currentPage++;
 
   addBrandedHeader("Annual Cash Flow", "Year-by-Year Financial Projections");
 
-  // Table headers
-  const colWidths = [15, 25, 25, 25, 25, 25];
-  let xPos = 20;
-  const headerY = yPosition;
+  const colWidths = [12, 22, 22, 22, 22, 22];
+  const cashFlowRows = results.yearlyData.slice(0, 20).map((year, idx) => [
+    (idx + 1).toString(),
+    formatNumberWithCommas(year.generation.toFixed(0)),
+    formatCurrency(year.revenue),
+    formatCurrency(year.opex),
+    formatCurrency(year.cashFlow),
+    formatCurrency(year.cumulativeCashFlow),
+  ]);
 
-  doc.setFillColor(...colors.navy);
-  doc.rect(20, headerY - 5, pageWidth - 40, 8, "F");
+  addTable(
+    ["Year", "Gen (MWh)", "Revenue", "Opex", "Cash Flow", "Cumulative"],
+    cashFlowRows,
+    colWidths
+  );
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(...colors.white);
-
-  const headers = ["Year", "Generation (MWh)", "Revenue (£)", "Opex (£)", "Cash Flow (£)"];
-  headers.forEach((header, i) => {
-    doc.text(header, xPos + colWidths[i] / 2, headerY + 2, { align: "center" });
-    xPos += colWidths[i];
-  });
-
-  yPosition = headerY + 10;
-
-  // Table rows
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(...colors.darkGray);
-
-  for (let year = 0; year < Math.min(results.yearlyData.length, 20); year++) {
-    checkPageBreak(8);
-
-    const yearData = results.yearlyData[year];
-    xPos = 20;
-
-    const rowData = [
-      (year + 1).toString(),
-      formatNumberWithCommas(yearData.generation.toFixed(0)),
-      formatCurrency(yearData.revenue),
-      formatCurrency(yearData.opex),
-      formatCurrency(yearData.cashFlow),
-    ];
-
-    rowData.forEach((data, i) => {
-      doc.text(data, xPos + colWidths[i] / 2, yPosition + 3, { align: "center" });
-      xPos += colWidths[i];
-    });
-
-    // Alternate row background
-    if (year % 2 === 0) {
-      doc.setFillColor(...colors.lightGray);
-      doc.rect(20, yPosition - 2, pageWidth - 40, 6, "F");
-    }
-
-    yPosition += 7;
-  }
-
-  // PAGE 5: ASSUMPTIONS & SOURCES
+  // ============ PAGE 5: ASSUMPTIONS ============
   doc.addPage();
   yPosition = 20;
-  currentPage++;
+
   addBrandedHeader("Assumptions & Sources", "Project Parameters");
 
-  addSection("Key Assumptions");
-  addText(`EPC Cost: £${formatNumberWithCommas(inputs.capexPerMW)}/MW`, 10);
-  addText(`Private Wire Cost: £${formatNumberWithCommas(inputs.privateWireCost)}`, 10);
-  addText(`OPEX: £${formatNumberWithCommas(inputs.opexPerMW)}/MW/year`, 10);
-  addText(`PPA Price: £${inputs.powerPrice.toFixed(2)}/MWh`, 10);
-  addText(`Export Price: £${inputs.exportPrice.toFixed(2)}/MWh`, 10);
-  addText(`Offsetable Energy Cost: £${inputs.offsetableEnergyCost.toFixed(2)}/MWh`, 10);
-  addText(`Cost Inflation (CPI): ${(inputs.costInflationRate * 100).toFixed(2)}%`, 10);
-  addText(`Panel Degradation: ${(inputs.degradationRate * 100).toFixed(2)}%/year`, 10);
+  addCard("Key Assumptions", [
+    `EPC Cost: £${formatNumberWithCommas(inputs.capexPerMW)}/MW`,
+    `Private Wire Cost: £${formatNumberWithCommas(inputs.privateWireCost)}`,
+    `OPEX: £${formatNumberWithCommas(inputs.opexPerMW)}/MW/year`,
+    `PPA Price: £${inputs.powerPrice.toFixed(2)}/MWh`,
+    `Offsetable Energy Cost: £${inputs.offsetableEnergyCost.toFixed(2)}/MWh`,
+    `Cost Inflation: ${(inputs.costInflationRate * 100).toFixed(2)}%`,
+  ]);
 
   checkPageBreak(30);
 
-  addSection("Grid Connection Parameters");
-  addText(`Cable Voltage: ${inputs.cableVoltageKV || "N/A"} kV`, 10);
-  addText(`Cable Distance: ${inputs.distanceKm || "N/A"} km`, 10);
-  addText(`Project Life: ${inputs.projectLife} years`, 10);
-  addText(`Discount Rate: ${(inputs.discountRate * 100).toFixed(2)}%`, 10);
-  addText(`Generation per MW: ${inputs.generationPerMW.toFixed(0)} MWh/year`, 10);
-  addText(`OPEX Escalation: ${(inputs.opexEscalation * 100).toFixed(2)}%/year`, 10);
+  addCard("Grid Connection Parameters", [
+    `Cable Voltage: ${inputs.cableVoltageKV || "N/A"} kV`,
+    `Cable Distance: ${inputs.distanceKm || "N/A"} km`,
+    `Generation/MW: ${inputs.generationPerMW.toFixed(0)} MWh/year`,
+    `OPEX Escalation: ${(inputs.opexEscalation * 100).toFixed(2)}%/year`,
+    `Panel Degradation: ${(inputs.degradationRate * 100).toFixed(2)}%/year`,
+  ]);
 
   checkPageBreak(30);
 
-  addSection("Data Sources");
-  addText("• SSEN Charging Statements (2024-25)", 10);
-  addText("• ENA Wayleave Rates", 10);
-  addText("• UK Meteorological Data (PVGIS)", 10);
-  addText("• Industry Standard Assumptions", 10);
+  addCard("Data Sources", [
+    "• SSEN Charging Statements (2024-25)",
+    "• ENA Wayleave Rates",
+    "• UK Meteorological Data (PVGIS)",
+    "• Industry Standard Assumptions",
+  ]);
 
   // Footer on all pages
   doc.setFont("helvetica", "normal");
