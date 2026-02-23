@@ -422,8 +422,8 @@ export default function Dashboard() {
           </div>
 
           {/* Offtaker Banner */}
-          <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: '#F0F8F4', borderLeft: '4px solid #2D8659' }}>
-            <h3 className="text-sm font-semibold mb-3" style={{ color: '#2D8659' }}>Offtaker</h3>
+          <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: '#2D8659' }}>
+            <h3 className="text-sm font-semibold mb-3" style={{ color: '#FFFFFF' }}>Offtaker</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
               <MetricCard 
                 title="Yearly Savings" 
@@ -441,8 +441,8 @@ export default function Dashboard() {
           </div>
 
           {/* Landowner Banner */}
-          <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: '#FFFBF0', borderLeft: '4px solid #FFD700' }}>
-            <h3 className="text-sm font-semibold mb-3" style={{ color: '#FFD700' }}>Landowner</h3>
+          <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: '#FFD700' }}>
+            <h3 className="text-sm font-semibold mb-3" style={{ color: '#000000' }}>Landowner</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
             <MetricCard 
               title="Yearly Rental Income" 
@@ -466,8 +466,8 @@ export default function Dashboard() {
           </div>
 
           {/* Developer Banner */}
-          <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: '#F0F4F8', borderLeft: '4px solid #001F3F' }}>
-            <h3 className="text-sm font-semibold mb-3" style={{ color: '#001F3F' }}>Developer</h3>
+          <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: '#001F3F' }}>
+            <h3 className="text-sm font-semibold mb-3" style={{ color: '#FFFFFF' }}>Developer</h3>
             <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-4">
             <MetricCard 
               title="Developer Premium" 
