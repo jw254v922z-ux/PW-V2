@@ -424,13 +424,13 @@ export default function Dashboard() {
                 title="Total NPV" 
                 value={formatCurrency(results.summary.totalDiscountedCashFlow)} 
                 icon={Factory}
-                className="bg-white/5 border-l-gray-400 text-white border-white/10 backdrop-blur-sm border-4"
+                className="bg-white/5 border-l-gray-400 text-white border-white/10 backdrop-blur-sm"
               />
               <MetricCard 
                 title="IRR" 
                 value={(results.summary.irr * 100).toFixed(2) + "%"} 
                 icon={Zap}
-                className="bg-white/5 border-l-gray-400 text-white border-white/10 backdrop-blur-sm border-4"
+                className="bg-white/5 border-l-gray-400 text-white border-white/10 backdrop-blur-sm"
               />
             </div>
           </div>
@@ -443,13 +443,13 @@ export default function Dashboard() {
                 title="Yearly Savings" 
                 value={formatCurrency(results.summary.yearlySavings) + "/year"} 
                 icon={Zap}
-                className="bg-white/5 border-l-green-400 text-white border-white/10 backdrop-blur-sm border-4"
+                className="bg-white/5 border-l-green-400 text-white border-white/10 backdrop-blur-sm"
               />
               <MetricCard 
                 title="Total Savings" 
                 value={formatCurrency(results.summary.totalSavings)} 
                 icon={Zap}
-                className="bg-white/5 border-l-emerald-400 text-white border-white/10 backdrop-blur-sm border-4"
+                className="bg-white/5 border-l-emerald-400 text-white border-white/10 backdrop-blur-sm"
               />
             </div>
           </div>
@@ -462,19 +462,19 @@ export default function Dashboard() {
               title="Yearly Rental Income" 
               value={formatCurrency(results.summary.yearlyRentalIncome) + "/year"} 
               icon={Leaf}
-              className="bg-white/5 border-l-green-500 text-white border-white/10 backdrop-blur-sm border-4"
+              className="bg-white/5 border-l-green-500 text-white border-white/10 backdrop-blur-sm"
             />
             <MetricCard 
               title="Total Rental Income" 
               value={formatCurrency(results.summary.totalLandOptionIncome)} 
               icon={TrendingUp}
-              className="bg-white/5 border-l-emerald-400 text-white border-white/10 backdrop-blur-sm border-4"
+              className="bg-white/5 border-l-emerald-400 text-white border-white/10 backdrop-blur-sm"
             />
             <MetricCard 
               title="Land Rental Yield" 
               value={results.summary.landOptionYield.toFixed(2) + "%"} 
               icon={TrendingUp}
-              className="bg-white/5 border-l-blue-400 text-white border-white/10 backdrop-blur-sm border-4"
+              className="bg-white/5 border-l-blue-400 text-white border-white/10 backdrop-blur-sm"
             />
             </div>
           </div>
@@ -487,7 +487,7 @@ export default function Dashboard() {
               title="Developer Premium" 
               value={formatCurrency(results.summary.totalDeveloperPremium)} 
               icon={Coins}
-              className="bg-white/5 border-l-purple-400 text-white border-white/10 backdrop-blur-sm border-4"
+              className="bg-white/5 border-l-purple-400 text-white border-white/10 backdrop-blur-sm"
             />
             </div>
           </div>
