@@ -416,8 +416,27 @@ export default function Dashboard() {
             />
           </div>
 
+          {/* Operator Card */}
+          <div className="mt-4 p-6 rounded-lg bg-white border border-gray-200 border-l-2 shadow-sm" style={{ borderLeftColor: '#808080' }}>
+            <h3 className="text-sm font-semibold mb-4" style={{ color: '#808080' }}>Operator</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+              <MetricCard 
+                title="Total NPV" 
+                value={formatCurrency(results.summary.totalDiscountedCashFlow)} 
+                icon={Factory}
+                className="bg-white/5 border-l-gray-400 text-white border-white/10 backdrop-blur-sm"
+              />
+              <MetricCard 
+                title="IRR" 
+                value={(results.summary.irr * 100).toFixed(2) + "%"} 
+                icon={Zap}
+                className="bg-white/5 border-l-gray-400 text-white border-white/10 backdrop-blur-sm"
+              />
+            </div>
+          </div>
+
           {/* Offtaker Card */}
-          <div className="mt-4 p-6 rounded-lg bg-white border border-gray-200 border-l-4 shadow-sm" style={{ borderLeftColor: '#2D8659' }}>
+          <div className="mt-4 p-6 rounded-lg bg-white border border-gray-200 border-l-2 shadow-sm" style={{ borderLeftColor: '#2D8659' }}>
             <h3 className="text-sm font-semibold mb-4" style={{ color: '#2D8659' }}>Offtaker</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
               <MetricCard 
@@ -436,7 +455,7 @@ export default function Dashboard() {
           </div>
 
           {/* Landowner Card */}
-          <div className="mt-4 p-6 rounded-lg bg-white border border-gray-200 border-l-4 shadow-sm" style={{ borderLeftColor: '#FFD700' }}>
+          <div className="mt-4 p-6 rounded-lg bg-white border border-gray-200 border-l-2 shadow-sm" style={{ borderLeftColor: '#FFD700' }}>
             <h3 className="text-sm font-semibold mb-4" style={{ color: '#FFD700' }}>Landowner</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
             <MetricCard 
@@ -461,7 +480,7 @@ export default function Dashboard() {
           </div>
 
           {/* Developer Card */}
-          <div className="mt-4 p-6 rounded-lg bg-white border border-gray-200 border-l-4 shadow-sm" style={{ borderLeftColor: '#001F3F' }}>
+          <div className="mt-4 p-6 rounded-lg bg-white border border-gray-200 border-l-2 shadow-sm" style={{ borderLeftColor: '#001F3F' }}>
             <h3 className="text-sm font-semibold mb-4" style={{ color: '#001F3F' }}>Developer</h3>
             <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-4">
             <MetricCard 
