@@ -14,7 +14,7 @@ interface MetricCardProps {
 
 export function MetricCard({ title, value, subValue, icon: Icon, className, trend, trendValue }: MetricCardProps) {
   return (
-    <Card className={cn("overflow-hidden border border-gray-200 border-l-2 border-l-primary shadow-sm hover:shadow-md transition-shadow", className)}>
+    <Card className={cn("overflow-hidden border border-gray-200 border-l-8 border-l-primary shadow-sm hover:shadow-md transition-shadow", className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
