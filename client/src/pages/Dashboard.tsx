@@ -231,19 +231,20 @@ export default function Dashboard() {
 
   const handleExportPDF = async () => {
     try {
-      toast.loading('Generating PDF...');
-      const mapScreenshot = await captureMapScreenshotWithTimeout(3000);
+      const toastId = toast.loading('Generating PDF...');
+      // Generate PDF directly without map screenshot for now
       generatePDFReport({ 
         inputs, 
         results, 
         projectName: modelName || 'Solar Project', 
         description: modelDescription,
-        mapScreenshot
+        mapScreenshot: undefined
       });
+      toast.dismiss(toastId);
       toast.success('PDF exported successfully!');
     } catch (error) {
       console.error('PDF export failed:', error);
-      toast.error('Failed to export PDF');
+      toast.error('Failed to export PDF: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
