@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getSolarModelsByUserId, getSolarModelById, createSolarModel, updateSolarModel, deleteSolarModel, getGridConnectionCost, createGridConnectionCost, updateGridConnectionCost, deleteGridConnectionCost } from "./db";
 import { InsertSolarModel, InsertGridConnectionCost } from "../drizzle/schema";
 import { customAuthRouter } from "./auth/router";
+import { projectsRouter } from "./projects/router";
 
 const gridConnectionSchema = z.object({
   agriculturalTrenchingMin: z.number().nonnegative().optional(),
@@ -36,6 +37,7 @@ const gridConnectionSchema = z.object({
 
 export const appRouter = router({
   system: systemRouter,
+  projects: projectsRouter,
   auth: router({
     signup: customAuthRouter._def.procedures.signup,
     login: customAuthRouter._def.procedures.login,

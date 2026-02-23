@@ -12,6 +12,7 @@ import Signup from "./pages/Signup";
 import VerifyEmail from "./pages/VerifyEmail";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import ProjectsDashboard from "./pages/ProjectsDashboard";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -22,6 +23,7 @@ function Router() {
       <Route path={"/verify-email"} component={VerifyEmail} />
       <Route path={"/forgot-password"} component={ForgotPassword} />
       <Route path={"/reset-password"} component={ResetPassword} />
+      <Route path={"/projects"} component={ProjectsDashboard} />
       <Route path={"/"} component={Dashboard} />
       <Route path={"/map"} component={MapViewPage} />
       <Route path={"/404"} component={NotFound} />

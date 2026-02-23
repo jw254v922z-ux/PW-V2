@@ -290,25 +290,28 @@
 - [ ] Test all auth flows end-to-end
 
 ### Phase 4: Project Management Backend
-- [ ] Implement `projects.create(name, description, inputs, results)`
-- [ ] Implement `projects.list()` to get all user projects
-- [ ] Implement `projects.get(projectId)` to load full project
-- [ ] Implement `projects.update(projectId, name, description, inputs, results)`
-- [ ] Implement `projects.delete(projectId)` with cascade delete
-- [ ] Implement `projects.duplicate(projectId)` to clone project
+- [x] Implement `projects.create(name, description, inputs, results)`
+- [x] Implement `projects.list()` to get all user projects
+- [x] Implement `projects.get(projectId)` to load full project
+- [x] Implement `projects.update(projectId, name, description, inputs, results)`
+- [x] Implement `projects.delete(projectId)` with cascade delete
+- [x] Implement `projects.duplicate(projectId)` to clone project
 - [ ] Implement `drawings.upload(projectId, file, type)` with S3 upload
 - [ ] Implement `drawings.list(projectId)` to get project drawings
 - [ ] Implement `drawings.delete(drawingId)` to remove from S3
-- [ ] Add user authorization checks (users can only access own projects)
+- [x] Add user authorization checks (users can only access own projects)
 
 ### Phase 5: Project Management UI - Dashboard
+- [x] Create Projects Dashboard page (/projects route)
+- [x] Create project list with timestamps
+- [x] Create "Create New Project" form
+- [x] Create "Load Project" button
+- [x] Create "Delete Project" button with confirmation
+- [x] Create "Duplicate Project" dialog
+- [x] Show success/error toasts for operations
 - [ ] Update Dashboard to show "Save Project" button
-- [ ] Create Save Project modal (name, description inputs)
-- [ ] Create Load Project modal (project list with search/filter)
 - [ ] Implement save functionality (call projects.create)
 - [ ] Implement load functionality (call projects.get and populate calculator)
-- [ ] Show success/error toasts for save/load operations
-- [ ] Add "Unsaved changes" indicator when calculator modified
 
 ### Phase 6: User Dashboard Page
 - [ ] Create `/dashboard` page component
