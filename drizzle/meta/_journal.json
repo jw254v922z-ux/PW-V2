@@ -36,6 +36,13 @@
       "when": 1769589702248,
       "tag": "0004_cute_jocasta",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1771830533410,
+      "tag": "0005_daily_chamber",
+      "breakpoints": true
     }
   ]
 }

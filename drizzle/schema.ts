@@ -6,16 +6,17 @@ import { integer, pgEnum, pgTable, text, timestamp, varchar, AnyPgColumn } from 
  * Columns use camelCase to match both database fields and generated types.
  */
 export const users = pgTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
+  /** Manus OAuth identifier (openId) - optional, for backward compatibility */
+  openId: varchar("openId", { length: 64 }).unique(),
+  /** Custom auth email - required for non-OAuth users */
+  email: varchar("email", { length: 320 }).unique(),
+  /** Hashed password for custom auth - optional if using OAuth */
+  passwordHash: varchar("passwordHash", { length: 255 }),
+  /** Email verification status */
+  emailVerified: integer("emailVerified").default(0).notNull(),
   name: text("name"),
-  email: varchar("email", { length: 320 }),
-  loginMethod: varchar("loginMethod", { length: 64 }),
+  loginMethod: varchar("loginMethod", { length: 64 }).default("custom"),
   role: text("role").notNull().default("user"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
@@ -104,3 +105,76 @@ export const gridConnectionCosts = pgTable("grid_connection_costs", {
 
 export type GridConnectionCost = typeof gridConnectionCosts.$inferSelect;
 export type InsertGridConnectionCost = typeof gridConnectionCosts.$inferInsert;
+
+/**
+ * Email verification tokens for custom auth
+ */
+export const emailVerificationTokens = pgTable("email_verification_tokens", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: integer("userId").notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect;
+export type InsertEmailVerificationToken = typeof emailVerificationTokens.$inferInsert;
+
+/**
+ * Password reset tokens for custom auth
+ */
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: integer("userId").notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
+
+/**
+ * Domain whitelist for signup restrictions
+ */
+export const domainWhitelist = pgTable("domain_whitelist", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  domain: varchar("domain", { length: 255 }).notNull().unique(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type DomainWhitelist = typeof domainWhitelist.$inferSelect;
+export type InsertDomainWhitelist = typeof domainWhitelist.$inferInsert;
+
+/**
+ * Projects with full calculator inputs and results
+ */
+export const projects = pgTable("projects", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: integer("userId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  /** Full calculator inputs as JSON */
+  inputs: text("inputs").notNull(),
+  /** Full calculator results as JSON */
+  results: text("results").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type Project = typeof projects.$inferSelect;
+export type InsertProject = typeof projects.$inferInsert;
+
+/**
+ * Project drawings (maps, sketches)
+ */
+export const projectDrawings = pgTable("project_drawings", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  projectId: integer("projectId").notNull(),
+  type: varchar("type", { length: 50 }).notNull(), // 'map', 'sketch', etc.
+  url: varchar("url", { length: 1024 }).notNull(), // S3 URL
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ProjectDrawing = typeof projectDrawings.$inferSelect;
+export type InsertProjectDrawing = typeof projectDrawings.$inferInsert;

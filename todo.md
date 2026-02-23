@@ -249,3 +249,111 @@
 - [x] Create .replit configuration file with npm dev command
 - [ ] Test deployment on Replit
 - [ ] Save checkpoint and push to GitHub
+
+
+## Phase 25: Custom Authentication & Project Management System
+
+### Phase 1: Database Schema & Auth Backend
+- [x] Add `users` table (id, email, passwordHash, emailVerified, createdAt, updatedAt)
+- [x] Add `email_verification_tokens` table (id, userId, token, expiresAt)
+- [x] Add `password_reset_tokens` table (id, userId, token, expiresAt)
+- [x] Add `domain_whitelist` table (id, domain, createdAt)
+- [x] Add `projects` table (id, userId, name, description, inputs JSON, results JSON, createdAt, updatedAt)
+- [x] Add `project_drawings` table (id, projectId, type, url, createdAt)
+- [x] Create database migrations with `pnpm db:push`
+
+### Phase 2: Authentication Backend (tRPC Procedures)
+- [ ] Implement `auth.signup(email, password)` with email validation
+- [ ] Implement `auth.login(email, password)` with password verification
+- [ ] Implement `auth.logout()` to clear session
+- [ ] Implement `auth.me()` to get current user
+- [ ] Implement `auth.requestPasswordReset(email)` with token generation
+- [ ] Implement `auth.resetPassword(token, newPassword)` with token validation
+- [ ] Implement `auth.verifyEmail(token)` for email confirmation
+- [ ] Implement `auth.sendVerificationEmail(email)` helper
+- [ ] Add bcrypt password hashing with salt
+- [ ] Add JWT token generation and validation
+- [ ] Add rate limiting for login attempts (prevent brute force)
+- [ ] Add domain whitelist validation in signup
+
+### Phase 3: Authentication UI
+- [ ] Create Login page component with email/password form
+- [ ] Create Signup page component with email/password/confirm password
+- [ ] Create Password Reset Request page (enter email)
+- [ ] Create Password Reset page (enter new password with token)
+- [ ] Create Email Verification page (confirm email link)
+- [ ] Add auth guard to redirect unauthenticated users to login
+- [ ] Add success/error toast notifications for auth flows
+- [ ] Test all auth flows end-to-end
+
+### Phase 4: Project Management Backend
+- [ ] Implement `projects.create(name, description, inputs, results)`
+- [ ] Implement `projects.list()` to get all user projects
+- [ ] Implement `projects.get(projectId)` to load full project
+- [ ] Implement `projects.update(projectId, name, description, inputs, results)`
+- [ ] Implement `projects.delete(projectId)` with cascade delete
+- [ ] Implement `projects.duplicate(projectId)` to clone project
+- [ ] Implement `drawings.upload(projectId, file, type)` with S3 upload
+- [ ] Implement `drawings.list(projectId)` to get project drawings
+- [ ] Implement `drawings.delete(drawingId)` to remove from S3
+- [ ] Add user authorization checks (users can only access own projects)
+
+### Phase 5: Project Management UI - Dashboard
+- [ ] Update Dashboard to show "Save Project" button
+- [ ] Create Save Project modal (name, description inputs)
+- [ ] Create Load Project modal (project list with search/filter)
+- [ ] Implement save functionality (call projects.create)
+- [ ] Implement load functionality (call projects.get and populate calculator)
+- [ ] Show success/error toasts for save/load operations
+- [ ] Add "Unsaved changes" indicator when calculator modified
+
+### Phase 6: User Dashboard Page
+- [ ] Create `/dashboard` page component
+- [ ] Create project list table (Name, Description, Created, Modified, Actions)
+- [ ] Implement search/filter by project name
+- [ ] Implement sort by date and name
+- [ ] Add pagination (20 projects per page)
+- [ ] Implement project actions: View, Edit, Duplicate, Delete, Export
+- [ ] Create project details modal (preview, metrics, drawings)
+- [ ] Add bulk delete functionality
+- [ ] Test dashboard loads and displays projects correctly
+
+### Phase 7: User Settings Page
+- [ ] Create `/settings` page component
+- [ ] Add Change Email section with verification
+- [ ] Add Change Password section with old password verification
+- [ ] Add Delete Account section with confirmation
+- [ ] Implement email change with re-verification flow
+- [ ] Implement password change with validation
+- [ ] Implement account deletion with all data cleanup
+- [ ] Add success/error notifications for all operations
+
+### Phase 8: Admin Page - Domain Whitelist
+- [ ] Create `/admin` page component (admin-only access)
+- [ ] Add domain whitelist management UI
+- [ ] Implement add domain functionality
+- [ ] Implement remove domain functionality
+- [ ] Create domain list table with add/remove buttons
+- [ ] Add validation for domain format (@example.com)
+- [ ] Implement admin authorization check
+- [ ] Test admin page access control
+
+### Phase 9: Integration & Testing
+- [ ] Test signup with email verification flow
+- [ ] Test login with valid/invalid credentials
+- [ ] Test password reset flow
+- [ ] Test domain whitelist enforcement
+- [ ] Test project save/load/delete
+- [ ] Test project list and search
+- [ ] Test user settings (email, password, account deletion)
+- [ ] Test admin domain whitelist management
+- [ ] Test all error cases and edge cases
+- [ ] Verify email notifications send correctly
+
+### Phase 10: Deployment & Checkpoint
+- [ ] Remove Manus OAuth from app (replace with custom auth)
+- [ ] Update App.tsx to use custom auth instead of useAuth hook
+- [ ] Update navigation to show login/logout based on auth state
+- [ ] Test full application end-to-end
+- [ ] Save checkpoint with complete auth system
+- [ ] Document authentication flow for future reference
