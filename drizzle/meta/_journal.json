@@ -43,6 +43,20 @@
       "when": 1771830533410,
       "tag": "0005_daily_chamber",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1771850382810,
+      "tag": "0006_lovely_landau",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1771850431619,
+      "tag": "0007_naive_luminals",
+      "breakpoints": true
     }
   ]
 }
