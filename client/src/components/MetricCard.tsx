@@ -22,7 +22,7 @@ export function MetricCard({ title, value, subValue, icon: Icon, className, tren
         {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold tracking-tight">{value}</div>
+        <div className="text-2xl font-bold tracking-tight text-slate-900">{value}</div>
         {(subValue || trendValue) && (
           <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
             {trend && (
