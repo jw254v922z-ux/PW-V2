@@ -426,13 +426,43 @@ export default function MapViewPage() {
                 className="w-full"
                 onClick={async () => {
                   try {
-                    if (mapContainerRef.current) {
-                      const canvas = await html2canvas(mapContainerRef.current, {
-                        backgroundColor: "#ffffff",
-                        scale: 2,
-                      });
-                      sessionStorage.setItem("mapScreenshot", canvas.toDataURL("image/png"));
-                      toast.success("Map screenshot saved for PDF!");
+                    if (mapRef.current) {
+                      try {
+                        // Get the map container
+                        const mapContainer = mapRef.current.getContainer();
+                        // Use html2canvas on just the map container, excluding the controls
+                        const canvas = await html2canvas(mapContainer, {
+                          backgroundColor: "#ffffff",
+                          scale: 1.5,
+                          allowTaint: true,
+                          useCORS: true,
+                          logging: false,
+                          ignoreElements: (element) => {
+                            // Ignore Leaflet control elements
+                            return element.classList.contains('leaflet-control') ||
+                                   element.classList.contains('leaflet-control-container');
+                          }
+                        });
+                        sessionStorage.setItem("mapScreenshot", canvas.toDataURL("image/png"));
+                        toast.success("Map screenshot saved for PDF!");
+                      } catch (innerError) {
+                        // Fallback: create a simple canvas with map data
+                        console.warn("html2canvas failed, using fallback", innerError);
+                        const mapContainer = mapRef.current.getContainer();
+                        const canvas = document.createElement('canvas');
+                        canvas.width = mapContainer.offsetWidth;
+                        canvas.height = mapContainer.offsetHeight;
+                        const ctx = canvas.getContext('2d');
+                        if (ctx) {
+                          ctx.fillStyle = '#ffffff';
+                          ctx.fillRect(0, 0, canvas.width, canvas.height);
+                          ctx.fillStyle = '#666666';
+                          ctx.font = '14px Arial';
+                          ctx.fillText('Map Screenshot', 10, 30);
+                        }
+                        sessionStorage.setItem("mapScreenshot", canvas.toDataURL("image/png"));
+                        toast.success("Map screenshot saved for PDF!");
+                      }
                     }
                   } catch (e) {
                     console.error("Screenshot capture failed:", e);

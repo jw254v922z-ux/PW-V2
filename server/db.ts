@@ -32,8 +32,14 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 
   try {
-    const values: InsertUser = {
+    // For OAuth users, provide a default email if not available
+    const defaultEmail = user.email || `oauth-${user.openId}@internal.local`;
+    
+    const values: Partial<InsertUser> = {
       openId: user.openId,
+      email: defaultEmail,
+      name: user.name,
+      loginMethod: user.loginMethod || 'oauth',
     };
     const updateSet: Record<string, unknown> = {};
 
@@ -70,11 +76,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.lastSignedIn = new Date();
     }
 
-    // PostgreSQL: Use ON CONFLICT instead of ON DUPLICATE KEY
-    await db.insert(users).values(values).onConflictDoUpdate({
-      target: users.openId,
-      set: updateSet,
-    });
+    // MySQL: Use onDuplicateKeyUpdate instead of onConflictDoUpdate
+    await db.insert(users).values(values as InsertUser).onDuplicateKeyUpdate({ set: updateSet });
   } catch (error) {
     console.error("[Database] Failed to upsert user:", error);
     throw error;
