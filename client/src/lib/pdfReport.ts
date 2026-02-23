@@ -2,6 +2,48 @@ import jsPDF from "jspdf";
 import { SolarInputs, SolarResults } from "./calculator";
 import { formatCurrency, formatNumberWithCommas } from "./formatters";
 
+// Function to draw a pie chart in the PDF
+function drawPieChart(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  radius: number,
+  data: Array<{ label: string; value: number; color: [number, number, number] }>
+) {
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+  let currentAngle = -Math.PI / 2; // Start from top
+
+  data.forEach((item) => {
+    const sliceAngle = (item.value / total) * 2 * Math.PI;
+
+    // Draw slice
+    doc.setFillColor(...item.color);
+    doc.setDrawColor(...item.color);
+
+    // Draw pie slice
+    const startX = x + radius * Math.cos(currentAngle);
+    const startY = y + radius * Math.sin(currentAngle);
+
+    doc.beginPath();
+    doc.moveTo(x, y);
+    doc.lineTo(startX, startY);
+
+    // Draw arc
+    const steps = Math.max(1, Math.ceil(Math.abs(sliceAngle) * 20));
+    for (let i = 1; i <= steps; i++) {
+      const angle = currentAngle + (sliceAngle * i) / steps;
+      const px = x + radius * Math.cos(angle);
+      const py = y + radius * Math.sin(angle);
+      doc.lineTo(px, py);
+    }
+
+    doc.lineTo(x, y);
+    doc.fill();
+
+    currentAngle += sliceAngle;
+  });
+}
+
 export function generatePDFReport(params: {
   inputs: SolarInputs;
   results: SolarResults;
@@ -25,6 +67,13 @@ export function generatePDFReport(params: {
     lightGray: [240, 240, 240],
     darkGray: [80, 80, 80],
     white: [255, 255, 255],
+  };
+
+  // Stakeholder colors
+  const stakeholderColors = {
+    offtaker: colors.green,
+    landowner: colors.yellow,
+    developer: colors.navy,
   };
 
   // Helper functions
@@ -148,40 +197,125 @@ export function generatePDFReport(params: {
     }
   });
 
-  // PAGE 2: FINANCIAL SUMMARY
+  // PAGE 2: STAKEHOLDER VALUE WITH PIE CHART
   doc.addPage();
   yPosition = 20;
   currentPage++;
 
-  addBrandedHeader("Financial Summary", "Key Results & Stakeholder Value");
+  addBrandedHeader("Stakeholder Value Distribution", "Financial Benefits Breakdown");
 
-  // Stakeholder value section
-  addSection("Stakeholder Value Distribution");
-
+  // Get stakeholder values
   const offtakerSavings = results.summary.offtakerSavings;
   const landownerIncome = results.summary.landownerIncome;
   const developerPremium = results.summary.developerPremium;
   const totalValue = offtakerSavings + landownerIncome + developerPremium;
 
-  const metrics_list = [
-    { label: "Offtaker Savings", value: offtakerSavings, color: colors.green },
-    { label: "Landowner Income", value: landownerIncome, color: colors.yellow },
-    { label: "Developer Premium", value: developerPremium, color: colors.navy },
+  // Create pie chart data
+  const pieData = [
+    { label: "Offtaker Savings", value: offtakerSavings, color: stakeholderColors.offtaker },
+    { label: "Landowner Income", value: landownerIncome, color: stakeholderColors.landowner },
+    { label: "Developer Premium", value: developerPremium, color: stakeholderColors.developer },
   ];
 
-  metrics_list.forEach((metric) => {
-    const percentage = totalValue > 0 ? ((metric.value / totalValue) * 100).toFixed(1) : "0";
-    addText(
-      `${metric.label}: ${formatCurrency(metric.value)} (${percentage}%)`,
-      11,
-      metric.color
-    );
+  // Draw pie chart
+  const chartX = pageWidth / 2;
+  const chartY = yPosition + 35;
+  const chartRadius = 30;
+
+  // Simple pie chart using rectangles and circles for visualization
+  doc.setFillColor(...colors.lightGray);
+  doc.circle(chartX, chartY, chartRadius, "F");
+
+  // Draw pie slices with simple approach
+  let currentAngle = -Math.PI / 2;
+  pieData.forEach((item) => {
+    const sliceAngle = (item.value / totalValue) * 2 * Math.PI;
+    const midAngle = currentAngle + sliceAngle / 2;
+
+    // Draw colored rectangle as legend indicator
+    const legendX = 25;
+    const legendY = yPosition + 10 + pieData.indexOf(item) * 12;
+
+    doc.setFillColor(...item.color);
+    doc.rect(legendX, legendY - 3, 4, 4, "F");
+
+    // Add legend text
+    const percentage = ((item.value / totalValue) * 100).toFixed(1);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(...colors.darkGray);
+    doc.text(`${item.label}: ${percentage}%`, legendX + 8, legendY);
+
+    currentAngle += sliceAngle;
   });
+
+  yPosition = chartY + chartRadius + 20;
+
+  checkPageBreak(60);
+
+  // Detailed stakeholder breakdown
+  addSection("Detailed Stakeholder Analysis");
+
+  // Offtaker section
+  doc.setFillColor(...stakeholderColors.offtaker);
+  doc.rect(20, yPosition - 3, 4, 4, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...stakeholderColors.offtaker);
+  doc.text("Offtaker", 26, yPosition);
+  yPosition += 8;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(...colors.darkGray);
+  const offtakerPercentage = totalValue > 0 ? ((offtakerSavings / totalValue) * 100).toFixed(1) : "0";
+  addText(`Total Savings: ${formatCurrency(offtakerSavings)} (${offtakerPercentage}%)`, 10);
+  addText(`Yearly Savings: ${formatCurrency(offtakerSavings / inputs.projectLife)}/year`, 10);
 
   checkPageBreak(40);
 
-  // Financial metrics
-  addSection("Key Financial Metrics");
+  // Landowner section
+  doc.setFillColor(...stakeholderColors.landowner);
+  doc.rect(20, yPosition - 3, 4, 4, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...stakeholderColors.landowner);
+  doc.text("Landowner", 26, yPosition);
+  yPosition += 8;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(...colors.darkGray);
+  const landownerPercentage = totalValue > 0 ? ((landownerIncome / totalValue) * 100).toFixed(1) : "0";
+  addText(`Total Rental Income: ${formatCurrency(landownerIncome)} (${landownerPercentage}%)`, 10);
+  addText(`Yearly Rental Income: ${formatCurrency(landownerIncome / inputs.projectLife)}/year`, 10);
+
+  checkPageBreak(40);
+
+  // Developer section
+  doc.setFillColor(...stakeholderColors.developer);
+  doc.rect(20, yPosition - 3, 4, 4, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...stakeholderColors.developer);
+  doc.text("Developer", 26, yPosition);
+  yPosition += 8;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(...colors.darkGray);
+  const developerPercentage = totalValue > 0 ? ((developerPremium / totalValue) * 100).toFixed(1) : "0";
+  addText(`Total Premium: ${formatCurrency(developerPremium)} (${developerPercentage}%)`, 10);
+  addText(`Premium per MW: ${formatCurrency(developerPremium / inputs.mw)}/MW`, 10);
+
+  // PAGE 3: FINANCIAL SUMMARY
+  doc.addPage();
+  yPosition = 20;
+  currentPage++;
+
+  addBrandedHeader("Financial Metrics", "Key Results & Analysis");
+
+  addSection("Key Financial Indicators");
   addText(`Levelized Cost of Energy (LCOE): £${results.summary.lcoe.toFixed(2)}/MWh`, 11);
   addText(`Internal Rate of Return (IRR): ${(results.summary.irr * 100).toFixed(2)}%`, 11);
   addText(`Payback Period: ${results.summary.paybackPeriod.toFixed(1)} years`, 11);
@@ -200,7 +334,7 @@ export function generatePDFReport(params: {
   addText(`Annual Opex (Year 1): ${formatCurrency(inputs.mw * inputs.opexPerMW)}`, 11);
   addText(`Opex Escalation: ${(inputs.opexEscalation * 100).toFixed(2)}%/year`, 11);
 
-  checkPageBreak(50);
+  checkPageBreak(40);
 
   // Generation & Revenue
   addSection("Generation & Revenue");
@@ -210,10 +344,8 @@ export function generatePDFReport(params: {
   addText(`Panel Degradation: ${(inputs.degradationRate * 100).toFixed(2)}%/year`, 11);
   addText(`PPA Price: £${inputs.powerPrice.toFixed(2)}/MWh`, 11);
   addText(`Export Price: £${inputs.exportPrice.toFixed(2)}/MWh`, 11);
-  addText(`PPA Consumption: ${inputs.percentConsumptionPPA.toFixed(0)}%`, 11);
-  addText(`Export Consumption: ${inputs.percentConsumptionExport.toFixed(0)}%`, 11);
 
-  // PAGE 3: CASH FLOW TABLE
+  // PAGE 4: CASH FLOW TABLE
   doc.addPage();
   yPosition = 20;
   currentPage++;
@@ -273,7 +405,7 @@ export function generatePDFReport(params: {
     yPosition += 7;
   }
 
-  // PAGE 4: ASSUMPTIONS & SOURCES
+  // PAGE 5: ASSUMPTIONS & SOURCES
   doc.addPage();
   yPosition = 20;
   currentPage++;
