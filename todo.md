@@ -279,13 +279,14 @@
 - [ ] Add domain whitelist validation in signup
 
 ### Phase 3: Authentication UI
-- [ ] Create Login page component with email/password form
-- [ ] Create Signup page component with email/password/confirm password
-- [ ] Create Password Reset Request page (enter email)
-- [ ] Create Password Reset page (enter new password with token)
-- [ ] Create Email Verification page (confirm email link)
+- [x] Create Login page component with email/password form
+- [x] Create Signup page component with email/password/confirm password
+- [x] Create Password Reset Request page (enter email)
+- [x] Create Password Reset page (enter new password with token)
+- [x] Create Email Verification page (confirm email link)
+- [x] Add auth routes to App.tsx
+- [x] Add success/error toast notifications for auth flows
 - [ ] Add auth guard to redirect unauthenticated users to login
-- [ ] Add success/error toast notifications for auth flows
 - [ ] Test all auth flows end-to-end
 
 ### Phase 4: Project Management Backend
