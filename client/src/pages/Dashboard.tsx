@@ -333,7 +333,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-12">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-100 pb-12">
       {/* Disclaimer Banner - Top */}
       <div className="bg-amber-50 dark:bg-amber-950 border-b-2 border-amber-400 p-3">
         <div className="container">
@@ -350,10 +350,10 @@ export default function Dashboard() {
       </div>
 
       {/* Hero Header */}
-      <div className="relative bg-slate-900 text-white pb-24 pt-12 overflow-hidden">
+      <div className="relative bg-slate-100 text-slate-900 pb-24 pt-12 overflow-hidden">
         <div className="absolute inset-0 z-0 opacity-40">
            <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663312201571/FyKDbvLKydspiJJE.jpg" alt="Solar Farm" className="w-full h-full object-cover" />
-           <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 to-slate-900/95" />
+           <div className="absolute inset-0 bg-gradient-to-b from-slate-100/60 to-slate-100/80" />
         </div>
         
         <div className="container relative z-10">
@@ -362,25 +362,25 @@ export default function Dashboard() {
               <h1 className="text-3xl md:text-4xl font-bold tracking-tight font-display mb-2">
                 Private Wire Solar Calculator
               </h1>
-              <p className="text-slate-300 max-w-2xl text-lg">
+              <p className="text-slate-700 max-w-2xl text-lg">
                 Welcome, {user?.name || "User"}! Advanced financial modeling for solar assets with private wire integration.
               </p>
             </div>
             <div className="flex gap-2">
-              <Button asChild variant="outline" className="bg-white/10 text-white border-white/20 hover:bg-white/20">
+              <Button asChild variant="outline" className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20">
                 <a href="/map" className="flex items-center gap-2">
                   <MapPin className="w-4 h-4" />
                   Site Mapping
                 </a>
               </Button>
-              <Button onClick={exportCSV} variant="outline" className="bg-white/10 text-white border-white/20 hover:bg-white/20">
+              <Button onClick={exportCSV} variant="outline" className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20">
                 <Download className="mr-2 h-4 w-4" /> Export CSV
               </Button>
-              <Button onClick={handleExportPDF} variant="outline" className="bg-white/10 text-white border-white/20 hover:bg-white/20">
+              <Button onClick={handleExportPDF} variant="outline" className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20">
                 <Download className="mr-2 h-4 w-4" /> Export PDF
               </Button>
               {isAuthenticated && (
-                <Button onClick={() => logout()} variant="outline" className="bg-white/10 text-white border-white/20 hover:bg-white/20">
+                <Button onClick={() => logout()} variant="outline" className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20">
                   <LogOut className="mr-2 h-4 w-4" /> Sign Out
                 </Button>
               )}
