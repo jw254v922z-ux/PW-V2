@@ -417,77 +417,77 @@ export default function Dashboard() {
           </div>
 
           {/* Operator Card */}
-          <div className="mt-4 p-6 rounded-lg bg-white border border-gray-200 border-l-2 shadow-sm" style={{ borderLeftColor: '#808080' }}>
+          <div className="mt-4 p-6 rounded-lg bg-white border-4 border-gray-200 border-l-[16px] shadow-sm" style={{ borderLeftColor: '#808080' }}>
             <h3 className="text-sm font-semibold mb-4" style={{ color: '#808080' }}>Operator</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
               <MetricCard 
                 title="Total NPV" 
                 value={formatCurrency(results.summary.totalDiscountedCashFlow)} 
                 icon={Factory}
-                className="bg-white/5 border-l-gray-400 text-white border-white/10 backdrop-blur-sm"
+                className="bg-white/5 border-l-gray-400 text-white border-white/10 backdrop-blur-sm border-4"
               />
               <MetricCard 
                 title="IRR" 
                 value={(results.summary.irr * 100).toFixed(2) + "%"} 
                 icon={Zap}
-                className="bg-white/5 border-l-gray-400 text-white border-white/10 backdrop-blur-sm"
+                className="bg-white/5 border-l-gray-400 text-white border-white/10 backdrop-blur-sm border-4"
               />
             </div>
           </div>
 
           {/* Offtaker Card */}
-          <div className="mt-4 p-6 rounded-lg bg-white border border-gray-200 border-l-2 shadow-sm" style={{ borderLeftColor: '#2D8659' }}>
+          <div className="mt-4 p-6 rounded-lg bg-white border-4 border-gray-200 border-l-[16px] shadow-sm" style={{ borderLeftColor: '#2D8659' }}>
             <h3 className="text-sm font-semibold mb-4" style={{ color: '#2D8659' }}>Offtaker</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
               <MetricCard 
                 title="Yearly Savings" 
                 value={formatCurrency(results.summary.yearlySavings) + "/year"} 
                 icon={Zap}
-                className="bg-white/5 border-l-green-400 text-white border-white/10 backdrop-blur-sm"
+                className="bg-white/5 border-l-green-400 text-white border-white/10 backdrop-blur-sm border-4"
               />
               <MetricCard 
                 title="Total Savings" 
                 value={formatCurrency(results.summary.totalSavings)} 
                 icon={Zap}
-                className="bg-white/5 border-l-emerald-400 text-white border-white/10 backdrop-blur-sm"
+                className="bg-white/5 border-l-emerald-400 text-white border-white/10 backdrop-blur-sm border-4"
               />
             </div>
           </div>
 
           {/* Landowner Card */}
-          <div className="mt-4 p-6 rounded-lg bg-white border border-gray-200 border-l-2 shadow-sm" style={{ borderLeftColor: '#FFD700' }}>
+          <div className="mt-4 p-6 rounded-lg bg-white border-4 border-gray-200 border-l-[16px] shadow-sm" style={{ borderLeftColor: '#FFD700' }}>
             <h3 className="text-sm font-semibold mb-4" style={{ color: '#FFD700' }}>Landowner</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
             <MetricCard 
               title="Yearly Rental Income" 
               value={formatCurrency(results.summary.yearlyRentalIncome) + "/year"} 
               icon={Leaf}
-              className="bg-white/5 border-l-green-500 text-white border-white/10 backdrop-blur-sm"
+              className="bg-white/5 border-l-green-500 text-white border-white/10 backdrop-blur-sm border-4"
             />
             <MetricCard 
               title="Total Rental Income" 
               value={formatCurrency(results.summary.totalLandOptionIncome)} 
               icon={TrendingUp}
-              className="bg-white/5 border-l-emerald-400 text-white border-white/10 backdrop-blur-sm"
+              className="bg-white/5 border-l-emerald-400 text-white border-white/10 backdrop-blur-sm border-4"
             />
             <MetricCard 
               title="Land Rental Yield" 
               value={results.summary.landOptionYield.toFixed(2) + "%"} 
               icon={TrendingUp}
-              className="bg-white/5 border-l-blue-400 text-white border-white/10 backdrop-blur-sm"
+              className="bg-white/5 border-l-blue-400 text-white border-white/10 backdrop-blur-sm border-4"
             />
             </div>
           </div>
 
           {/* Developer Card */}
-          <div className="mt-4 p-6 rounded-lg bg-white border border-gray-200 border-l-2 shadow-sm" style={{ borderLeftColor: '#001F3F' }}>
+          <div className="mt-4 p-6 rounded-lg bg-white border-4 border-gray-200 border-l-[16px] shadow-sm" style={{ borderLeftColor: '#001F3F' }}>
             <h3 className="text-sm font-semibold mb-4" style={{ color: '#001F3F' }}>Developer</h3>
             <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-4">
             <MetricCard 
               title="Developer Premium" 
               value={formatCurrency(results.summary.totalDeveloperPremium)} 
               icon={Coins}
-              className="bg-white/5 border-l-purple-400 text-white border-white/10 backdrop-blur-sm"
+              className="bg-white/5 border-l-purple-400 text-white border-white/10 backdrop-blur-sm border-4"
             />
             </div>
           </div>
