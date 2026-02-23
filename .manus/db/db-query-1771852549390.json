@@ -1,0 +1,20 @@
+{
+  "query": "SELECT id, email, name FROM users;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user QwAcehYpRThLgZg.root --database RdWa8hhqoCPXtzzNtncWne --execute SELECT id, email, name FROM users;",
+  "rows": [
+    {
+      "id": "10",
+      "email": "phil.pearson@savills.com",
+      "name": "Phil Pearson"
+    },
+    {
+      "id": "153",
+      "email": "alexpearson43@hotmail.com",
+      "name": "alexpearson43"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\temail\tname\n10\tphil.pearson@savills.com\tPhil Pearson\n153\talexpearson43@hotmail.com\talexpearson43\n",
+  "stderr": "",
+  "execution_time_ms": 344
+}

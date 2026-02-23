@@ -28,9 +28,18 @@ export function generateToken(): string {
 
 /**
  * Create a JWT session token
+ * Note: This is used for custom email/password auth
+ * The token payload must match what verifySession expects
  */
-export async function createSessionToken(userId: number): Promise<string> {
-  const token = await new SignJWT({ userId })
+export async function createSessionToken(userId: number, openId?: string, name?: string): Promise<string> {
+  // For now, use userId as openId for custom auth
+  // In production, you'd want to use the actual openId from the user
+  const payload = {
+    openId: openId || `local-user-${userId}`,
+    appId: process.env.VITE_APP_ID || 'local-app',
+    name: name || `User ${userId}`,
+  };
+  const token = await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setExpirationTime('30d')
     .sign(secret);

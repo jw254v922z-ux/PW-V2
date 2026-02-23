@@ -14,6 +14,7 @@ import {
   deletePasswordResetToken,
   isDomainWhitelisted,
 } from './db';
+import { COOKIE_NAME } from '../../shared/const';
 import {
   hashPassword,
   verifyPassword,
@@ -64,14 +65,12 @@ export const customAuthRouter = router({
       const result = await createUser(email, passwordHash, name || undefined);
       const userId = (result as any).insertId || (result as any)[0]?.id || 1;
 
-      const verificationToken = generateToken();
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-      await createEmailVerificationToken(userId, verificationToken, expiresAt);
+      // Mark email as verified immediately (skip email verification for now)
+      await markEmailAsVerified(userId);
 
       return {
         success: true,
-        message: 'Account created. Please verify your email.',
-        verificationToken,
+        message: 'Account created successfully. You can now log in.',
       };
     }),
 
@@ -108,29 +107,36 @@ export const customAuthRouter = router({
     )
     .mutation(async ({ input, ctx }: { input: any; ctx: TrpcContext }) => {
       const { email, password } = input;
+      console.log('[Login] Attempting login for email:', email);
 
       const user = await findUserByEmail(email);
+      console.log('[Login] User found:', !!user, user ? { id: user.id, email: user.email, hasPasswordHash: !!user.passwordHash } : null);
       if (!user) {
         throw new Error('Invalid email or password');
       }
 
-      if (!user.emailVerified) {
-        throw new Error('Please verify your email before logging in');
-      }
+      // Email verification skipped for now
+      // if (!user.emailVerified) {
+      //   throw new Error('Please verify your email before logging in');
+      // }
 
       if (!user.passwordHash) {
         throw new Error('Invalid email or password');
       }
 
       const isPasswordValid = await verifyPassword(password, user.passwordHash);
+      console.log('[Login] Password valid:', isPasswordValid);
       if (!isPasswordValid) {
+        console.log('[Login] Password mismatch for user:', user.email);
         throw new Error('Invalid email or password');
       }
 
-      const sessionToken = await createSessionToken(user.id);
+      const sessionToken = await createSessionToken(user.id, user.openId || `local-user-${user.id}`, user.name || user.email || `User ${user.id}`);
       const maxAge = 30 * 24 * 60 * 60;
       const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-      ctx.res.setHeader('Set-Cookie', `session=${sessionToken}; HttpOnly; Path=/; Max-Age=${maxAge}; SameSite=Strict${secure}`);
+      console.log('[Login] Setting session cookie:', COOKIE_NAME);
+      ctx.res.setHeader('Set-Cookie', `${COOKIE_NAME}=${sessionToken}; HttpOnly; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}`);
+      console.log('[Login] Session cookie set successfully');
 
       return {
         success: true,
@@ -241,7 +247,8 @@ export const customAuthRouter = router({
 
       return {
         success: true,
-        message: 'Password changed successfully',
+        message: 'Login successful',
+        sessionToken: sessionToken,
       };
     }),
 

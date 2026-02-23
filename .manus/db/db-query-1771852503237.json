@@ -1,0 +1,22 @@
+{
+  "query": "SELECT id, email, name, createdAt FROM users ORDER BY createdAt DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user QwAcehYpRThLgZg.root --database RdWa8hhqoCPXtzzNtncWne --execute SELECT id, email, name, createdAt FROM users ORDER BY createdAt DESC;",
+  "rows": [
+    {
+      "id": "10",
+      "email": "phil.pearson@savills.com",
+      "name": "Phil Pearson",
+      "createdAt": "2026-02-23 12:50:43"
+    },
+    {
+      "id": "1",
+      "email": "alexpearson43@hotmail.com",
+      "name": "alexpearson43",
+      "createdAt": "2026-02-23 12:48:03"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\temail\tname\tcreatedAt\n10\tphil.pearson@savills.com\tPhil Pearson\t2026-02-23 12:50:43\n1\talexpearson43@hotmail.com\talexpearson43\t2026-02-23 12:48:03\n",
+  "stderr": "",
+  "execution_time_ms": 407
+}

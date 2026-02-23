@@ -16,12 +16,9 @@ export default function Signup() {
 
   const signupMutation = trpc.auth.signup.useMutation({
     onSuccess: (data) => {
-      toast.success('Signup successful! Please check your email to verify your account.');
-      // Store verification token in sessionStorage for email verification page
-      if (data.verificationToken) {
-        sessionStorage.setItem('verificationToken', data.verificationToken);
-      }
-      setLocation('/verify-email');
+      toast.success('Signup successful! You can now log in.');
+      // Redirect to login (email verification skipped)
+      setLocation('/login');
     },
     onError: (error) => {
       toast.error(error.message || 'Signup failed');
@@ -49,7 +46,7 @@ export default function Signup() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Create Account</CardTitle>
-          <CardDescription>Sign up to start saving your solar projects</CardDescription>
+          <CardDescription>Create an account with your @savills.com email</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

@@ -15,7 +15,7 @@ export default function Login() {
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: () => {
       toast.success('Login successful!');
-      setLocation('/dashboard');
+      setLocation('/');
     },
     onError: (error) => {
       toast.error(error.message || 'Login failed');

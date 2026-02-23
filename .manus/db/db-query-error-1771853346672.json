@@ -1,0 +1,8 @@
+{
+  "query": "ALTER TABLE users ADD COLUMN openId varchar(64) NULL AFTER id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user QwAcehYpRThLgZg.root --database RdWa8hhqoCPXtzzNtncWne --execute ALTER TABLE users ADD COLUMN openId varchar(64) NULL AFTER id;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1060 (42S21) at line 1: Duplicate column name 'openId'"
+  ]
+}
