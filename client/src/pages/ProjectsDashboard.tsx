@@ -153,8 +153,8 @@ export default function ProjectsDashboard() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="text-sm text-muted-foreground">
-                      <p>Created {formatDistanceToNow(new Date(project.createdAt), { addSuffix: true })}</p>
-                      <p>Updated {formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true })}</p>
+                      <p>Created {project.createdAt ? formatDistanceToNow(new Date(project.createdAt), { addSuffix: true }) : 'N/A'}</p>
+                      <p>Updated {project.updatedAt ? formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true }) : 'N/A'}</p>
                     </div>
 
                     <div className="flex gap-2">

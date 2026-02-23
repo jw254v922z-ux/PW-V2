@@ -141,6 +141,7 @@ export const customAuthRouter = router({
       return {
         success: true,
         message: 'Login successful',
+        sessionToken,
         user: {
           id: user.id,
           email: user.email,
@@ -247,8 +248,7 @@ export const customAuthRouter = router({
 
       return {
         success: true,
-        message: 'Login successful',
-        sessionToken: sessionToken,
+        message: 'Password changed successfully',
       };
     }),
 

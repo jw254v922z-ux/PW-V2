@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,12 +12,29 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [, setLocation] = useLocation();
 
+  // Redirect if already logged in
+  React.useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      setLocation('/');
+    }
+  }, [setLocation]);
+
   const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('[Login] Success response:', data);
+      if (data.sessionToken) {
+        console.log('[Login] Storing token in localStorage');
+        localStorage.setItem('auth_token', data.sessionToken);
+        console.log('[Login] Token stored, redirecting to /');
+      } else {
+        console.warn('[Login] No sessionToken in response');
+      }
       toast.success('Login successful!');
       setLocation('/');
     },
     onError: (error) => {
+      console.error('[Login] Error:', error);
       toast.error(error.message || 'Login failed');
     },
   });
@@ -25,12 +42,15 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    console.log('[Login] Submitting login form for email:', email);
 
     try {
       await loginMutation.mutateAsync({
         email,
         password,
       });
+    } catch (error) {
+      console.error('[Login] Mutation error:', error);
     } finally {
       setIsLoading(false);
     }

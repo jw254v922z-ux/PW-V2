@@ -10,8 +10,8 @@ let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      const connection = await mysql.createConnection(process.env.DATABASE_URL);
-      _db = drizzle(connection);
+      const pool = mysql.createPool(process.env.DATABASE_URL);
+      _db = drizzle(pool);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -49,9 +49,11 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     const assignNullable = (field: TextField) => {
       const value = user[field];
       if (value === undefined) return;
-      const normalized = value ?? null;
-      values[field] = normalized;
-      updateSet[field] = normalized;
+      const normalized = value ?? undefined;
+      if (normalized !== undefined) {
+        values[field] = normalized;
+        updateSet[field] = normalized;
+      }
     };
 
     textFields.forEach(assignNullable);

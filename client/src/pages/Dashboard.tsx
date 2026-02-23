@@ -232,14 +232,27 @@ export default function Dashboard() {
   const handleExportPDF = async () => {
     try {
       const toastId = toast.loading('Generating PDF...');
-      // Generate PDF directly without map screenshot for now
-      generatePDFReport({ 
+      // Generate PDF and trigger download
+      const doc = generatePDFReport({ 
         inputs, 
         results, 
         projectName: modelName || 'Solar Project', 
         description: modelDescription,
         mapScreenshot: undefined
       });
+      
+      // Convert PDF to blob and trigger download using anchor element
+      const filename = `${modelName || 'Solar Project'}-report.pdf`;
+      const pdfBlob = doc.output('blob');
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
       toast.dismiss(toastId);
       toast.success('PDF exported successfully!');
     } catch (error) {

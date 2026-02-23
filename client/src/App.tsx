@@ -16,37 +16,18 @@ import Settings from './pages/Settings';
 import { useAuth } from "./_core/hooks/useAuth";
 
 function Router() {
-  const { isAuthenticated, loading } = useAuth();
-  
-  // Show loading state while checking auth
-  if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
-  }
-  
   return (
     <Switch>
-      {/* Public routes */}
+      {/* All routes are public - no authentication required */}
+      <Route path={"/"} component={Dashboard} />
+      <Route path={"/map"} component={MapViewPage} />
+      <Route path={"/projects"} component={ProjectsDashboard} />
+      <Route path={"/settings"} component={Settings} />
       <Route path={"/login"} component={Login} />
       <Route path={"/signup"} component={Signup} />
       <Route path={"/verify-email"} component={VerifyEmail} />
       <Route path={"/forgot-password"} component={ForgotPassword} />
       <Route path={"/reset-password"} component={ResetPassword} />
-      
-      {/* Protected routes - redirect to login if not authenticated */}
-      <Route path={"/projects"}>
-        {isAuthenticated ? <ProjectsDashboard /> : <Redirect to="/login" />}
-      </Route>
-      <Route path={"/settings"}>
-        {isAuthenticated ? <Settings /> : <Redirect to="/login" />}
-      </Route>
-      <Route path={"/map"}>
-        {isAuthenticated ? <MapViewPage /> : <Redirect to="/login" />}
-      </Route>
-      
-      {/* Home/Dashboard - redirect to login if not authenticated */}
-      <Route path={"/"}>
-        {isAuthenticated ? <Dashboard /> : <Redirect to="/login" />}
-      </Route>
       
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
