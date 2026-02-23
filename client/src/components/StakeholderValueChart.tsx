@@ -104,6 +104,7 @@ export function StakeholderValueChart({ results }: StakeholderValueChartProps) {
                   fill="#8884d8"
                   dataKey="value"
                   labelPosition="outside"
+                  labelStyle={{ fill: '#000000', fontSize: '14px', fontWeight: 'bold' }}
                 >
                   {data.map((entry, index) => (
                     <Cell 
