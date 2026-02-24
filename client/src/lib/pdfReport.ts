@@ -514,5 +514,28 @@ export async function generatePDFReport(params: {
     });
   });
 
+  // Add page numbers and footer to all pages
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    
+    // Add footer line
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
+    doc.line(15, pageHeight - 12, pageWidth - 15, pageHeight - 12);
+    
+    // Add "Produced by Savills Earth" on left
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text("Produced by Savills Earth", 15, pageHeight - 7);
+    
+    // Add page number on right
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth - 25, pageHeight - 7, { align: "right" });
+  }
+
   return doc;
 }
