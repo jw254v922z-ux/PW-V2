@@ -52,6 +52,88 @@ export async function generatePDFReport(params: {
     yPosition += 18;
   };
 
+  // Helper: Draw pie chart with improved labels
+  const drawPieChart = (
+    x: number,
+    y: number,
+    radius: number,
+    data: Array<{ value: number; color: string; label: string; percentage: number }>
+  ) => {
+    const totalValue = data.reduce((sum, item) => sum + item.value, 0);
+    let currentAngle = -Math.PI / 2; // Start from top
+
+    // First pass: draw pie slices
+    data.forEach((item) => {
+      if (item.value === 0) return;
+
+      const sliceAngle = (item.value / totalValue) * 2 * Math.PI;
+      const endAngle = currentAngle + sliceAngle;
+
+      // Convert hex color to RGB
+      const hexColor = item.color;
+      const r = parseInt(hexColor.slice(1, 3), 16);
+      const g = parseInt(hexColor.slice(3, 5), 16);
+      const b = parseInt(hexColor.slice(5, 7), 16);
+
+      doc.setFillColor(r, g, b);
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(0.5);
+
+      // Draw pie slice
+      const startX = x + radius * Math.cos(currentAngle);
+      const startY = y + radius * Math.sin(currentAngle);
+
+      doc.moveTo(x, y);
+      doc.lineTo(startX, startY);
+
+      // Draw arc using multiple line segments
+      const steps = Math.ceil((sliceAngle * 180) / Math.PI / 5); // 5 degree segments
+      for (let i = 1; i <= steps; i++) {
+        const angle = currentAngle + (sliceAngle * i) / steps;
+        const px = x + radius * Math.cos(angle);
+        const py = y + radius * Math.sin(angle);
+        doc.lineTo(px, py);
+      }
+
+      doc.lineTo(x, y);
+      doc.fill("FD");
+
+      currentAngle = endAngle;
+    });
+
+    // Second pass: draw labels with better visibility
+    currentAngle = -Math.PI / 2;
+    data.forEach((item) => {
+      if (item.value === 0) return;
+
+      const sliceAngle = (item.value / totalValue) * 2 * Math.PI;
+      const labelAngle = currentAngle + sliceAngle / 2;
+      const labelRadius = radius * 0.7;
+      const labelX = x + labelRadius * Math.cos(labelAngle);
+      const labelY = y + labelRadius * Math.sin(labelAngle);
+
+      // Draw white background box for label
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.3);
+      
+      const labelText = `${item.label} (${item.percentage.toFixed(1)}%)`;
+      const textWidth = doc.getTextWidth(labelText);
+      const boxWidth = textWidth + 2;
+      const boxHeight = 5;
+
+      doc.rect(labelX - boxWidth / 2, labelY - boxHeight / 2, boxWidth, boxHeight, "FD");
+
+      // Draw label text
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(0, 0, 0);
+      doc.text(labelText, labelX, labelY + 1.5, { align: "center" });
+
+      currentAngle += sliceAngle;
+    });
+  };
+
   // PAGE 1: COVER
   doc.setFont("helvetica", "bold");
   doc.setFontSize(24);
@@ -72,25 +154,28 @@ export async function generatePDFReport(params: {
     yPosition += descLines.length * 5 + 5;
   }
 
-  // Add disclaimer
+  // Add full disclaimer
+  yPosition += 3;
   doc.setFillColor(255, 243, 205);
-  doc.rect(15, yPosition, pageWidth - 30, 20, "F");
+  doc.rect(15, yPosition, pageWidth - 30, 50, "F");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(184, 134, 11);
-  doc.text("Disclaimer:", 18, yPosition + 5);
+  doc.text("Tool Limitations & Disclaimer", 18, yPosition + 5);
+  
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
+  doc.setFontSize(7);
   doc.setTextColor(100, 100, 100);
+  
   const disclaimerText = doc.splitTextToSize(
-    "Indicative projections based on Jan 2026 data. Not for investment decisions without professional verification.",
+    "This calculator provides indicative financial projections based on industry assumptions and publicly available data sources. All data and assumptions are valid as of January 2026. Results are for indicative purposes only and should not be relied upon for investment decisions. Grid costs, irradiance data, and technology assumptions may vary significantly by location. Costs and pricing may change over time. Site-specific conditions (soil, access, environmental) are not accounted for. This tool does not include all potential costs (e.g., planning, environmental surveys, financing). Results should not be relied upon for investment decisions without independent professional verification from qualified engineers, surveyors, and financial advisors.",
     pageWidth - 36
   );
   doc.text(disclaimerText, 18, yPosition + 10);
-  yPosition += 28;
+  yPosition += 56;
 
   // Key metrics grid
-  yPosition += 5;
+  yPosition += 3;
   const metrics = [
     { label: "Total CAPEX", value: formatCurrency(results.summary.totalCapex) },
     { label: "LCOE (Real)", value: "£" + (results.summary.lcoe || 0).toFixed(2) + "/MWh" },
@@ -107,129 +192,132 @@ export async function generatePDFReport(params: {
     const row = Math.floor(idx / metricsPerRow);
     const col = idx % metricsPerRow;
     const x = 15 + col * metricWidth;
-    const y = yPosition + row * 25;
+    const y = yPosition + row * 20;
 
     // Box
     doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.5);
-    doc.rect(x, y, metricWidth - 5, 20);
+    doc.rect(x, y, metricWidth - 5, 18);
 
     // Label
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setTextColor(120, 120, 120);
-    doc.text(metric.label, x + 3, y + 6);
+    doc.text(metric.label, x + 3, y + 5);
 
     // Value
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
-    doc.text(metric.value, x + 3, y + 15);
+    doc.text(metric.value, x + 3, y + 14);
   });
 
-  yPosition += 55;
+  yPosition += 48;
 
   // PAGE 2: STAKEHOLDER VALUE
   addPageBreak();
   addBrandedHeader("Stakeholder Value Distribution");
 
   // Calculate stakeholder values from summary
-  const operatorNPV = results.summary.totalDiscountedCashFlow;
-  const offtakerSavings = results.summary.totalSavings;
-  const landownerIncome = results.summary.totalLandOptionIncome;
-  const developerPremium = results.summary.totalDeveloperPremium;
+  const operatorNPV = Math.max(0, results.summary.totalDiscountedCashFlow);
+  const offtakerSavings = Math.max(0, results.summary.totalSavings);
+  const landownerIncome = Math.max(0, results.summary.totalLandOptionIncome);
+  const developerPremium = Math.max(0, results.summary.totalDeveloperPremium);
 
   const totalValue = operatorNPV + offtakerSavings + landownerIncome + developerPremium;
 
   const stakeholderData = [
-    { label: "Operator", value: operatorNPV, color: hexColors.project },
-    { label: "Offtaker", value: offtakerSavings, color: hexColors.offtaker },
-    { label: "Landowner", value: landownerIncome, color: hexColors.landowner },
-    { label: "Developer", value: developerPremium, color: hexColors.developer },
+    { 
+      label: "Operator", 
+      value: operatorNPV, 
+      color: hexColors.project,
+      percentage: totalValue > 0 ? (operatorNPV / totalValue) * 100 : 0
+    },
+    { 
+      label: "Offtaker", 
+      value: offtakerSavings, 
+      color: hexColors.offtaker,
+      percentage: totalValue > 0 ? (offtakerSavings / totalValue) * 100 : 0
+    },
+    { 
+      label: "Landowner", 
+      value: landownerIncome, 
+      color: hexColors.landowner,
+      percentage: totalValue > 0 ? (landownerIncome / totalValue) * 100 : 0
+    },
+    { 
+      label: "Developer", 
+      value: developerPremium, 
+      color: hexColors.developer,
+      percentage: totalValue > 0 ? (developerPremium / totalValue) * 100 : 0
+    },
   ];
 
-  // Draw pie chart representation as bars
-  let pieY = yPosition;
-  stakeholderData.forEach((item, idx) => {
-    const percentage = totalValue > 0 ? ((item.value / totalValue) * 100) : 0;
-    const barWidth = (percentage / 100) * (pageWidth - 30);
+  // Draw pie chart
+  const chartCenterX = pageWidth / 2;
+  const chartCenterY = yPosition + 28;
+  const chartRadius = 24;
 
-    // Color bar
-    const rgb = item.color === hexColors.project ? colors.darkGray : 
-                item.color === hexColors.offtaker ? colors.green :
-                item.color === hexColors.landowner ? colors.yellow :
-                colors.navy;
+  drawPieChart(chartCenterX, chartCenterY, chartRadius, stakeholderData);
 
-    doc.setFillColor(rgb.r, rgb.g, rgb.b);
-    doc.rect(15, pieY, barWidth, 8, "F");
+  yPosition += 65;
 
-    // Label
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`${item.label}: ${percentage.toFixed(1)}%`, 15 + barWidth + 3, pieY + 6);
-
-    pieY += 12;
-  });
-
-  yPosition = pieY + 10;
-
-  // Stakeholder callout boxes
-  const boxHeight = 25;
+  // Stakeholder metric cards
+  const boxHeight = 24;
   const boxWidth = (pageWidth - 30) / 2;
 
   // Operator
   doc.setFillColor(200, 200, 200);
   doc.rect(15, yPosition, boxWidth - 2, boxHeight, "F");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(80, 80, 80);
-  doc.text("Operator", 18, yPosition + 6);
-  doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
+  doc.setTextColor(80, 80, 80);
+  doc.text("Operator", 18, yPosition + 5);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
   doc.setTextColor(0, 0, 0);
-  doc.text(`NPV: ${formatCurrency(operatorNPV)}`, 18, yPosition + 14);
-  doc.text(`IRR: ${((results.summary.irr || 0) * 100).toFixed(2)}%`, 18, yPosition + 20);
+  doc.text(`Value: ${formatCurrency(operatorNPV)}`, 18, yPosition + 12);
+  doc.text(`Percentage: ${((operatorNPV / totalValue) * 100).toFixed(1)}%`, 18, yPosition + 19);
 
   // Offtaker
   doc.setFillColor(45, 134, 89);
   doc.rect(15 + boxWidth, yPosition, boxWidth - 2, boxHeight, "F");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(255, 255, 255);
-  doc.text("Offtaker", 18 + boxWidth, yPosition + 6);
-  doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text(`Total Savings: ${formatCurrency(offtakerSavings)}`, 18 + boxWidth, yPosition + 14);
-  doc.text(`Yearly: ${formatCurrency(results.summary.yearlySavings)}`, 18 + boxWidth, yPosition + 20);
+  doc.setTextColor(255, 255, 255);
+  doc.text("Offtaker", 18 + boxWidth, yPosition + 5);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.text(`Total Savings: ${formatCurrency(offtakerSavings)}`, 18 + boxWidth, yPosition + 12);
+  doc.text(`Percentage: ${((offtakerSavings / totalValue) * 100).toFixed(1)}%`, 18 + boxWidth, yPosition + 19);
 
-  yPosition += boxHeight + 5;
+  yPosition += boxHeight + 3;
 
   // Landowner
   doc.setFillColor(255, 215, 0);
   doc.rect(15, yPosition, boxWidth - 2, boxHeight, "F");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(0, 0, 0);
-  doc.text("Landowner", 18, yPosition + 6);
-  doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text(`Total Income: ${formatCurrency(landownerIncome)}`, 18, yPosition + 14);
-  doc.text(`Yearly: ${formatCurrency(results.summary.yearlyRentalIncome)}`, 18, yPosition + 20);
+  doc.setTextColor(0, 0, 0);
+  doc.text("Landowner", 18, yPosition + 5);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.text(`Total Income: ${formatCurrency(landownerIncome)}`, 18, yPosition + 12);
+  doc.text(`Percentage: ${((landownerIncome / totalValue) * 100).toFixed(1)}%`, 18, yPosition + 19);
 
   // Developer
   doc.setFillColor(0, 31, 63);
   doc.rect(15 + boxWidth, yPosition, boxWidth - 2, boxHeight, "F");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(255, 255, 255);
-  doc.text("Developer", 18 + boxWidth, yPosition + 6);
-  doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text(`Total Premium: ${formatCurrency(developerPremium)}`, 18 + boxWidth, yPosition + 14);
-  doc.text(`Payback: ${(results.summary.paybackPeriod || 0).toFixed(1)} years`, 18 + boxWidth, yPosition + 20);
+  doc.setTextColor(255, 255, 255);
+  doc.text("Developer", 18 + boxWidth, yPosition + 5);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.text(`Total Premium: ${formatCurrency(developerPremium)}`, 18 + boxWidth, yPosition + 12);
+  doc.text(`Percentage: ${((developerPremium / totalValue) * 100).toFixed(1)}%`, 18 + boxWidth, yPosition + 19);
 
-  yPosition += boxHeight + 10;
+  yPosition += boxHeight + 8;
 
   // PAGE 3: FINANCIAL METRICS
   addPageBreak();
@@ -237,10 +325,10 @@ export async function generatePDFReport(params: {
 
   // Cost Breakdown Table
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setTextColor(0, 31, 63);
   doc.text("Cost Breakdown", 15, yPosition);
-  yPosition += 8;
+  yPosition += 7;
 
   const costData = [
     ["EPC Cost", formatCurrency(inputs.capexPerMW * inputs.mw)],
@@ -255,25 +343,25 @@ export async function generatePDFReport(params: {
     const bgColor = isTotal ? colors.yellow : colors.gray;
     
     doc.setFillColor(bgColor.r, bgColor.g, bgColor.b);
-    doc.rect(15, yPosition, pageWidth - 30, 7, "F");
+    doc.rect(15, yPosition, pageWidth - 30, 6, "F");
 
     doc.setFont("helvetica", isTotal ? "bold" : "normal");
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setTextColor(0, 0, 0);
-    doc.text(row[0], 18, yPosition + 5);
-    doc.text(row[1], pageWidth - 25, yPosition + 5, { align: "right" });
+    doc.text(row[0], 18, yPosition + 4);
+    doc.text(row[1], pageWidth - 25, yPosition + 4, { align: "right" });
 
-    yPosition += 7;
+    yPosition += 6;
   });
 
-  yPosition += 5;
+  yPosition += 4;
 
   // Generation & Revenue Table
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setTextColor(0, 31, 63);
   doc.text("Generation & Revenue (Year 1)", 15, yPosition);
-  yPosition += 8;
+  yPosition += 7;
 
   const year1Data = results.yearlyData[1]; // Year 1 is index 1 (Year 0 is CAPEX)
   const genData = [
@@ -289,18 +377,18 @@ export async function generatePDFReport(params: {
     const bgColor = isTotal ? colors.green : colors.gray;
     
     doc.setFillColor(bgColor.r, bgColor.g, bgColor.b);
-    doc.rect(15, yPosition, pageWidth - 30, 7, "F");
+    doc.rect(15, yPosition, pageWidth - 30, 6, "F");
 
     doc.setFont("helvetica", isTotal ? "bold" : "normal");
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setTextColor(isTotal ? 255 : 0, isTotal ? 255 : 0, isTotal ? 255 : 0);
-    doc.text(row[0], 18, yPosition + 5);
-    doc.text(row[1], pageWidth - 25, yPosition + 5, { align: "right" });
+    doc.text(row[0], 18, yPosition + 4);
+    doc.text(row[1], pageWidth - 25, yPosition + 4, { align: "right" });
 
-    yPosition += 7;
+    yPosition += 6;
   });
 
-  yPosition += 10;
+  yPosition += 8;
 
   // PAGE 4: ANNUAL CASH FLOW
   addPageBreak();
@@ -308,7 +396,7 @@ export async function generatePDFReport(params: {
 
   // Table header
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
+  doc.setFontSize(7);
   doc.setFillColor(0, 31, 63);
   doc.setTextColor(255, 255, 255);
   
@@ -339,7 +427,7 @@ export async function generatePDFReport(params: {
     doc.rect(15, yPosition, pageWidth - 30, 5, "F");
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
+    doc.setFontSize(6);
     doc.setTextColor(0, 0, 0);
     
     doc.text(yearData.year.toString(), 15 + 2, yPosition + 3.5);
@@ -357,7 +445,14 @@ export async function generatePDFReport(params: {
 
   // PAGE 5: ASSUMPTIONS & SOURCES
   addPageBreak();
-  addBrandedHeader("Assumptions & Sources");
+  addBrandedHeader("Assumptions & Data Sources");
+
+  // Assumptions section
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(0, 31, 63);
+  doc.text("Project Assumptions", 15, yPosition);
+  yPosition += 6;
 
   const assumptions = [
     ["Project Life", inputs.projectLife + " years"],
@@ -365,7 +460,7 @@ export async function generatePDFReport(params: {
     ["CAPEX per MW", "£" + formatNumberWithCommas((inputs.capexPerMW || 0).toFixed(0))],
     ["OPEX per MW (Year 1)", "£" + formatNumberWithCommas((inputs.opexPerMW || 0).toFixed(0))],
     ["Cost Inflation Rate", (inputs.costInflationRate || 0).toFixed(2) + "%"],
-    ["Generation Degradation", (inputs.degradationRate || 0).toFixed(2) + "% p.a."],
+    ["Generation Degradation", (inputs.degradationRate || 0).toFixed(4) + "% p.a."],
     ["PPA Price", "£" + (inputs.powerPrice || 0).toFixed(2) + "/MWh"],
     ["Discount Rate", (inputs.discountRate || 0).toFixed(2) + "%"],
   ];
@@ -377,12 +472,46 @@ export async function generatePDFReport(params: {
     doc.rect(15, yPosition, pageWidth - 30, 6, "F");
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setTextColor(0, 0, 0);
     doc.text(row[0], 18, yPosition + 4);
     doc.text(row[1], pageWidth - 25, yPosition + 4, { align: "right" });
 
     yPosition += 6;
+  });
+
+  yPosition += 6;
+
+  // Data Sources section
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(0, 31, 63);
+  doc.text("Data Sources & Methodology", 15, yPosition);
+  yPosition += 6;
+
+  const sourcesList = [
+    "Grid connection costs: SSEN Distribution Cost Estimates (2025)",
+    "Solar irradiance: UK Met Office historical averages",
+    "EPC costs: Industry benchmarks (2026)",
+    "Transformer costs: Manufacturer quotes",
+    "Cable costs: Supplier pricing data",
+    "Financial calculations: NPV at specified discount rate, IRR via iterative method",
+    "All costs are updated in real-time as parameters are adjusted",
+  ];
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(60, 60, 60);
+
+  sourcesList.forEach((source) => {
+    const lines = doc.splitTextToSize("• " + source, pageWidth - 35);
+    lines.forEach((line) => {
+      if (yPosition > pageHeight - 15) {
+        addPageBreak();
+      }
+      doc.text(line, 18, yPosition);
+      yPosition += 4;
+    });
   });
 
   return doc;
