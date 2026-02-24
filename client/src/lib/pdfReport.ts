@@ -188,9 +188,9 @@ export async function generatePDFReport(params: {
   // Key metrics grid
   const metrics = [
     { label: "Total CAPEX", value: formatCurrency(results.summary.totalCapex) },
-    { label: "LCOE (Real)", value: "£" + results.summary.lcoeReal.toFixed(2) + "/MWh" },
-    { label: "IRR (Unlevered)", value: (results.summary.irrUnlevered * 100).toFixed(2) + "%" },
-    { label: "Payback Period", value: results.summary.paybackPeriod > inputs.projectLife ? "> Project Life" : results.summary.paybackPeriod.toFixed(1) + " years" },
+    { label: "LCOE (Real)", value: "£" + (results.summary.lcoeReal || 0).toFixed(2) + "/MWh" },
+    { label: "IRR (Unlevered)", value: ((results.summary.irrUnlevered || 0) * 100).toFixed(2) + "%" },
+    { label: "Payback Period", value: (results.summary.paybackPeriod || 0) > inputs.projectLife ? "> Project Life" : (results.summary.paybackPeriod || 0).toFixed(1) + " years" },
     { label: "Total NPV", value: formatCurrency(results.summary.totalDiscountedCashFlow) },
     { label: "Project Life", value: inputs.projectLife + " years" },
   ];
@@ -460,11 +460,11 @@ export async function generatePDFReport(params: {
 
   const assumptions = [
     { label: "Project Life", value: inputs.projectLife + " years" },
-    { label: "Cable Distance", value: (inputs.cableDistance || 0).toFixed(1) + " km" },
+    { label: "Cable Distance", value: ((inputs.cableDistance || 0).toFixed ? (inputs.cableDistance || 0).toFixed(1) : '0') + " km" },
     { label: "Cable Voltage", value: (inputs.cableVoltage || 0) + " kV" },
-    { label: "Installed Capacity", value: (inputs.installedCapacity || 0).toFixed(2) + " MWp" },
-    { label: "CAPEX per MW", value: "£" + formatNumberWithCommas((inputs.capexPerMW || 0).toFixed(0)) },
-    { label: "OPEX per MW (Year 1)", value: "£" + formatNumberWithCommas((inputs.opexPerMW || 0).toFixed(0)) },
+    { label: "Installed Capacity", value: ((inputs.installedCapacity || 0).toFixed ? (inputs.installedCapacity || 0).toFixed(2) : '0') + " MWp" },
+    { label: "CAPEX per MW", value: "£" + formatNumberWithCommas(((inputs.capexPerMW || 0).toFixed ? (inputs.capexPerMW || 0).toFixed(0) : '0')) },
+    { label: "OPEX per MW (Year 1)", value: "£" + formatNumberWithCommas(((inputs.opexPerMW || 0).toFixed ? (inputs.opexPerMW || 0).toFixed(0) : '0')) },
     { label: "Cost Inflation Rate", value: (inputs.costInflationRate || 0).toFixed(2) + "%" },
     { label: "Generation Degradation", value: (inputs.generationDegradation || 0).toFixed(2) + "% p.a." },
     { label: "PPA Price", value: "£" + (inputs.powerPrice || 0).toFixed(2) + "/MWh" },
