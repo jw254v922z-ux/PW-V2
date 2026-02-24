@@ -80,6 +80,33 @@ export default function MapViewPage() {
     };
   }, [drawingMode]);
 
+  // Finalize polygon when pvCompleted becomes true
+  useEffect(() => {
+    if (!pvCompleted || pvPoints.length < 3 || !mapRef.current) return;
+
+    // Remove old polygon if exists
+    if (pvPolygon) {
+      mapRef.current.removeLayer(pvPolygon);
+    }
+
+    // Create final polygon
+    const polygon = L.polygon(pvPoints, {
+      color: "#22c55e",
+      weight: 2,
+      opacity: 0.8,
+      fillColor: "#22c55e",
+      fillOpacity: 0.2,
+    }).addTo(mapRef.current);
+
+    setPvPolygon(polygon);
+
+    // Calculate area
+    const area = calculatePolygonArea(pvPoints);
+    const hectares = area / 10000;
+    const systemSize = hectares * 10;
+    setPvAreaResults({ area, hectares, systemSize });
+  }, [pvCompleted, pvPoints, pvPolygon]);
+
   const addPVPoint = useCallback((point: L.LatLng) => {
     setPvPoints((prev) => {
       // Check if user clicked on first point to close polygon
@@ -111,27 +138,9 @@ export default function MapViewPage() {
 
       setPvMarkers((prevMarkers) => [...prevMarkers, marker]);
 
-      // Create or update polygon
-      if (newPoints.length >= 3) {
-        if (pvPolygon) {
-          mapRef.current?.removeLayer(pvPolygon);
-        }
-        const polygon = L.polygon(newPoints, {
-          color: "#22c55e",
-          weight: 2,
-          opacity: 0.8,
-          fillColor: "#22c55e",
-          fillOpacity: 0.2,
-        }).addTo(mapRef.current!);
-
-        setPvPolygon(polygon);
-
-        // Calculate area
-        const area = calculatePolygonArea(newPoints);
-        const hectares = area / 10000;
-        const systemSize = hectares * 10;
-        setPvAreaResults({ area, hectares, systemSize });
-      }
+      // Show preview polyline while drawing (not a closed polygon yet)
+      // Only create actual polygon when explicitly closed by clicking first point
+      // This is handled in the setPvCompleted state change effect below
       return newPoints;
     });
   }, [pvPolygon, pvMarkers]);
