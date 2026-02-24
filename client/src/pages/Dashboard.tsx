@@ -333,7 +333,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-white pb-12">
+    <div className="min-h-screen bg-gray-100 pb-12">
       {/* Disclaimer Banner - Top */}
       <div className="bg-amber-50 dark:bg-amber-950 border-b-2 border-amber-400 p-3">
         <div className="container">
