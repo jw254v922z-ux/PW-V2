@@ -330,10 +330,12 @@ export async function generatePDFReport(params: {
   doc.text("Annual Generation & Revenue (Year 1)", 15, yPosition);
   yPosition += 6;
 
+  // Get Year 1 data from yearly data
+  const year1Data = results.yearlyData.find(y => y.year === 1);
   const genRevData = [
-    ["Annual Generation", (results.summary.annualGeneration || 0).toFixed(0) + " MWh"],
-    ["Annual Revenue", formatCurrency(results.summary.annualRevenue || 0)],
-    ["OPEX per MW", formatCurrency(results.summary.opexPerMW || 0)],
+    ["Annual Generation (Year 1)", (year1Data?.generation || 0).toFixed(0) + " MWh"],
+    ["Annual Revenue (Year 1)", formatCurrency(year1Data?.revenue || 0)],
+    ["Annual OPEX (Year 1)", formatCurrency(year1Data?.opex || 0)],
   ];
 
   genRevData.forEach((row, idx) => {
@@ -388,24 +390,30 @@ export async function generatePDFReport(params: {
   // Cash flow table header
   doc.setFillColor(colors.navy.r, colors.navy.g, colors.navy.b);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(7);
+  doc.setFontSize(6);
   doc.setTextColor(255, 255, 255);
   
-  const colWidth = (pageWidth - 30) / 5;
+  const colWidth = (pageWidth - 30) / 7;
   doc.rect(15, yPosition, colWidth, 6, "F");
   doc.text("Year", 15 + 2, yPosition + 4);
   
   doc.rect(15 + colWidth, yPosition, colWidth, 6, "F");
-  doc.text("Revenue", 15 + colWidth + 2, yPosition + 4);
+  doc.text("Generation (MWh)", 15 + colWidth + 2, yPosition + 4);
   
   doc.rect(15 + colWidth * 2, yPosition, colWidth, 6, "F");
-  doc.text("OPEX", 15 + colWidth * 2 + 2, yPosition + 4);
+  doc.text("Revenue", 15 + colWidth * 2 + 2, yPosition + 4);
   
   doc.rect(15 + colWidth * 3, yPosition, colWidth, 6, "F");
-  doc.text("Net CF", 15 + colWidth * 3 + 2, yPosition + 4);
+  doc.text("OPEX", 15 + colWidth * 3 + 2, yPosition + 4);
   
   doc.rect(15 + colWidth * 4, yPosition, colWidth, 6, "F");
-  doc.text("Cumulative", 15 + colWidth * 4 + 2, yPosition + 4);
+  doc.text("Net CF", 15 + colWidth * 4 + 2, yPosition + 4);
+  
+  doc.rect(15 + colWidth * 5, yPosition, colWidth, 6, "F");
+  doc.text("Disc CF", 15 + colWidth * 5 + 2, yPosition + 4);
+  
+  doc.rect(15 + colWidth * 6, yPosition, colWidth, 6, "F");
+  doc.text("Cum CF", 15 + colWidth * 6 + 2, yPosition + 4);
 
   yPosition += 6;
 
@@ -418,14 +426,16 @@ export async function generatePDFReport(params: {
     doc.rect(15, yPosition, pageWidth - 30, 5, "F");
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(6);
+    doc.setFontSize(5);
     doc.setTextColor(0, 0, 0);
     
     doc.text(yearData.year.toString(), 15 + 2, yPosition + 3.5);
-    doc.text("£" + formatNumberWithCommas(yearData.revenue.toFixed(0)), 15 + colWidth + 2, yPosition + 3.5);
-    doc.text("£" + formatNumberWithCommas(yearData.opex.toFixed(0)), 15 + colWidth * 2 + 2, yPosition + 3.5);
-    doc.text("£" + formatNumberWithCommas(yearData.cashFlow.toFixed(0)), 15 + colWidth * 3 + 2, yPosition + 3.5);
-    doc.text("£" + formatNumberWithCommas(yearData.cumulativeCashFlow.toFixed(0)), 15 + colWidth * 4 + 2, yPosition + 3.5);
+    doc.text(formatNumberWithCommas(yearData.generation.toFixed(0)), 15 + colWidth + 2, yPosition + 3.5);
+    doc.text("£" + formatNumberWithCommas(yearData.revenue.toFixed(0)), 15 + colWidth * 2 + 2, yPosition + 3.5);
+    doc.text("£" + formatNumberWithCommas(yearData.opex.toFixed(0)), 15 + colWidth * 3 + 2, yPosition + 3.5);
+    doc.text("£" + formatNumberWithCommas(yearData.cashFlow.toFixed(0)), 15 + colWidth * 4 + 2, yPosition + 3.5);
+    doc.text("£" + formatNumberWithCommas(yearData.discountedCashFlow.toFixed(0)), 15 + colWidth * 5 + 2, yPosition + 3.5);
+    doc.text("£" + formatNumberWithCommas(yearData.cumulativeCashFlow.toFixed(0)), 15 + colWidth * 6 + 2, yPosition + 3.5);
 
     yPosition += 5;
 
@@ -447,10 +457,10 @@ export async function generatePDFReport(params: {
   yPosition += 8;
 
   const stakeholders = [
-    { name: "Operator", npv: results.summary.operatorNPV || 0, color: hexColors.project },
-    { name: "Offtaker", npv: results.summary.offtakerNPV || 0, color: hexColors.offtaker },
-    { name: "Landowner", npv: results.summary.landownerNPV || 0, color: hexColors.landowner },
-    { name: "Developer", npv: results.summary.developerNPV || 0, color: hexColors.developer },
+    { name: "Operator", npv: results.summary.totalDiscountedCashFlow || 0, irr: results.summary.irr || 0, color: hexColors.project },
+    { name: "Offtaker", npv: results.summary.totalSavings || 0, irr: 0, color: hexColors.offtaker },
+    { name: "Landowner", npv: results.summary.totalLandOptionIncome || 0, irr: 0, color: hexColors.landowner },
+    { name: "Developer", npv: results.summary.totalDeveloperPremium || 0, irr: 0, color: hexColors.developer },
   ];
 
   stakeholders.forEach((stakeholder) => {
@@ -460,13 +470,16 @@ export async function generatePDFReport(params: {
     const b = parseInt(hexColor.slice(5, 7), 16);
     
     doc.setFillColor(r, g, b);
-    doc.rect(15, yPosition, pageWidth - 30, 6, "F");
+    doc.rect(15, yPosition, pageWidth - 30, 8, "F");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
     doc.setTextColor(255, 255, 255);
     doc.text(stakeholder.name, 18, yPosition + 4);
-    doc.text("NPV: " + formatCurrency(stakeholder.npv), pageWidth - 25, yPosition + 4, { align: "right" });
-    yPosition += 7;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.text("NPV: " + formatCurrency(stakeholder.npv), pageWidth - 25, yPosition + 3, { align: "right" });
+    doc.text("IRR: " + ((stakeholder.irr || 0) * 100).toFixed(2) + "%", pageWidth - 25, yPosition + 6, { align: "right" });
+    yPosition += 9;
   });
 
   // PAGE 5: ASSUMPTIONS & SOURCES
