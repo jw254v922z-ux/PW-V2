@@ -138,7 +138,7 @@ export async function generatePDFReport(params: {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(24);
   doc.setTextColor(0, 31, 63);
-  doc.text("Private Wire Solar Calculator", 15, yPosition);
+  doc.text("Solar Project Analysis", 15, yPosition);
   yPosition += 15;
 
   doc.setFont("helvetica", "normal");
@@ -314,7 +314,7 @@ export async function generatePDFReport(params: {
   doc.text("Developer", 18 + boxWidth, yPosition + 5);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
-  doc.text(`Total Premium: ${formatCurrency(developerPremium)}`, 18 + boxWidth, yPosition + 12);
+  doc.text(`Premium: ${formatCurrency(developerPremium)}`, 18 + boxWidth, yPosition + 12);
   doc.text(`Percentage: ${((developerPremium / totalValue) * 100).toFixed(1)}%`, 18 + boxWidth, yPosition + 19);
 
   yPosition += boxHeight + 8;
@@ -323,29 +323,25 @@ export async function generatePDFReport(params: {
   addPageBreak();
   addBrandedHeader("Financial Metrics");
 
-  // Cost Breakdown Table
+  // Generation & Revenue table
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setTextColor(0, 31, 63);
-  doc.text("Cost Breakdown", 15, yPosition);
-  yPosition += 7;
+  doc.text("Annual Generation & Revenue (Year 1)", 15, yPosition);
+  yPosition += 6;
 
-  const costData = [
-    ["EPC Cost", formatCurrency(inputs.capexPerMW * inputs.mw)],
-    ["Private Wire Cost", formatCurrency(inputs.privateWireCost)],
-    ["Grid Connection Cost", formatCurrency(inputs.gridConnectionCost)],
-    ["Developer Premium", formatCurrency(results.summary.totalDeveloperPremium)],
-    ["Total CAPEX", formatCurrency(results.summary.totalCapex)],
+  const genRevData = [
+    ["Annual Generation", (results.summary.annualGeneration || 0).toFixed(0) + " MWh"],
+    ["Annual Revenue", formatCurrency(results.summary.annualRevenue || 0)],
+    ["OPEX per MW", formatCurrency(results.summary.opexPerMW || 0)],
   ];
 
-  costData.forEach((row, idx) => {
-    const isTotal = idx === costData.length - 1;
-    const bgColor = isTotal ? colors.yellow : colors.gray;
-    
+  genRevData.forEach((row, idx) => {
+    const bgColor = idx % 2 === 0 ? colors.white : colors.gray;
     doc.setFillColor(bgColor.r, bgColor.g, bgColor.b);
     doc.rect(15, yPosition, pageWidth - 30, 6, "F");
 
-    doc.setFont("helvetica", isTotal ? "bold" : "normal");
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(0, 0, 0);
     doc.text(row[0], 18, yPosition + 4);
@@ -354,50 +350,45 @@ export async function generatePDFReport(params: {
     yPosition += 6;
   });
 
-  yPosition += 4;
+  yPosition += 6;
 
-  // Generation & Revenue Table
+  // Cost Breakdown table
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setTextColor(0, 31, 63);
-  doc.text("Generation & Revenue (Year 1)", 15, yPosition);
-  yPosition += 7;
+  doc.text("Cost Breakdown", 15, yPosition);
+  yPosition += 6;
 
-  const year1Data = results.yearlyData[1]; // Year 1 is index 1 (Year 0 is CAPEX)
-  const genData = [
-    ["Annual Generation", formatNumberWithCommas(year1Data.generation.toFixed(0)) + " MWh"],
-    ["PPA Price", "£" + (inputs.powerPrice || 0).toFixed(2) + "/MWh"],
-    ["Annual Revenue", formatCurrency(year1Data.revenue)],
-    ["OPEX (Year 1)", formatCurrency(year1Data.opex)],
-    ["Net Cash Flow", formatCurrency(year1Data.cashFlow)],
+  const costData = [
+    ["EPC Cost", formatCurrency((results.summary.epcCost || 0))],
+    ["Private Wire Cost", formatCurrency((results.summary.privateWireCost || 0))],
+    ["Grid Connection Cost", formatCurrency((results.summary.gridConnectionCost || 0))],
+    ["Developer Premium", formatCurrency((results.summary.developerPremium || 0))],
+    ["Total CAPEX", formatCurrency((results.summary.totalCapex || 0))],
   ];
 
-  genData.forEach((row, idx) => {
-    const isTotal = idx === genData.length - 1;
-    const bgColor = isTotal ? colors.green : colors.gray;
-    
+  costData.forEach((row, idx) => {
+    const bgColor = idx % 2 === 0 ? colors.white : colors.gray;
     doc.setFillColor(bgColor.r, bgColor.g, bgColor.b);
     doc.rect(15, yPosition, pageWidth - 30, 6, "F");
 
-    doc.setFont("helvetica", isTotal ? "bold" : "normal");
+    doc.setFont("helvetica", idx === costData.length - 1 ? "bold" : "normal");
     doc.setFontSize(8);
-    doc.setTextColor(isTotal ? 255 : 0, isTotal ? 255 : 0, isTotal ? 255 : 0);
+    doc.setTextColor(0, 0, 0);
     doc.text(row[0], 18, yPosition + 4);
     doc.text(row[1], pageWidth - 25, yPosition + 4, { align: "right" });
 
     yPosition += 6;
   });
 
-  yPosition += 8;
-
-  // PAGE 4: ANNUAL CASH FLOW
+  // PAGE 4: CASH FLOW ANALYSIS
   addPageBreak();
-  addBrandedHeader("Annual Cash Flow Projection");
+  addBrandedHeader("Annual Cash Flow Analysis");
 
-  // Table header
+  // Cash flow table header
+  doc.setFillColor(colors.navy.r, colors.navy.g, colors.navy.b);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7);
-  doc.setFillColor(0, 31, 63);
   doc.setTextColor(255, 255, 255);
   
   const colWidth = (pageWidth - 30) / 5;
@@ -441,6 +432,41 @@ export async function generatePDFReport(params: {
     if (yPosition > pageHeight - 20 && idx < results.yearlyData.length - 1) {
       addPageBreak();
     }
+  });
+
+  // Stakeholder cash flow summary
+  if (yPosition > pageHeight - 50) {
+    addPageBreak();
+  }
+
+  yPosition += 8;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(0, 31, 63);
+  doc.text("Cash Flow Summary by Stakeholder", 15, yPosition);
+  yPosition += 8;
+
+  const stakeholders = [
+    { name: "Operator", npv: results.summary.operatorNPV || 0, color: hexColors.project },
+    { name: "Offtaker", npv: results.summary.offtakerNPV || 0, color: hexColors.offtaker },
+    { name: "Landowner", npv: results.summary.landownerNPV || 0, color: hexColors.landowner },
+    { name: "Developer", npv: results.summary.developerNPV || 0, color: hexColors.developer },
+  ];
+
+  stakeholders.forEach((stakeholder) => {
+    const hexColor = stakeholder.color;
+    const r = parseInt(hexColor.slice(1, 3), 16);
+    const g = parseInt(hexColor.slice(3, 5), 16);
+    const b = parseInt(hexColor.slice(5, 7), 16);
+    
+    doc.setFillColor(r, g, b);
+    doc.rect(15, yPosition, pageWidth - 30, 6, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    doc.text(stakeholder.name, 18, yPosition + 4);
+    doc.text("NPV: " + formatCurrency(stakeholder.npv), pageWidth - 25, yPosition + 4, { align: "right" });
+    yPosition += 7;
   });
 
   // PAGE 5: ASSUMPTIONS & SOURCES

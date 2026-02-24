@@ -604,7 +604,7 @@ export default function Dashboard() {
                     </div>
                     <Slider 
                       value={[inputs.projectLife]} 
-                      min={5} max={30} step={1} 
+                      min={5} max={40} step={1} 
                       onValueChange={(v) => handleInputChange("projectLife", v[0])} 
                     />
                   </div>
