@@ -14,14 +14,14 @@ interface MetricCardProps {
 
 export function MetricCard({ title, value, subValue, icon: Icon, className, trend, trendValue }: MetricCardProps) {
   return (
-    <Card className={cn("overflow-hidden border-[12px] border-gray-400 border-l-[24px] border-l-primary shadow-sm hover:shadow-md transition-shadow bg-gray-50", className)}>
+    <Card className={cn("overflow-hidden border-[12px] border-gray-400 border-l-[24px] border-l-primary shadow-sm hover:shadow-md transition-shadow bg-white", className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
         {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
       </CardHeader>
-      <CardContent className="bg-gray-50">
+      <CardContent className="bg-white">
         <div className="text-2xl font-bold tracking-tight text-slate-900">{value}</div>
         {(subValue || trendValue) && (
           <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
