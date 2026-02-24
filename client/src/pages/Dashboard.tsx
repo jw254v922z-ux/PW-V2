@@ -350,7 +350,7 @@ export default function Dashboard() {
       </div>
 
       {/* Hero Header */}
-      <div className="relative bg-white text-slate-900 pb-24 pt-12 overflow-hidden border-b-4 border-yellow-400">
+      <div className="relative bg-gray-100 text-slate-900 pb-24 pt-12 overflow-hidden border-b-4 border-yellow-400">
         <div className="container relative z-10">
           <div className="flex justify-between items-start">
             <div>
