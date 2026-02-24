@@ -61,6 +61,8 @@ export function GridConnectionSliders({ onCostsUpdate, setShowSourceInfo, initia
   const [roadPercentage, setRoadPercentage] = useState(50);
   const [roadCrossings, setRoadCrossings] = useState(2);
   const [includeStepDownInstallation, setIncludeStepDownInstallation] = useState(false);
+  const [includeStepUpTransformer, setIncludeStepUpTransformer] = useState(true);
+  const [includeStepDownTransformer, setIncludeStepDownTransformer] = useState(true);
 
   // Update distance when initialDistance prop changes
   useEffect(() => {
@@ -77,6 +79,8 @@ export function GridConnectionSliders({ onCostsUpdate, setShowSourceInfo, initia
     roadCrossings,
     includeStepDownInstallation,
     wayleaveYears: 1,
+    includeStepUpTransformer,
+    includeStepDownTransformer,
   });
 
   // Update parent component with new costs
@@ -115,7 +119,7 @@ export function GridConnectionSliders({ onCostsUpdate, setShowSourceInfo, initia
       totalCostMin: costs.totalCost.min,
       totalCostMax: costs.totalCost.max,
     });
-  }, [distance, cableVoltage, stepDownVoltage, stepUpTransformerCount, stepDownTransformerCount, roadPercentage, roadCrossings, includeStepDownInstallation]);
+  }, [distance, cableVoltage, stepDownVoltage, stepUpTransformerCount, stepDownTransformerCount, roadPercentage, roadCrossings, includeStepDownInstallation, includeStepUpTransformer, includeStepDownTransformer]);
 
   const CostSummaryCard = ({ label, min, max, source }: { label: string; min: number; max: number; source?: string }) => (
     <div className="p-3 bg-slate-50 rounded-lg border">
@@ -251,6 +255,35 @@ export function GridConnectionSliders({ onCostsUpdate, setShowSourceInfo, initia
                   Adds proportional costs for transformer sites, civil works, and connections
                 </p>
               </Label>
+            </div>
+
+            {/* Transformer Cost Toggles */}
+            <div className="space-y-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <Label className="text-base font-semibold">Transformer Costs</Label>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id="include-stepup"
+                    checked={includeStepUpTransformer}
+                    onCheckedChange={(checked) => setIncludeStepUpTransformer(checked as boolean)}
+                  />
+                  <Label htmlFor="include-stepup" className="cursor-pointer text-sm">
+                    <span className="font-semibold">Include Step-Up Transformer Costs</span>
+                    <p className="text-xs text-slate-600 mt-0.5">Solar output to transmission voltage</p>
+                  </Label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id="include-stepdown"
+                    checked={includeStepDownTransformer}
+                    onCheckedChange={(checked) => setIncludeStepDownTransformer(checked as boolean)}
+                  />
+                  <Label htmlFor="include-stepdown" className="cursor-pointer text-sm">
+                    <span className="font-semibold">Include Step-Down Transformer Costs</span>
+                    <p className="text-xs text-slate-600 mt-0.5">Transmission voltage to end-user voltage</p>
+                  </Label>
+                </div>
+              </div>
             </div>
 
             {/* Cable Distance */}
