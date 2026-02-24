@@ -52,28 +52,6 @@ export async function generatePDFReport(params: {
     yPosition += 18;
   };
 
-  // Helper: Add callout box
-  const addCalloutBox = (label: string, value: string, x: number, y: number, width: number, color: { r: number; g: number; b: number }) => {
-    // Background
-    doc.setFillColor(color.r, color.g, color.b);
-    doc.rect(x, y, width, 20, "F");
-
-    // Border
-    doc.setDrawColor(color.r, color.g, color.b);
-    doc.setLineWidth(0.5);
-    doc.rect(x, y, width, 20);
-
-    // Text
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(255, 255, 255);
-    doc.text(label, x + 3, y + 6);
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.text(value, x + 3, y + 15);
-  };
-
   // PAGE 1: COVER
   doc.setFont("helvetica", "bold");
   doc.setFontSize(24);
@@ -115,8 +93,8 @@ export async function generatePDFReport(params: {
   yPosition += 5;
   const metrics = [
     { label: "Total CAPEX", value: formatCurrency(results.summary.totalCapex) },
-    { label: "LCOE (Real)", value: "£" + (results.summary.lcoeReal || 0).toFixed(2) + "/MWh" },
-    { label: "IRR (Unlevered)", value: ((results.summary.irrUnlevered || 0) * 100).toFixed(2) + "%" },
+    { label: "LCOE (Real)", value: "£" + (results.summary.lcoe || 0).toFixed(2) + "/MWh" },
+    { label: "IRR (Unlevered)", value: ((results.summary.irr || 0) * 100).toFixed(2) + "%" },
     { label: "Payback Period", value: (results.summary.paybackPeriod || 0) > inputs.projectLife ? "> Project Life" : (results.summary.paybackPeriod || 0).toFixed(1) + " years" },
     { label: "Total NPV", value: formatCurrency(results.summary.totalDiscountedCashFlow) },
     { label: "Project Life", value: inputs.projectLife + " years" },
@@ -155,17 +133,22 @@ export async function generatePDFReport(params: {
   addPageBreak();
   addBrandedHeader("Stakeholder Value Distribution");
 
-  // Pie chart representation (visual bars)
-  const totalValue = results.stakeholders.operatorNPV + results.stakeholders.offtakerSavings + results.stakeholders.landownerIncome + results.stakeholders.developerPremium;
+  // Calculate stakeholder values from summary
+  const operatorNPV = results.summary.totalDiscountedCashFlow;
+  const offtakerSavings = results.summary.totalSavings;
+  const landownerIncome = results.summary.totalLandOptionIncome;
+  const developerPremium = results.summary.totalDeveloperPremium;
+
+  const totalValue = operatorNPV + offtakerSavings + landownerIncome + developerPremium;
 
   const stakeholderData = [
-    { label: "Operator", value: results.stakeholders.operatorNPV, color: hexColors.project },
-    { label: "Offtaker", value: results.stakeholders.offtakerSavings, color: hexColors.offtaker },
-    { label: "Landowner", value: results.stakeholders.landownerIncome, color: hexColors.landowner },
-    { label: "Developer", value: results.stakeholders.developerPremium, color: hexColors.developer },
+    { label: "Operator", value: operatorNPV, color: hexColors.project },
+    { label: "Offtaker", value: offtakerSavings, color: hexColors.offtaker },
+    { label: "Landowner", value: landownerIncome, color: hexColors.landowner },
+    { label: "Developer", value: developerPremium, color: hexColors.developer },
   ];
 
-  // Draw pie chart representation
+  // Draw pie chart representation as bars
   let pieY = yPosition;
   stakeholderData.forEach((item, idx) => {
     const percentage = totalValue > 0 ? ((item.value / totalValue) * 100) : 0;
@@ -205,8 +188,8 @@ export async function generatePDFReport(params: {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(0, 0, 0);
-  doc.text(`NPV: ${formatCurrency(results.stakeholders.operatorNPV)}`, 18, yPosition + 14);
-  doc.text(`IRR: ${((results.stakeholders.operatorIRR || 0) * 100).toFixed(2)}%`, 18, yPosition + 20);
+  doc.text(`NPV: ${formatCurrency(operatorNPV)}`, 18, yPosition + 14);
+  doc.text(`IRR: ${((results.summary.irr || 0) * 100).toFixed(2)}%`, 18, yPosition + 20);
 
   // Offtaker
   doc.setFillColor(45, 134, 89);
@@ -217,8 +200,8 @@ export async function generatePDFReport(params: {
   doc.text("Offtaker", 18 + boxWidth, yPosition + 6);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text(`Total Savings: ${formatCurrency(results.stakeholders.offtakerSavings)}`, 18 + boxWidth, yPosition + 14);
-  doc.text(`Yearly: ${formatCurrency(results.stakeholders.offtakerYearlySavings)}`, 18 + boxWidth, yPosition + 20);
+  doc.text(`Total Savings: ${formatCurrency(offtakerSavings)}`, 18 + boxWidth, yPosition + 14);
+  doc.text(`Yearly: ${formatCurrency(results.summary.yearlySavings)}`, 18 + boxWidth, yPosition + 20);
 
   yPosition += boxHeight + 5;
 
@@ -231,8 +214,8 @@ export async function generatePDFReport(params: {
   doc.text("Landowner", 18, yPosition + 6);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text(`Total Income: ${formatCurrency(results.stakeholders.landownerIncome)}`, 18, yPosition + 14);
-  doc.text(`Yearly: ${formatCurrency(results.stakeholders.landownerYearlyIncome)}`, 18, yPosition + 20);
+  doc.text(`Total Income: ${formatCurrency(landownerIncome)}`, 18, yPosition + 14);
+  doc.text(`Yearly: ${formatCurrency(results.summary.yearlyRentalIncome)}`, 18, yPosition + 20);
 
   // Developer
   doc.setFillColor(0, 31, 63);
@@ -243,8 +226,8 @@ export async function generatePDFReport(params: {
   doc.text("Developer", 18 + boxWidth, yPosition + 6);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text(`Total Premium: ${formatCurrency(results.stakeholders.developerPremium)}`, 18 + boxWidth, yPosition + 14);
-  doc.text(`Payback: ${(results.stakeholders.developerPayback || 0).toFixed(1)} years`, 18 + boxWidth, yPosition + 20);
+  doc.text(`Total Premium: ${formatCurrency(developerPremium)}`, 18 + boxWidth, yPosition + 14);
+  doc.text(`Payback: ${(results.summary.paybackPeriod || 0).toFixed(1)} years`, 18 + boxWidth, yPosition + 20);
 
   yPosition += boxHeight + 10;
 
@@ -260,10 +243,10 @@ export async function generatePDFReport(params: {
   yPosition += 8;
 
   const costData = [
-    ["Cable Cost", formatCurrency(results.gridConnection.cableCost)],
-    ["Step-Up Transformer", formatCurrency(results.gridConnection.stepUpTransformerCost)],
-    ["Step-Down Transformer", formatCurrency(results.gridConnection.stepDownTransformerCost)],
-    ["Grid Connection Cost", formatCurrency(results.gridConnection.totalGridConnectionCost)],
+    ["EPC Cost", formatCurrency(inputs.capexPerMW * inputs.mw)],
+    ["Private Wire Cost", formatCurrency(inputs.privateWireCost)],
+    ["Grid Connection Cost", formatCurrency(inputs.gridConnectionCost)],
+    ["Developer Premium", formatCurrency(results.summary.totalDeveloperPremium)],
     ["Total CAPEX", formatCurrency(results.summary.totalCapex)],
   ];
 
@@ -292,12 +275,13 @@ export async function generatePDFReport(params: {
   doc.text("Generation & Revenue (Year 1)", 15, yPosition);
   yPosition += 8;
 
+  const year1Data = results.yearlyData[1]; // Year 1 is index 1 (Year 0 is CAPEX)
   const genData = [
-    ["Annual Generation", formatNumberWithCommas(results.generation.annualGeneration.toFixed(0)) + " MWh"],
+    ["Annual Generation", formatNumberWithCommas(year1Data.generation.toFixed(0)) + " MWh"],
     ["PPA Price", "£" + (inputs.powerPrice || 0).toFixed(2) + "/MWh"],
-    ["Annual Revenue", formatCurrency(results.generation.annualRevenue)],
-    ["OPEX (Year 1)", formatCurrency(results.costs.opexYear1)],
-    ["Net Cash Flow", formatCurrency(results.generation.annualRevenue - results.costs.opexYear1)],
+    ["Annual Revenue", formatCurrency(year1Data.revenue)],
+    ["OPEX (Year 1)", formatCurrency(year1Data.opex)],
+    ["Net Cash Flow", formatCurrency(year1Data.cashFlow)],
   ];
 
   genData.forEach((row, idx) => {
@@ -346,16 +330,11 @@ export async function generatePDFReport(params: {
 
   yPosition += 6;
 
-  // Cash flow rows
-  let cumulativeCF = -results.summary.totalCapex;
-  
-  for (let year = 0; year < inputs.projectLife; year++) {
-    const revenue = results.generation.annualRevenue * Math.pow(1 - (inputs.generationDegradation || 0) / 100, year);
-    const opex = results.costs.opexYear1 * Math.pow(1 + (inputs.costInflationRate || 0) / 100, year);
-    const netCF = revenue - opex;
-    cumulativeCF += netCF;
+  // Cash flow rows - all years
+  results.yearlyData.forEach((yearData, idx) => {
+    if (idx === 0) return; // Skip year 0 (CAPEX only)
 
-    const bgColor = year % 2 === 0 ? colors.white : colors.gray;
+    const bgColor = idx % 2 === 0 ? colors.white : colors.gray;
     doc.setFillColor(bgColor.r, bgColor.g, bgColor.b);
     doc.rect(15, yPosition, pageWidth - 30, 5, "F");
 
@@ -363,18 +342,18 @@ export async function generatePDFReport(params: {
     doc.setFontSize(7);
     doc.setTextColor(0, 0, 0);
     
-    doc.text((year + 1).toString(), 15 + 2, yPosition + 3.5);
-    doc.text("£" + formatNumberWithCommas(revenue.toFixed(0)), 15 + colWidth + 2, yPosition + 3.5);
-    doc.text("£" + formatNumberWithCommas(opex.toFixed(0)), 15 + colWidth * 2 + 2, yPosition + 3.5);
-    doc.text("£" + formatNumberWithCommas(netCF.toFixed(0)), 15 + colWidth * 3 + 2, yPosition + 3.5);
-    doc.text("£" + formatNumberWithCommas(cumulativeCF.toFixed(0)), 15 + colWidth * 4 + 2, yPosition + 3.5);
+    doc.text(yearData.year.toString(), 15 + 2, yPosition + 3.5);
+    doc.text("£" + formatNumberWithCommas(yearData.revenue.toFixed(0)), 15 + colWidth + 2, yPosition + 3.5);
+    doc.text("£" + formatNumberWithCommas(yearData.opex.toFixed(0)), 15 + colWidth * 2 + 2, yPosition + 3.5);
+    doc.text("£" + formatNumberWithCommas(yearData.cashFlow.toFixed(0)), 15 + colWidth * 3 + 2, yPosition + 3.5);
+    doc.text("£" + formatNumberWithCommas(yearData.cumulativeCashFlow.toFixed(0)), 15 + colWidth * 4 + 2, yPosition + 3.5);
 
     yPosition += 5;
 
-    if (yPosition > pageHeight - 20 && year < inputs.projectLife - 1) {
+    if (yPosition > pageHeight - 20 && idx < results.yearlyData.length - 1) {
       addPageBreak();
     }
-  }
+  });
 
   // PAGE 5: ASSUMPTIONS & SOURCES
   addPageBreak();
@@ -382,13 +361,11 @@ export async function generatePDFReport(params: {
 
   const assumptions = [
     ["Project Life", inputs.projectLife + " years"],
-    ["Cable Distance", (inputs.cableDistance || 0).toFixed(1) + " km"],
-    ["Cable Voltage", (inputs.cableVoltage || 0) + " kV"],
-    ["Installed Capacity", (inputs.installedCapacity || 0).toFixed(2) + " MWp"],
+    ["Installed Capacity", (inputs.mw || 0).toFixed(2) + " MWp"],
     ["CAPEX per MW", "£" + formatNumberWithCommas((inputs.capexPerMW || 0).toFixed(0))],
     ["OPEX per MW (Year 1)", "£" + formatNumberWithCommas((inputs.opexPerMW || 0).toFixed(0))],
     ["Cost Inflation Rate", (inputs.costInflationRate || 0).toFixed(2) + "%"],
-    ["Generation Degradation", (inputs.generationDegradation || 0).toFixed(2) + "% p.a."],
+    ["Generation Degradation", (inputs.degradationRate || 0).toFixed(2) + "% p.a."],
     ["PPA Price", "£" + (inputs.powerPrice || 0).toFixed(2) + "/MWh"],
     ["Discount Rate", (inputs.discountRate || 0).toFixed(2) + "%"],
   ];
