@@ -361,12 +361,19 @@ export async function generatePDFReport(params: {
   doc.text("Cost Breakdown", 15, yPosition);
   yPosition += 6;
 
+  // Calculate individual costs from inputs
+  const epcCost = inputs.capexPerMW * inputs.mw;
+  const devPremiumAmount = inputs.developmentPremiumEnabled 
+    ? inputs.developmentPremiumPerMW * inputs.mw * (1 - inputs.developmentPremiumDiscount / 100)
+    : 0;
+  const gridCost = inputs.gridCostOverrideEnabled ? inputs.gridCostOverride : inputs.gridConnectionCost;
+  
   const costData = [
-    ["EPC Cost", formatCurrency((results.summary.epcCost || 0))],
-    ["Private Wire Cost", formatCurrency((results.summary.privateWireCost || 0))],
-    ["Grid Connection Cost", formatCurrency((results.summary.gridConnectionCost || 0))],
-    ["Developer Premium", formatCurrency((results.summary.developerPremium || 0))],
-    ["Total CAPEX", formatCurrency((results.summary.totalCapex || 0))],
+    ["EPC Cost", formatCurrency(epcCost)],
+    ["Private Wire Cost", formatCurrency(inputs.privateWireCost)],
+    ["Grid Connection Cost", formatCurrency(gridCost)],
+    ["Developer Premium", formatCurrency(devPremiumAmount)],
+    ["Total CAPEX", formatCurrency(results.summary.totalCapex)],
   ];
 
   costData.forEach((row, idx) => {
@@ -390,32 +397,34 @@ export async function generatePDFReport(params: {
   // Cash flow table header
   doc.setFillColor(colors.navy.r, colors.navy.g, colors.navy.b);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(6);
+  doc.setFontSize(7);
   doc.setTextColor(255, 255, 255);
   
   const colWidth = (pageWidth - 30) / 7;
-  doc.rect(15, yPosition, colWidth, 6, "F");
-  doc.text("Year", 15 + 2, yPosition + 4);
+  const headerY = yPosition;
   
-  doc.rect(15 + colWidth, yPosition, colWidth, 6, "F");
-  doc.text("Generation (MWh)", 15 + colWidth + 2, yPosition + 4);
+  doc.rect(15, headerY, colWidth, 7, "F");
+  doc.text("Year", 15 + 1, headerY + 5);
   
-  doc.rect(15 + colWidth * 2, yPosition, colWidth, 6, "F");
-  doc.text("Revenue", 15 + colWidth * 2 + 2, yPosition + 4);
+  doc.rect(15 + colWidth, headerY, colWidth, 7, "F");
+  doc.text("Generation", 15 + colWidth + 1, headerY + 5);
   
-  doc.rect(15 + colWidth * 3, yPosition, colWidth, 6, "F");
-  doc.text("OPEX", 15 + colWidth * 3 + 2, yPosition + 4);
+  doc.rect(15 + colWidth * 2, headerY, colWidth, 7, "F");
+  doc.text("Revenue", 15 + colWidth * 2 + 1, headerY + 5);
   
-  doc.rect(15 + colWidth * 4, yPosition, colWidth, 6, "F");
-  doc.text("Net CF", 15 + colWidth * 4 + 2, yPosition + 4);
+  doc.rect(15 + colWidth * 3, headerY, colWidth, 7, "F");
+  doc.text("OPEX", 15 + colWidth * 3 + 1, headerY + 5);
   
-  doc.rect(15 + colWidth * 5, yPosition, colWidth, 6, "F");
-  doc.text("Disc CF", 15 + colWidth * 5 + 2, yPosition + 4);
+  doc.rect(15 + colWidth * 4, headerY, colWidth, 7, "F");
+  doc.text("Net CF", 15 + colWidth * 4 + 1, headerY + 5);
   
-  doc.rect(15 + colWidth * 6, yPosition, colWidth, 6, "F");
-  doc.text("Cum CF", 15 + colWidth * 6 + 2, yPosition + 4);
+  doc.rect(15 + colWidth * 5, headerY, colWidth, 7, "F");
+  doc.text("Disc CF", 15 + colWidth * 5 + 1, headerY + 5);
+  
+  doc.rect(15 + colWidth * 6, headerY, colWidth, 7, "F");
+  doc.text("Cum CF", 15 + colWidth * 6 + 1, headerY + 5);
 
-  yPosition += 6;
+  yPosition += 7;
 
   // Cash flow rows - all years
   results.yearlyData.forEach((yearData, idx) => {
