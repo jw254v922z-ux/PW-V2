@@ -397,34 +397,26 @@ export async function generatePDFReport(params: {
   // Cash flow table header
   doc.setFillColor(colors.navy.r, colors.navy.g, colors.navy.b);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(7);
+  doc.setFontSize(8);
   doc.setTextColor(255, 255, 255);
   
   const colWidth = (pageWidth - 30) / 7;
   const headerY = yPosition;
+  const headerHeight = 8;
   
-  doc.rect(15, headerY, colWidth, 7, "F");
-  doc.text("Year", 15 + 1, headerY + 5);
+  // Draw full header background
+  doc.rect(15, headerY, pageWidth - 30, headerHeight, "F");
   
-  doc.rect(15 + colWidth, headerY, colWidth, 7, "F");
-  doc.text("Generation", 15 + colWidth + 1, headerY + 5);
-  
-  doc.rect(15 + colWidth * 2, headerY, colWidth, 7, "F");
-  doc.text("Revenue", 15 + colWidth * 2 + 1, headerY + 5);
-  
-  doc.rect(15 + colWidth * 3, headerY, colWidth, 7, "F");
-  doc.text("OPEX", 15 + colWidth * 3 + 1, headerY + 5);
-  
-  doc.rect(15 + colWidth * 4, headerY, colWidth, 7, "F");
-  doc.text("Net CF", 15 + colWidth * 4 + 1, headerY + 5);
-  
-  doc.rect(15 + colWidth * 5, headerY, colWidth, 7, "F");
-  doc.text("Disc CF", 15 + colWidth * 5 + 1, headerY + 5);
-  
-  doc.rect(15 + colWidth * 6, headerY, colWidth, 7, "F");
-  doc.text("Cum CF", 15 + colWidth * 6 + 1, headerY + 5);
+  // Draw header text for each column
+  doc.text("Year", 15 + 2, headerY + 6);
+  doc.text("Generation", 15 + colWidth + 2, headerY + 6);
+  doc.text("Revenue", 15 + colWidth * 2 + 2, headerY + 6);
+  doc.text("OPEX", 15 + colWidth * 3 + 2, headerY + 6);
+  doc.text("Net CF", 15 + colWidth * 4 + 2, headerY + 6);
+  doc.text("Disc CF", 15 + colWidth * 5 + 2, headerY + 6);
+  doc.text("Cum CF", 15 + colWidth * 6 + 2, headerY + 6);
 
-  yPosition += 7;
+  yPosition += headerHeight;
 
   // Cash flow rows - all years
   results.yearlyData.forEach((yearData, idx) => {
