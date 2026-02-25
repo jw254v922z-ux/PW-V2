@@ -217,23 +217,23 @@ export async function generatePDFReport(params: {
   // Add map screenshot if available
   if (mapScreenshot) {
     yPosition += 5;
-    if (yPosition > pageHeight - 60) {
+    if (yPosition > pageHeight - 80) {
       addPageBreak();
-    } else {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.setTextColor(0, 31, 63);
-      doc.text("Site Location Map", 15, yPosition);
-      yPosition += 8;
+    }
+    
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(0, 31, 63);
+    doc.text("Site Location Map", 15, yPosition);
+    yPosition += 8;
 
-      try {
-        const mapWidth = pageWidth - 30;
-        const mapHeight = 60;
-        doc.addImage(mapScreenshot, "PNG", 15, yPosition, mapWidth, mapHeight);
-        yPosition += mapHeight + 5;
-      } catch (e) {
-        console.error("Failed to add map image to PDF:", e);
-      }
+    try {
+      const mapWidth = pageWidth - 30;
+      const mapHeight = 60;
+      doc.addImage(mapScreenshot, "PNG", 15, yPosition, mapWidth, mapHeight);
+      yPosition += mapHeight + 5;
+    } catch (e) {
+      console.error("Failed to add map image to PDF:", e);
     }
   }
 
