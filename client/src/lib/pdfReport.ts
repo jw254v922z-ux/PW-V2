@@ -214,6 +214,39 @@ export async function generatePDFReport(params: {
 
   yPosition += 48;
 
+  // Add simple map placeholder section
+  addPageBreak();
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(0, 31, 63);
+  doc.text("Site Location Map", 15, yPosition);
+  yPosition += 10;
+  
+  // Add a simple rectangle as placeholder for map
+  doc.setDrawColor(200, 200, 200);
+  doc.rect(15, yPosition, pageWidth - 30, 80);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(150, 150, 150);
+  doc.text("Map will appear here when polygon is drawn", pageWidth / 2, yPosition + 40, { align: "center" });
+  yPosition += 85;
+  
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(0, 31, 63);
+  doc.text("Site Information", 15, yPosition);
+  yPosition += 8;
+  
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(80, 80, 80);
+  doc.text(`System Size: ${inputs.capacity} MW`, 15, yPosition);
+  yPosition += 6;
+  doc.text(`Project Life: ${inputs.projectLife} years`, 15, yPosition);
+  yPosition += 6;
+  doc.text(`Annual Generation: ${(results.yearlyData[0]?.generation || 0).toFixed(0)} MWh`, 15, yPosition);
+  yPosition += 15;
+
   // PAGE 2: STAKEHOLDER VALUE
   addPageBreak();
   addBrandedHeader("Stakeholder Value Distribution");
