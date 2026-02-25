@@ -18,7 +18,6 @@ import { GridConnectionCostBreakdown } from "../components/GridConnectionCostBre
 import { GridConnectionSliders, type GridConnectionCosts } from "../components/GridConnectionSliders";
 import { SensitivityHeatmap } from "../components/SensitivityHeatmap";
 import { CashFlowTable } from "../components/CashFlowTable";
-import { useMapContext } from "@/contexts/MapContext";
 import { StakeholderValueChart } from "../components/StakeholderValueChart";
 import LandownerPage from "./Landowner";
 import { calculateSensitivityMatrix } from "@/lib/sensitivity";
@@ -228,25 +227,54 @@ export default function Dashboard() {
     return new Intl.NumberFormat('en-GB', { maximumFractionDigits: decimals }).format(val);
   };
 
-
-
-  const { mapScreenshot } = useMapContext();
+  // Get map screenshot from localStorage (persisted from MapView)
+  const getMapScreenshot = () => {
+    try {
+      return localStorage.getItem('mapScreenshot');
+    } catch (e) {
+      console.error('Failed to get map screenshot from localStorage:', e);
+      return null;
+    }
+  };
 
   const handleExportPDF = async () => {
     try {
       const toastId = toast.loading('Generating PDF...');
-      // Map screenshot is retrieved from context
       
-      // Generate PDF and trigger download
+      // Try to capture the map from localStorage first (from manual button click in MapView)
+      let mapImage = getMapScreenshot();
+      
+      // If no manual screenshot, try to capture the map element if it exists
+      if (!mapImage) {
+        try {
+          const mapElement = document.querySelector('.leaflet-container');
+          if (mapElement && mapElement instanceof HTMLElement) {
+            console.log('[PDF Export] Capturing map element...');
+            const canvas = await html2canvas(mapElement, {
+              backgroundColor: '#ffffff',
+              scale: 2,
+              logging: false,
+              useCORS: true,
+              allowTaint: true,
+            });
+            mapImage = canvas.toDataURL('image/png');
+            console.log('[PDF Export] Map captured successfully');
+          }
+        } catch (error) {
+          console.warn('[PDF Export] Failed to capture map element:', error);
+        }
+      }
+      
+      // Generate PDF with map image
       const doc = await generatePDFReport({ 
         inputs, 
         results, 
         projectName: modelName || 'Solar Project', 
         description: modelDescription,
-        mapScreenshot: mapScreenshot || undefined
+        mapScreenshot: mapImage || undefined
       });
       
-      // Convert PDF to blob and trigger download using anchor element
+      // Convert PDF to blob and trigger download
       const filename = `${modelName || 'Solar Project'}-report.pdf`;
       const pdfBlob = doc.output('blob');
       const url = URL.createObjectURL(pdfBlob);
@@ -261,898 +289,647 @@ export default function Dashboard() {
       toast.dismiss(toastId);
       toast.success('PDF exported successfully!');
     } catch (error) {
-      console.error('PDF export failed:', error);
-      toast.error('Failed to export PDF: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      console.error('[PDF Export] Error:', error);
+      toast.error('Failed to generate PDF: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
-  const exportCSV = () => {
-    const headers = [
-      "Year", "Capex", "Opex", "Generation (MWh)", "Revenue", "Cash Flow", 
-      "Cumulative Cash Flow", "Discount Factor", "Discounted Cost", 
-      "Discounted Energy", "Discounted Revenue", "Discounted Cash Flow", "Cumulative Discounted CF"
-    ];
-    
-    const rows = results.yearlyData.map(y => [
-      y.year, y.capex, y.opex, y.generation, y.revenue, y.cashFlow,
-      y.cumulativeCashFlow, y.discountFactor, y.discountedCost,
-      y.discountedEnergy, y.discountedRevenue, y.discountedCashFlow, y.cumulativeDiscountedCashFlow
-    ]);
+  const handleExportCSV = () => {
+    try {
+      const csvContent = [
+        ['Year', 'Generation (MWh)', 'Revenue (£)', 'OPEX (£)', 'Net Cash Flow (£)', 'Discounted CF (£)', 'Cumulative CF (£)'],
+        ...results.yearlyData.map(year => [
+          year.year,
+          year.generation.toFixed(0),
+          year.revenue.toFixed(2),
+          year.opex.toFixed(2),
+          year.netCashFlow.toFixed(2),
+          year.discountedCashFlow.toFixed(2),
+          year.cumulativeCashFlow.toFixed(2),
+        ])
+      ].map(row => row.join(',')).join('\n');
 
-    const csvContent = [
-      headers.join(","),
-      ...rows.map(r => r.join(","))
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", "solar_model_results.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${modelName || 'Solar Project'}-cashflow.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success('CSV exported successfully!');
+    } catch (error) {
+      toast.error('Failed to export CSV');
+    }
   };
 
-  const [guestMode, setGuestMode] = useState(true); // Public access - guest mode enabled by default
-
-  if (!isAuthenticated && !guestMode) {
-    return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Welcome to Private Wire Solar Calculator</CardTitle>
-            <CardDescription>Sign in to save and manage your solar project models</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button 
-              onClick={() => window.location.href = getLoginUrl()} 
-              className="w-full"
-              size="lg"
-            >
-              Sign In with Manus
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* Header */}
+        <div className="flex justify-between items-start mb-8">
+          <div>
+            <h1 className="text-4xl font-bold text-slate-900 mb-2">Private Wire Solar Calculator</h1>
+            <p className="text-slate-600">Welcome, {user?.name || 'Guest'}! Advanced financial modeling for solar assets with private wire integration.</p>
+          </div>
+          <div className="flex gap-3">
+            <Button variant="outline" size="sm" onClick={() => window.location.href = '/map'} className="gap-2">
+              <MapPin className="w-4 h-4" />
+              Site Mapping
             </Button>
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-300"></span>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white dark:bg-slate-950 text-gray-500">or</span>
+            <Button variant="outline" size="sm" onClick={handleExportCSV} className="gap-2">
+              <Download className="w-4 h-4" />
+              Export CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-2">
+              <Download className="w-4 h-4" />
+              Export PDF
+            </Button>
+            <Button variant="outline" size="sm" onClick={logout} className="gap-2">
+              <LogOut className="w-4 h-4" />
+              Sign Out
+            </Button>
+          </div>
+        </div>
+
+        {/* Disclaimer */}
+        <Card className="mb-6 border-yellow-200 bg-yellow-50">
+          <CardContent className="pt-6">
+            <div className="flex gap-3">
+              <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-yellow-900">Disclaimer:</p>
+                <p className="text-yellow-800 text-sm">Indicative projections based on Jan 2026 data. Not for investment decisions without professional verification.</p>
+                <button onClick={() => setShowDisclaimerModal(true)} className="text-yellow-700 hover:text-yellow-900 text-sm font-medium underline mt-1">
+                  View full details
+                </button>
               </div>
             </div>
-            <Button 
-              onClick={() => setGuestMode(true)} 
-              variant="outline"
-              className="w-full"
-              size="lg"
-            >
-              Continue as Guest (Read-Only)
-            </Button>
-            <p className="text-xs text-gray-500 text-center mt-4">
-              Guest mode allows you to explore the calculator but you won't be able to save your models.
-            </p>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
 
-  return (
-    <div className="min-h-screen bg-gray-100 pb-12">
-      {/* Disclaimer Banner - Top */}
-      <div className="bg-amber-50 dark:bg-amber-950 border-b-2 border-amber-400 p-3">
-        <div className="container">
-          <div className="flex gap-2 items-center justify-between">
-            <div className="flex gap-2 items-center flex-1">
-              <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-              <p className="text-xs text-amber-800 dark:text-amber-200">
-                <strong>Disclaimer:</strong> Indicative projections based on Jan 2026 data. Not for investment decisions without professional verification.
-                <button onClick={() => setShowDisclaimerModal(true)} className="ml-2 font-semibold text-amber-700 dark:text-amber-300 hover:underline cursor-pointer">View full details</button>
-              </p>
-            </div>
-          </div>
+        {/* Key Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+          <MetricCard
+            title="Total CAPEX"
+            value={formatCurrency(results.summary.totalCapex)}
+            icon={Factory}
+          />
+          <MetricCard
+            title="LCOE (Real)"
+            value={`£${results.summary.lcoe.toFixed(0)}/MWh`}
+            icon={Zap}
+          />
+          <MetricCard
+            title="IRR (Unlevered)"
+            value={`${(results.summary.irr * 100).toFixed(2)}%`}
+            icon={TrendingUp}
+          />
+          <MetricCard
+            title="Payback Period"
+            value={results.summary.paybackPeriod > results.summary.projectLife ? '> Project Life' : `${results.summary.paybackPeriod.toFixed(1)} years`}
+            icon={BatteryCharging}
+          />
+          <MetricCard
+            title="Total NPV"
+            value={formatCurrency(results.summary.totalDiscountedCashFlow)}
+            icon={Coins}
+          />
         </div>
-      </div>
 
-      {/* Hero Header */}
-      <div className="relative bg-gray-100 text-slate-900 pb-24 pt-12 overflow-hidden border-b-4 border-yellow-400">
-        <div className="container relative z-10">
-          <div className="flex justify-between items-start">
+        {/* Stakeholder Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {/* Operator */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                Operator
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-slate-600">Total NPV</p>
+                  <p className="text-xl font-bold text-slate-900">{formatCurrency(results.summary.totalDiscountedCashFlow)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-600">IRR</p>
+                  <p className="text-xl font-bold text-slate-900">{(results.summary.irr * 100).toFixed(2)}%</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Offtaker */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                Offtaker
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-slate-600">Yearly Savings</p>
+                  <p className="text-lg font-bold text-slate-900">{formatCurrency(results.summary.offtakerYearlySavings)}/year</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-600">Total Savings</p>
+                  <p className="text-lg font-bold text-slate-900">{formatCurrency(results.summary.offtakerTotalSavings)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Landowner */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                Landowner
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-slate-600">Yearly Rental Income</p>
+                  <p className="text-lg font-bold text-slate-900">{formatCurrency(results.summary.landownerYearlyIncome)}/year</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-600">Total Rental Income</p>
+                  <p className="text-lg font-bold text-slate-900">{formatCurrency(results.summary.landownerTotalIncome)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Developer */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-slate-900"></div>
+                Developer
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-slate-600">Developer Premium</p>
+                  <p className="text-lg font-bold text-slate-900">{formatCurrency(results.summary.developerPremium)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Stakeholder Value Chart */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Stakeholder Value Distribution</CardTitle>
+            <CardDescription>Proportional value created for each party based on project NPV, offtaker savings, landowner rental income, and developer premium</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StakeholderValueChart results={results} />
+          </CardContent>
+        </Card>
+
+        {/* Guest Mode Notice */}
+        {!isAuthenticated && (
+          <Card className="mb-8 border-blue-200 bg-blue-50">
+            <CardContent className="pt-6">
+              <p className="text-blue-900"><strong>Guest Mode:</strong> You're using the calculator in read-only mode. <a href={getLoginUrl()} className="underline font-semibold">Sign in</a> to save your models.</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Saved Models Section */}
+        {isAuthenticated && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Saved Models</CardTitle>
+              <CardDescription>Load or manage your project models</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {savedModels.length === 0 ? (
+                <p className="text-slate-600">No saved models yet. Create one to get started!</p>
+              ) : (
+                <div className="space-y-2">
+                  {savedModels.map(model => (
+                    <div key={model.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                      <div>
+                        <p className="font-semibold">{model.name}</p>
+                        <p className="text-sm text-slate-600">{model.description}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => setCurrentModelId(model.id)}>Load</Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleDeleteModel(model.id)}>Delete</Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Project Details */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Project Details</CardTitle>
+            <CardDescription>Name and identify your solar model</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight font-display mb-2">
-                Private Wire Solar Calculator
-              </h1>
-              <p className="text-slate-700 max-w-2xl text-lg">
-                Welcome, {user?.name || "User"}! Advanced financial modeling for solar assets with private wire integration.
-              </p>
+              <Label htmlFor="project-name">Project Name</Label>
+              <Input
+                id="project-name"
+                placeholder="e.g. North Ridge Solar"
+                value={modelName}
+                onChange={(e) => setModelName(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="project-description">Description (Optional)</Label>
+              <Input
+                id="project-description"
+                placeholder="Brief project overview"
+                value={modelDescription}
+                onChange={(e) => setModelDescription(e.target.value)}
+              />
             </div>
             <div className="flex gap-2">
-              <Button asChild variant="outline" className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20">
-                <a href="/map" className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  Site Mapping
-                </a>
+              <Button onClick={handleSaveModel} className="gap-2">
+                <Save className="w-4 h-4" />
+                Save Model
               </Button>
-              <Button onClick={exportCSV} variant="outline" className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20">
-                <Download className="mr-2 h-4 w-4" /> Export CSV
-              </Button>
-              <Button onClick={handleExportPDF} variant="outline" className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20">
-                <Download className="mr-2 h-4 w-4" /> Export PDF
-              </Button>
-              {isAuthenticated && (
-                <Button onClick={() => logout()} variant="outline" className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20">
-                  <LogOut className="mr-2 h-4 w-4" /> Sign Out
-                </Button>
-              )}
             </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          {/* Project Details Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mt-8">
-            <MetricCard 
-              title="Total CAPEX" 
-              value={formatCurrency(results.summary.totalCapex)} 
-              icon={Factory}
-              className="bg-white/5 border-l-orange-400 text-white border-white/10 backdrop-blur-sm"
-            />
-            <MetricCard 
-              title="LCOE (Real)" 
-              value={formatCurrency(results.summary.lcoe) + "/MWh"} 
-              icon={Coins}
-              className="bg-white/5 border-l-emerald-400 text-white border-white/10 backdrop-blur-sm"
-            />
-            <MetricCard 
-              title="IRR (Unlevered)" 
-              value={(results.summary.irr * 100).toFixed(2) + "%"} 
-              icon={Zap}
-              className="bg-white/5 border-l-yellow-400 text-white border-white/10 backdrop-blur-sm"
-            />
-            <MetricCard 
-              title="Payback Period" 
-              value={results.summary.paybackPeriod > inputs.projectLife ? "> Project Life" : results.summary.paybackPeriod.toFixed(1) + " Years"} 
-              icon={BatteryCharging}
-              className="bg-white/5 border-l-blue-400 text-white border-white/10 backdrop-blur-sm"
-            />
-            <MetricCard 
-              title="Total NPV" 
-              value={formatCurrency(results.summary.totalDiscountedCashFlow)} 
-              icon={Factory}
-              className="bg-white/5 border-l-purple-400 text-white border-white/10 backdrop-blur-sm"
-            />
-          </div>
+        {/* Tabs for different analyses */}
+        <Tabs defaultValue="parameters" className="mb-8">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="parameters">Parameters</TabsTrigger>
+            <TabsTrigger value="costs">Cost Breakdown</TabsTrigger>
+            <TabsTrigger value="gridcosts">Private Wire Parameters</TabsTrigger>
+            <TabsTrigger value="cashflow">Cash Flow Analysis</TabsTrigger>
+            <TabsTrigger value="generation">Generation & Revenue</TabsTrigger>
+          </TabsList>
 
-          {/* Operator Card */}
-          <div className="mt-4 p-6 rounded-lg bg-white border-4 border-gray-200 border-l-[16px] shadow-sm" style={{ borderLeftColor: '#808080' }}>
-            <h3 className="text-sm font-semibold mb-4" style={{ color: '#808080' }}>Operator</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-              <MetricCard 
-                title="Total NPV" 
-                value={formatCurrency(results.summary.totalDiscountedCashFlow)} 
-                icon={Factory}
-                className="bg-white/5 border-l-gray-400 text-white border-white/10 backdrop-blur-sm"
-              />
-              <MetricCard 
-                title="IRR" 
-                value={(results.summary.irr * 100).toFixed(2) + "%"} 
-                icon={Zap}
-                className="bg-white/5 border-l-gray-400 text-white border-white/10 backdrop-blur-sm"
-              />
-            </div>
-          </div>
-
-          {/* Offtaker Card */}
-          <div className="mt-4 p-6 rounded-lg bg-white border-4 border-gray-200 border-l-[16px] shadow-sm" style={{ borderLeftColor: '#2D8659' }}>
-            <h3 className="text-sm font-semibold mb-4" style={{ color: '#2D8659' }}>Offtaker</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-              <MetricCard 
-                title="Yearly Savings" 
-                value={formatCurrency(results.summary.yearlySavings) + "/year"} 
-                icon={Zap}
-                className="bg-white/5 border-l-green-400 text-white border-white/10 backdrop-blur-sm"
-              />
-              <MetricCard 
-                title="Total Savings" 
-                value={formatCurrency(results.summary.totalSavings)} 
-                icon={Zap}
-                className="bg-white/5 border-l-emerald-400 text-white border-white/10 backdrop-blur-sm"
-              />
-            </div>
-          </div>
-
-          {/* Landowner Card */}
-          <div className="mt-4 p-6 rounded-lg bg-white border-4 border-gray-200 border-l-[16px] shadow-sm" style={{ borderLeftColor: '#FFD700' }}>
-            <h3 className="text-sm font-semibold mb-4" style={{ color: '#FFD700' }}>Landowner</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
-            <MetricCard 
-              title="Yearly Rental Income" 
-              value={formatCurrency(results.summary.yearlyRentalIncome) + "/year"} 
-              icon={Leaf}
-              className="bg-white/5 border-l-green-500 text-white border-white/10 backdrop-blur-sm"
-            />
-            <MetricCard 
-              title="Total Rental Income" 
-              value={formatCurrency(results.summary.totalLandOptionIncome)} 
-              icon={TrendingUp}
-              className="bg-white/5 border-l-emerald-400 text-white border-white/10 backdrop-blur-sm"
-            />
-            <MetricCard 
-              title="Land Rental Yield" 
-              value={results.summary.landOptionYield.toFixed(2) + "%"} 
-              icon={TrendingUp}
-              className="bg-white/5 border-l-blue-400 text-white border-white/10 backdrop-blur-sm"
-            />
-            </div>
-          </div>
-
-          {/* Developer Card */}
-          <div className="mt-4 p-6 rounded-lg bg-white border-4 border-gray-200 border-l-[16px] shadow-sm" style={{ borderLeftColor: '#001F3F' }}>
-            <h3 className="text-sm font-semibold mb-4" style={{ color: '#001F3F' }}>Developer</h3>
-            <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-4">
-            <MetricCard 
-              title="Developer Premium" 
-              value={formatCurrency(results.summary.totalDeveloperPremium)} 
-              icon={Coins}
-              className="bg-white/5 border-l-purple-400 text-white border-white/10 backdrop-blur-sm"
-            />
-            </div>
-          </div>
-        </div>
-        
-        {/* Stakeholder Value Distribution Chart */}
-        <StakeholderValueChart results={results} />
-      </div>
-
-      {guestMode && (
-              <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded p-3 text-sm">
-                <p className="text-blue-900 dark:text-blue-100">
-                  <strong>Guest Mode:</strong> You're using the calculator in read-only mode. Sign in to save your models.
-                </p>
-              </div>
-            )}
-
-            <div className="container -mt-16 relative z-20">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* Sidebar with Model Management */}
-          <div className="lg:col-span-4 space-y-6">
-            {/* Model Management Card */}
-            <Card className="shadow-lg border-t-4 border-t-primary">
-              <CardHeader>
-                <CardTitle>Saved Models</CardTitle>
-                <CardDescription>Load or manage your project models</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {savedModels.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No saved models yet. Create one to get started!</p>
-                ) : (
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {savedModels.map((model) => (
-                      <div key={model.id} className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-800 rounded">
-                        <button
-                          onClick={() => setCurrentModelId(model.id)}
-                          className={cn(
-                            "flex-1 text-left text-sm font-medium truncate",
-                            currentModelId === model.id ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                          )}
-                        >
-                          {model.name}
-                        </button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleDeleteModel(model.id)}
-                          className="h-6 w-6 p-0"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Parameters Card */}
-            <Card className="shadow-lg border-t-4 border-t-primary">
-              <CardHeader>
-                <CardTitle>Project Details</CardTitle>
-                <CardDescription>Name and identify your solar model</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="project-name">Project Name</Label>
-                  <Input 
-                    id="project-name"
-                    value={modelName} 
-                    onChange={(e) => setModelName(e.target.value)} 
-                    placeholder="e.g. North Ridge Solar"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="project-description">Description (Optional)</Label>
-                  <Input 
-                    id="project-description"
-                    value={modelDescription} 
-                    onChange={(e) => setModelDescription(e.target.value)} 
-                    placeholder="Brief project overview"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Parameters Card */}
-            <Card className="shadow-lg border-t-4 border-t-primary">
+          {/* Parameters Tab */}
+          <TabsContent value="parameters">
+            <Card>
               <CardHeader>
                 <CardTitle>Project Parameters</CardTitle>
                 <CardDescription>Adjust inputs to update the model</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                
-                <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">System Size</h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>Capacity (MW)</Label>
-                      <span className="text-sm font-mono">{formatNumberWithCommas(inputs.mw)} MW</span>
+                <div>
+                  <h3 className="font-semibold mb-4">System Size</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <Label>Capacity (MW)</Label>
+                        <span className="font-semibold">{inputs.mw.toFixed(2)} MW</span>
+                      </div>
+                      <Slider
+                        value={[inputs.mw]}
+                        onValueChange={(value) => handleInputChange('mw', value[0])}
+                        min={1}
+                        max={100}
+                        step={0.1}
+                      />
                     </div>
-                    <Slider 
-                      value={[inputs.mw]} 
-                      min={1} max={100} step={0.5} 
-                      onValueChange={(v) => handleInputChange("mw", v[0])} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>Project Life (Years)</Label>
-                      <span className="text-sm font-mono">{inputs.projectLife} years</span>
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <Label>Project Life (Years)</Label>
+                        <span className="font-semibold">{inputs.projectLife} years</span>
+                      </div>
+                      <Slider
+                        value={[inputs.projectLife]}
+                        onValueChange={(value) => handleInputChange('projectLife', value[0])}
+                        min={5}
+                        max={40}
+                        step={1}
+                      />
                     </div>
-                    <Slider 
-                      value={[inputs.projectLife]} 
-                      min={5} max={40} step={1} 
-                      onValueChange={(v) => handleInputChange("projectLife", v[0])} 
-                    />
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Costs (Capex)</h3>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
+                <div>
+                  <h3 className="font-semibold mb-4">Costs (Capex)</h3>
+                  <div className="space-y-4">
+                    <div>
                       <Label>EPC Cost per MW (£)</Label>
-                      <span className="text-sm font-mono">{formatNumberWithCommas(inputs.capexPerMW)}</span>
+                      <Input
+                        type="number"
+                        value={inputs.capexPerMW}
+                        onChange={(e) => handleInputChange('capexPerMW', parseFloat(e.target.value))}
+                      />
                     </div>
-                    <Input 
-                      type="text" 
-                      value={formatNumberWithCommas(inputs.capexPerMW)} 
-                      onChange={(e) => handleInputChange("capexPerMW", Number(e.target.value.replace(/,/g, '')))} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
+                    <div>
                       <Label>Private Wire Cost (£)</Label>
-                      <span className="text-sm font-mono">{formatNumberWithCommas(inputs.privateWireCost)}</span>
+                      <Input
+                        type="number"
+                        value={inputs.privateWireCost}
+                        onChange={(e) => handleInputChange('privateWireCost', parseFloat(e.target.value))}
+                      />
                     </div>
-                    {gridConnectionCosts && (
-                      <div className="text-xs text-slate-500 bg-blue-50 p-2 rounded">
-                        <div className="flex items-center justify-between font-semibold">
-                          <span>Grid Connection Estimate:</span>
-                          <button 
-                            onClick={() => setShowSourceInfo('gridCost')}
-                            className="text-blue-500 hover:text-blue-700 p-0 h-4 w-4"
-                            title="View source information"
-                          >
-                            <Info className="h-4 w-4" />
-                          </button>
-                        </div>
-                        <div>{formatCurrency((gridConnectionCosts.totalCostMin + gridConnectionCosts.totalCostMax) / 2)}</div>
-                      </div>
-                    )}
-                    <Input 
-                      type="text" 
-                      value={formatNumberWithCommas(inputs.privateWireCost)} 
-                      onChange={(e) => handleInputChange("privateWireCost", Number(e.target.value.replace(/,/g, '')))} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
+                    <div>
+                      <Label>Grid Connection Estimate:</Label>
+                      <Input
+                        type="number"
+                        value={inputs.gridConnectionCost}
+                        onChange={(e) => handleInputChange('gridConnectionCost', parseFloat(e.target.value))}
+                      />
+                    </div>
+                    <div>
                       <Label>Dev Premium per MW (£)</Label>
-                      <span className="text-sm font-mono">{formatNumberWithCommas(inputs.developmentPremiumPerMW)}</span>
+                      <Input
+                        type="number"
+                        value={inputs.developmentPremiumPerMW}
+                        onChange={(e) => handleInputChange('developmentPremiumPerMW', parseFloat(e.target.value))}
+                      />
                     </div>
-                    <Input 
-                      type="text" 
-                      value={formatNumberWithCommas(inputs.developmentPremiumPerMW)} 
-                      onChange={(e) => handleInputChange("developmentPremiumPerMW", Number(e.target.value.replace(/,/g, '')))} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <input 
-                        type="checkbox" 
+                      <Checkbox
                         id="devPremiumEnabled"
                         checked={inputs.developmentPremiumEnabled}
-                        onChange={(e) => handleInputChange("developmentPremiumEnabled", e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-300"
+                        onCheckedChange={(checked) => handleInputChange('developmentPremiumEnabled', checked === true)}
                       />
-                      <Label htmlFor="devPremiumEnabled" className="cursor-pointer">Include Developer Premium in CAPEX</Label>
+                      <Label htmlFor="devPremiumEnabled">Include Developer Premium in CAPEX</Label>
                     </div>
-                  </div>
-
-                  {inputs.developmentPremiumEnabled && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <Label>Dev Premium Discount (%)</Label>
-                        <span className="text-sm font-mono">{inputs.developmentPremiumDiscount.toFixed(1)}%</span>
-                      </div>
-                      <Slider 
-                        value={[inputs.developmentPremiumDiscount]} 
-                        min={0} max={100} step={0.5} 
-                        onValueChange={(v) => handleInputChange("developmentPremiumDiscount", v[0])} 
+                    <div>
+                      <Label>Dev Premium Discount (%)</Label>
+                      <Input
+                        type="number"
+                        value={inputs.developmentPremiumDiscount}
+                        onChange={(e) => handleInputChange('developmentPremiumDiscount', parseFloat(e.target.value))}
                       />
                     </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
+                    <div>
                       <Label>Land Rental Cost per MW/year (£)</Label>
-                      <span className="text-sm font-mono">{formatNumberWithCommas(inputs.landOptionCostPerMWYear)}</span>
+                      <Input
+                        type="number"
+                        value={inputs.landOptionCostPerMWYear}
+                        onChange={(e) => handleInputChange('landOptionCostPerMWYear', parseFloat(e.target.value))}
+                      />
                     </div>
-                    <Input 
-                      type="text" 
-                      value={formatNumberWithCommas(inputs.landOptionCostPerMWYear)} 
-                      onChange={(e) => handleInputChange("landOptionCostPerMWYear", Number(e.target.value.replace(/,/g, '')))} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <input 
-                        type="checkbox" 
+                      <Checkbox
                         id="landOptionEnabled"
                         checked={inputs.landOptionEnabled}
-                        onChange={(e) => handleInputChange("landOptionEnabled", e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-300"
+                        onCheckedChange={(checked) => handleInputChange('landOptionEnabled', checked === true)}
                       />
-                      <Label htmlFor="landOptionEnabled" className="cursor-pointer">Include Land Rental Cost in OPEX</Label>
+                      <Label htmlFor="landOptionEnabled">Include Land Rental Cost in OPEX</Label>
                     </div>
-                  </div>
-
-                  {inputs.landOptionEnabled && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <Label>Land Rental Discount (%)</Label>
-                        <span className="text-sm font-mono">{inputs.landOptionDiscount.toFixed(1)}%</span>
-                      </div>
-                      <Slider 
-                        value={[inputs.landOptionDiscount]} 
-                        min={0} max={100} step={0.5} 
-                        onValueChange={(v) => handleInputChange("landOptionDiscount", v[0])} 
+                    <div>
+                      <Label>Land Rental Discount (%)</Label>
+                      <Input
+                        type="number"
+                        value={inputs.landOptionDiscount}
+                        onChange={(e) => handleInputChange('landOptionDiscount', parseFloat(e.target.value))}
                       />
                     </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
+                    <div>
                       <Label>Land Value (£)</Label>
-                      <span className="text-sm font-mono">{formatNumberWithCommas(inputs.landValue)}</span>
+                      <Input
+                        type="number"
+                        value={inputs.landValue}
+                        onChange={(e) => handleInputChange('landValue', parseFloat(e.target.value))}
+                      />
                     </div>
-                    <Input 
-                      type="text" 
-                      value={formatNumberWithCommas(inputs.landValue)} 
-                      onChange={(e) => handleInputChange("landValue", Number(e.target.value.replace(/,/g, '')))} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
+                    <div>
                       <Label>Cost Inflation Rate (CPI %)</Label>
-                      <span className="text-sm font-mono">{inputs.costInflationRate.toFixed(2)}%</span>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={inputs.costInflationRate}
+                        onChange={(e) => handleInputChange('costInflationRate', parseFloat(e.target.value))}
+                      />
                     </div>
-                    <Slider 
-                      value={[inputs.costInflationRate]} 
-                      min={0} max={10} step={0.1} 
-                      onValueChange={(v) => handleInputChange("costInflationRate", v[0])} 
-                    />
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Operational</h3>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
+                <div>
+                  <h3 className="font-semibold mb-4">Operational</h3>
+                  <div className="space-y-4">
+                    <div>
                       <Label>Opex per MW (£/year)</Label>
-                      <span className="text-sm font-mono">{formatNumberWithCommas(inputs.opexPerMW)}</span>
-                    </div>
-                    <Input 
-                      type="text" 
-                      value={formatNumberWithCommas(inputs.opexPerMW)} 
-                      onChange={(e) => handleInputChange("opexPerMW", Number(e.target.value.replace(/,/g, '')))} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>PPA Price (£/MWh)</Label>
-                      <span className="text-sm font-mono">{formatNumberWithCommas(inputs.powerPrice)}</span>
-                    </div>
-                    <Input 
-                      type="text" 
-                      value={formatNumberWithCommas(inputs.powerPrice)} 
-                      onChange={(e) => handleInputChange("powerPrice", Number(e.target.value.replace(/,/g, '')))} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>% Consumption at PPA</Label>
-                      <span className="text-sm font-mono">{inputs.percentConsumptionPPA.toFixed(1)}%</span>
-                    </div>
-                    <Slider 
-                      value={[inputs.percentConsumptionPPA]} 
-                      min={0} max={100} step={1} 
-                      onValueChange={(v) => handleInputChange("percentConsumptionPPA", v[0])} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>% Consumption at Export</Label>
-                      <span className="text-sm font-mono">{inputs.percentConsumptionExport.toFixed(1)}%</span>
-                    </div>
-                    <Slider 
-                      value={[inputs.percentConsumptionExport]} 
-                      min={0} max={100} step={1} 
-                      onValueChange={(v) => handleInputChange("percentConsumptionExport", v[0])} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>Export Price (£/MWh)</Label>
-                      <span className="text-sm font-mono">{formatNumberWithCommas(inputs.exportPrice)}</span>
-                    </div>
-                    <Input 
-                      type="text" 
-                      value={formatNumberWithCommas(inputs.exportPrice)} 
-                      onChange={(e) => handleInputChange("exportPrice", Number(e.target.value.replace(/,/g, '')))} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>Offsetable Energy Cost (£/MWh)</Label>
-                      <span className="text-sm font-mono">{formatNumberWithCommas(inputs.offsetableEnergyCost)}</span>
-                    </div>
-                    <p className="text-xs text-gray-500 mb-2">Use energy pricing tool for accurate site-specific info</p>
-                    <Input 
-                      type="text" 
-                      value={formatNumberWithCommas(inputs.offsetableEnergyCost)} 
-                      onChange={(e) => handleInputChange("offsetableEnergyCost", Number(e.target.value.replace(/,/g, '')))} 
-                    />
-                  </div>
-
-                  {/* Grid Cost Override Section */}
-                  <div className="border-t pt-4 mt-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Checkbox 
-                        checked={inputs.gridCostOverrideEnabled}
-                        onCheckedChange={(checked: boolean) => handleInputChange("gridCostOverrideEnabled", checked)}
+                      <Input
+                        type="number"
+                        value={inputs.opexPerMW}
+                        onChange={(e) => handleInputChange('opexPerMW', parseFloat(e.target.value))}
                       />
-                      <Label className="font-semibold">Override Grid Connection Costs</Label>
                     </div>
-                    
-                    {inputs.gridCostOverrideEnabled && (
-                      <div className="space-y-2 bg-blue-50 dark:bg-blue-950 p-3 rounded">
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                          Enter total grid connection cost (£). This overrides all calculated grid costs.
-                        </p>
-                        <div className="flex justify-between">
-                          <Label>Total Grid Cost (£)</Label>
-                          <span className="text-sm font-mono">{formatNumberWithCommas(inputs.gridCostOverride)}</span>
-                        </div>
-                        <Input 
-                          type="text" 
-                          value={formatNumberWithCommas(inputs.gridCostOverride)} 
-                          onChange={(e) => handleInputChange("gridCostOverride", Number(e.target.value.replace(/,/g, '')))} 
-                          placeholder="Enter total grid cost"
-                        />
+                    <div>
+                      <Label>PPA Price (£/MWh)</Label>
+                      <Input
+                        type="number"
+                        value={inputs.powerPrice}
+                        onChange={(e) => handleInputChange('powerPrice', parseFloat(e.target.value))}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <Label>% Consumption at PPA</Label>
+                        <span className="font-semibold">{inputs.percentConsumptionPPA.toFixed(1)}%</span>
                       </div>
+                      <Slider
+                        value={[inputs.percentConsumptionPPA]}
+                        onValueChange={(value) => handleInputChange('percentConsumptionPPA', value[0])}
+                        min={0}
+                        max={100}
+                        step={0.1}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <Label>% Consumption at Export</Label>
+                        <span className="font-semibold">{inputs.percentConsumptionExport.toFixed(1)}%</span>
+                      </div>
+                      <Slider
+                        value={[inputs.percentConsumptionExport]}
+                        onValueChange={(value) => handleInputChange('percentConsumptionExport', value[0])}
+                        min={0}
+                        max={100}
+                        step={0.1}
+                      />
+                    </div>
+                    <div>
+                      <Label>Export Price (£/MWh)</Label>
+                      <Input
+                        type="number"
+                        value={inputs.exportPrice}
+                        onChange={(e) => handleInputChange('exportPrice', parseFloat(e.target.value))}
+                      />
+                    </div>
+                    <div>
+                      <Label>Offsetable Energy Cost (£/MWh)</Label>
+                      <Input
+                        type="number"
+                        value={inputs.offsetableEnergyCost}
+                        onChange={(e) => handleInputChange('offsetableEnergyCost', parseFloat(e.target.value))}
+                      />
+                    </div>
+                    <p className="text-sm text-slate-600">Use energy pricing tool for accurate site-specific info</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold mb-4">Override Grid Connection Costs</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="gridCostOverrideEnabled"
+                        checked={inputs.gridCostOverrideEnabled}
+                        onCheckedChange={(checked) => handleInputChange('gridCostOverrideEnabled', checked === true)}
+                      />
+                      <Label htmlFor="gridCostOverrideEnabled">Enable Override</Label>
+                    </div>
+                    {inputs.gridCostOverrideEnabled && (
+                      <Input
+                        type="number"
+                        placeholder="0 = use default from generation/MW"
+                        value={inputs.gridCostOverride}
+                        onChange={(e) => handleInputChange('gridCostOverride', parseFloat(e.target.value))}
+                      />
                     )}
                   </div>
+                </div>
 
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
+                <div>
+                  <h3 className="font-semibold mb-4">Advanced Settings</h3>
+                  <div className="space-y-4">
+                    <div>
                       <Label>Irradiance Override (kWh/m²/year)</Label>
-                      <span className="text-sm font-mono">{inputs.irradianceOverride === 0 ? "Default" : inputs.irradianceOverride.toFixed(2)}</span>
-                    </div>
-                    <Input 
-                      type="number" 
-                      step="0.01"
-                      value={inputs.irradianceOverride} 
-                      onChange={(e) => handleInputChange("irradianceOverride", Number(e.target.value))} 
-                      placeholder="0 = use default from generation/MW"
-                    />
-                  </div>
-
-                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <Label>Discount Rate (%)</Label>
-                        <span className="text-sm font-mono">{(inputs.discountRate * 100).toFixed(2)}%</span>
-                      </div>
-                      <Input 
-                        type="number" 
-                        step="0.01"
-                        value={inputs.discountRate * 100} 
-                        onChange={(e) => handleInputChange("discountRate", Number(e.target.value) / 100)} 
+                      <Input
+                        type="number"
+                        placeholder="0 = use default from generation/MW"
+                        value={inputs.irradianceOverride}
+                        onChange={(e) => handleInputChange('irradianceOverride', parseFloat(e.target.value))}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label>Panel Degradation (%)</Label>
-                      <div className="relative">
-                        <Input 
-                          type="number" 
-                          step="0.001"
-                          value={inputs.degradationRate} 
-                          onChange={(e) => handleInputChange("degradationRate", Number(e.target.value))} 
-                        />
-                        <span className="absolute right-3 top-2.5 text-xs text-muted-foreground">%</span>
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <Label>Discount Rate (%)</Label>
+                        <span className="font-semibold">{inputs.discountRate.toFixed(2)}%</span>
                       </div>
+                      <Slider
+                        value={[inputs.discountRate]}
+                        onValueChange={(value) => handleInputChange('discountRate', value[0])}
+                        min={0}
+                        max={20}
+                        step={0.1}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <Label>Panel Degradation (%)</Label>
+                        <span className="font-semibold">{inputs.degradationRate.toFixed(4)}%</span>
+                      </div>
+                      <Slider
+                        value={[inputs.degradationRate]}
+                        onValueChange={(value) => handleInputChange('degradationRate', value[0])}
+                        min={0}
+                        max={1}
+                        step={0.0001}
+                      />
                     </div>
                   </div>
                 </div>
-
-                <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
-                  <DialogTrigger asChild>
-                    <Button className="w-full" size="lg" disabled={guestMode}>
-                      <Save className="mr-2 h-4 w-4" /> {currentModelId ? "Update" : "Save"} Model
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>{currentModelId ? "Update" : "Save"} Model</DialogTitle>
-                      <DialogDescription>Give your model a name and description</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Model Name</Label>
-                        <Input 
-                          value={modelName} 
-                          onChange={(e) => setModelName(e.target.value)} 
-                          placeholder="e.g., 28MW Solar Farm - High Price Scenario"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Description (Optional)</Label>
-                        <Input 
-                          value={modelDescription} 
-                          onChange={(e) => setModelDescription(e.target.value)} 
-                          placeholder="Add notes about this model..."
-                        />
-                      </div>
-                      <Button 
-                        onClick={handleSaveModel} 
-                        className="w-full"
-                        disabled={createModelMutation.isPending || updateModelMutation.isPending}
-                      >
-                        {createModelMutation.isPending || updateModelMutation.isPending ? "Saving..." : "Save Model"}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-
               </CardContent>
             </Card>
-          </div>
+          </TabsContent>
 
-          {/* Main Charts Area */}
-          <div className="lg:col-span-8 space-y-6">
-            
-            <Tabs defaultValue="gridcosts" className="w-full">
-              <TabsList className="grid w-full grid-cols-6 mb-4">
-                <TabsTrigger value="gridcosts">Private Wire Parameters</TabsTrigger>
-                <TabsTrigger value="cashflow">Cash Flow Analysis</TabsTrigger>
-                <TabsTrigger value="cumulative">Cumulative Returns</TabsTrigger>
-                <TabsTrigger value="generation">Generation & Revenue</TabsTrigger>
-                <TabsTrigger value="sensitivity">Sensitivity Analysis</TabsTrigger>
+          {/* Cost Breakdown Tab */}
+          <TabsContent value="costs">
+            <GridConnectionCostBreakdown costs={gridConnectionCosts} />
+          </TabsContent>
 
-              </TabsList>
-              
-              <TabsContent value="cashflow">
-                <CashFlowTable yearlyData={results.yearlyData} projectName={modelName || "Solar Project"} />
-              </TabsContent>
-
-              <TabsContent value="cumulative">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Cumulative Discounted Cash Flow</CardTitle>
-                    <CardDescription>Project NPV trajectory showing payback period</CardDescription>
-                  </CardHeader>
-                  <CardContent className="h-[400px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={results.yearlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                        <defs>
-                          <linearGradient id="colorCumulative" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
-                            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis dataKey="year" />
-                        <YAxis tickFormatter={(val) => `£${val/1000000}m`} />
-                        <Tooltip formatter={(val: number) => formatCurrency(val)} />
-                        <Legend />
-                        <Area type="monotone" dataKey="cumulativeDiscountedCashFlow" name="Cumulative Discounted CF" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorCumulative)" />
-                        <Line type="monotone" dataKey={() => 0} stroke="#64748b" strokeDasharray="5 5" strokeWidth={1} dot={false} activeDot={false} legendType="none" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="generation">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Generation & Revenue</CardTitle>
-                    <CardDescription>Energy production vs. Revenue over time (accounting for degradation)</CardDescription>
-                  </CardHeader>
-                  <CardContent className="h-[400px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={results.yearlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis dataKey="year" />
-                        <YAxis yAxisId="left" tickFormatter={(val) => `${val/1000}k`} label={{ value: 'MWh', angle: -90, position: 'insideLeft' }} />
-                        <YAxis yAxisId="right" orientation="right" tickFormatter={(val) => `£${val/1000000}m`} label={{ value: 'Revenue', angle: 90, position: 'insideRight' }} />
-                        <Tooltip formatter={(val: number, name: string) => [name === 'Revenue' ? formatCurrency(val) : formatNumber(val) + ' MWh', name]} />
-                        <Legend />
-                        <Line yAxisId="left" type="monotone" dataKey="generation" name="Generation (MWh)" stroke="#f59e0b" strokeWidth={2} />
-                        <Line yAxisId="right" type="monotone" dataKey="revenue" name="Revenue (£)" stroke="#10b981" strokeWidth={2} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              
-              <TabsContent value="gridcosts">
+          {/* Grid Connection Tab */}
+          <TabsContent value="gridcosts">
+            <Card>
+              <CardHeader>
+                <CardTitle>Grid Connection Cost Calculator</CardTitle>
+                <CardDescription>Configure your private wire infrastructure parameters - costs auto-update in real-time</CardDescription>
+              </CardHeader>
+              <CardContent>
                 <GridConnectionSliders
-                  initialDistance={inputs.distanceKm}
-                  onCostsUpdate={(costs) => {
-                    setGridConnectionCosts(costs);
-                    const avgCost = (costs.totalCostMin + costs.totalCostMax) / 2;
-                    handleInputChange("gridConnectionCost", Math.round(avgCost));
-                    // Also update Private Wire Cost with grid connection estimate
-                    handleInputChange("privateWireCost", Math.round(avgCost));
-                  }}
-                  setShowSourceInfo={setShowSourceInfo}
+                  onCostsChange={setGridConnectionCosts}
+                  onGridConnectionCostChange={(cost) => handleInputChange('gridConnectionCost', cost)}
                 />
-              </TabsContent>
-              
-              <TabsContent value="sensitivity">
-                <div className="space-y-6">
-                  <SensitivityHeatmap 
-                    matrix={sensitivityMatrix} 
-                    currentInputs={inputs}
-                    title="LCOE Sensitivity Analysis"
-                    metric="lcoe"
-                  />
-                  <SensitivityHeatmap 
-                    matrix={sensitivityMatrix} 
-                    currentInputs={inputs}
-                    title="IRR Sensitivity Analysis"
-                    metric="irr"
-                  />
-                </div>
-              </TabsContent>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-            </Tabs>
+          {/* Cash Flow Tab */}
+          <TabsContent value="cashflow">
+            <Card>
+              <CardHeader>
+                <CardTitle>Cash Flow Analysis</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CashFlowTable data={results.yearlyData} />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-            {/* Detailed Table Preview - Only show on non-gridcosts tabs */}
-            {/* Hidden from Private Wire Parameters tab */}
+          {/* Generation Tab */}
+          <TabsContent value="generation">
+            <Card>
+              <CardHeader>
+                <CardTitle>Generation & Revenue</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={results.yearlyData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="year" />
+                    <YAxis yAxisId="left" />
+                    <YAxis yAxisId="right" orientation="right" />
+                    <Tooltip />
+                    <Legend />
+                    <Area yAxisId="left" type="monotone" dataKey="generation" stroke="#3b82f6" fill="#93c5fd" name="Generation (MWh)" />
+                    <Area yAxisId="right" type="monotone" dataKey="revenue" stroke="#10b981" fill="#a7f3d0" name="Revenue (£)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
-          </div>
-        </div>
+        {/* Disclaimer Modal */}
+        <Dialog open={showDisclaimerModal} onOpenChange={setShowDisclaimerModal}>
+          <DialogContent className="max-h-96 overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Full Disclaimer</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 text-sm">
+              <p>This Solar Project Analysis tool provides indicative financial projections based on the parameters you input. The following important disclaimers apply:</p>
+              <div className="space-y-2">
+                <h4 className="font-semibold">1. Not Investment Advice</h4>
+                <p>These projections are for informational purposes only and do not constitute investment advice. Do not make investment decisions based solely on these calculations without professional financial, legal, and technical advice.</p>
+                
+                <h4 className="font-semibold">2. Data Basis</h4>
+                <p>Projections are based on January 2026 data and assumptions. Market conditions, technology costs, energy prices, and regulatory environments change frequently and may significantly impact actual project economics.</p>
+                
+                <h4 className="font-semibold">3. Accuracy of Inputs</h4>
+                <p>The accuracy of outputs depends entirely on the accuracy of inputs. Users are responsible for verifying all input parameters with site-specific surveys, quotes, and market data.</p>
+                
+                <h4 className="font-semibold">4. Assumptions</h4>
+                <p>The model makes standard assumptions about panel degradation, inflation rates, discount rates, and other factors. Actual project performance may differ materially from these assumptions.</p>
+                
+                <h4 className="font-semibold">5. Professional Verification</h4>
+                <p>Before proceeding with any solar project, obtain independent verification from qualified engineers, financial advisors, and legal counsel familiar with your specific location and circumstances.</p>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
-
-      {/* Source Info Modal */}
-      <Dialog open={!!showSourceInfo} onOpenChange={() => setShowSourceInfo(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Source Information</DialogTitle>
-          </DialogHeader>
-          <div className="text-sm space-y-4">
-            {showSourceInfo && (() => {
-              const source = getSourceDetails(showSourceInfo);
-              if (!source) {
-                return <p className="text-gray-500">Source information not available</p>;
-              }
-              return (
-                <>
-                  <div className="bg-blue-50 border border-blue-200 rounded p-4">
-                    <p className="font-bold text-blue-900">{source.title}</p>
-                    <p className="text-sm text-blue-800 mt-1">{source.organization} ({source.year})</p>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <h4 className="font-semibold text-gray-900">Description</h4>
-                      <p className="text-gray-700">{source.description}</p>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-semibold text-gray-900">Methodology</h4>
-                      <p className="text-gray-700">{source.methodology}</p>
-                    </div>
-                    
-                    {source.link && (
-                      <div>
-                        <h4 className="font-semibold text-gray-900">Reference Link</h4>
-                        <a href={source.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline break-all">
-                          {source.link}
-                        </a>
-                      </div>
-                    )}
-                    
-                    <div className="bg-gray-50 p-3 rounded">
-                      <p className="text-xs text-gray-600">
-                        <strong>Confidence Level:</strong> {source && source.confidence ? source.confidence.charAt(0).toUpperCase() + source.confidence.slice(1) : 'High'}
-                      </p>
-                      <p className="text-xs text-gray-600 mt-1">
-                        <strong>Last Updated:</strong> {source && source.lastUpdated ? source.lastUpdated : 'January 2026'}
-                      </p>
-                    </div>
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-
-      {/* Disclaimer Modal */}
-      <Dialog open={showDisclaimerModal} onOpenChange={setShowDisclaimerModal}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Tool Limitations & Disclaimer</DialogTitle>
-            <DialogDescription>Important information about this calculator</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 text-sm">
-            <div>
-              <h3 className="font-semibold mb-2">Validity & Data Sources</h3>
-              <p>This calculator provides indicative financial projections based on industry assumptions and publicly available data sources. All data and assumptions are valid as of January 2026.</p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">Limitations</h3>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Results are for indicative purposes only and should not be relied upon for investment decisions</li>
-                <li>Grid costs, irradiance data, and technology assumptions may vary significantly by location</li>
-                <li>Costs and pricing may change over time</li>
-                <li>Site-specific conditions (soil, access, environmental) are not accounted for</li>
-                <li>This tool does not include all potential costs (e.g., planning, environmental surveys, financing)</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">Professional Verification Required</h3>
-              <p>Results should not be relied upon for investment decisions without independent professional verification from qualified engineers, surveyors, and financial advisors.</p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">Data Sources</h3>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Grid connection costs: SSEN Distribution Cost Estimates (2025)</li>
-                <li>Solar irradiance: UK Met Office historical averages</li>
-                <li>EPC costs: Industry benchmarks (2026)</li>
-                <li>Transformer costs: Manufacturer quotes</li>
-                <li>Cable costs: Supplier pricing data</li>
-              </ul>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

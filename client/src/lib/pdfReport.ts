@@ -214,27 +214,48 @@ export async function generatePDFReport(params: {
 
   yPosition += 48;
 
-  // Add map screenshot if available
+  // Add map screenshot if available - on a new page
   if (mapScreenshot) {
-    yPosition += 5;
-    if (yPosition > pageHeight - 80) {
-      addPageBreak();
-    }
+    console.log('[PDF] Map screenshot received, size:', mapScreenshot.length);
+    addPageBreak();
+    yPosition = 20;
     
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
+    doc.setFontSize(14);
     doc.setTextColor(0, 31, 63);
     doc.text("Site Location Map", 15, yPosition);
-    yPosition += 8;
+    yPosition += 12;
 
     try {
       const mapWidth = pageWidth - 30;
-      const mapHeight = 60;
+      const mapHeight = 100;
+      console.log('[PDF] Adding image to PDF at position', 15, yPosition);
       doc.addImage(mapScreenshot, "PNG", 15, yPosition, mapWidth, mapHeight);
-      yPosition += mapHeight + 5;
+      console.log('[PDF] Image added successfully');
+      yPosition += mapHeight + 10;
+      
+      // Add site info below map
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(0, 31, 63);
+      doc.text("Site Information", 15, yPosition);
+      yPosition += 8;
+      
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(80, 80, 80);
+      const siteInfo = [
+        `System Size: ${inputs.capacity || 'N/A'} MW`,
+        `Project Life: ${inputs.projectLife || 'N/A'} years`,
+        `Annual Generation: ${(results.yearlyData[0]?.generation || 0).toFixed(0)} MWh`,
+      ];
+      doc.text(siteInfo, 15, yPosition);
+      yPosition += siteInfo.length * 6 + 5;
     } catch (e) {
       console.error("Failed to add map image to PDF:", e);
     }
+  } else {
+    console.log('[PDF] No map screenshot provided');
   }
 
   // PAGE 2: STAKEHOLDER VALUE

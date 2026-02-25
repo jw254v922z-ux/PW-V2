@@ -9,13 +9,24 @@ import { calculatePolygonArea, calculatePolylineDistance } from "@/lib/geospatia
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
 import "leaflet/dist/leaflet.css";
-import { useMapContext } from "@/contexts/MapContext";
+
 
 export default function MapViewPage() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const [, setLocation] = useLocation();
-  const { setMapScreenshot } = useMapContext();
+  // Use localStorage to persist map screenshot across page navigation
+  const setMapScreenshot = (screenshot: string | null) => {
+    try {
+      if (screenshot) {
+        localStorage.setItem('mapScreenshot', screenshot);
+      } else {
+        localStorage.removeItem('mapScreenshot');
+      }
+    } catch (e) {
+      console.error('Failed to save map screenshot to localStorage:', e);
+    }
+  };
   
   const [drawingMode, setDrawingMode] = useState<"view" | "pv" | "cable">("view");
   const [pvPoints, setPvPoints] = useState<L.LatLng[]>([]);
