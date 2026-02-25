@@ -10,7 +10,7 @@ export async function generatePDFReport(params: {
   description?: string;
   mapScreenshot?: string;
 }): Promise<jsPDF> {
-  const { inputs, results, projectName, description, mapScreenshot } = params;
+  const { inputs, results, projectName, description } = params;
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -213,50 +213,6 @@ export async function generatePDFReport(params: {
   });
 
   yPosition += 48;
-
-  // Add map screenshot if available - on a new page
-  if (mapScreenshot) {
-    console.log('[PDF] Map screenshot received, size:', mapScreenshot.length);
-    addPageBreak();
-    yPosition = 20;
-    
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.setTextColor(0, 31, 63);
-    doc.text("Site Location Map", 15, yPosition);
-    yPosition += 12;
-
-    try {
-      const mapWidth = pageWidth - 30;
-      const mapHeight = 100;
-      console.log('[PDF] Adding image to PDF at position', 15, yPosition);
-      doc.addImage(mapScreenshot, "PNG", 15, yPosition, mapWidth, mapHeight);
-      console.log('[PDF] Image added successfully');
-      yPosition += mapHeight + 10;
-      
-      // Add site info below map
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.setTextColor(0, 31, 63);
-      doc.text("Site Information", 15, yPosition);
-      yPosition += 8;
-      
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(80, 80, 80);
-      const siteInfo = [
-        `System Size: ${inputs.capacity || 'N/A'} MW`,
-        `Project Life: ${inputs.projectLife || 'N/A'} years`,
-        `Annual Generation: ${(results.yearlyData[0]?.generation || 0).toFixed(0)} MWh`,
-      ];
-      doc.text(siteInfo, 15, yPosition);
-      yPosition += siteInfo.length * 6 + 5;
-    } catch (e) {
-      console.error("Failed to add map image to PDF:", e);
-    }
-  } else {
-    console.log('[PDF] No map screenshot provided');
-  }
 
   // PAGE 2: STAKEHOLDER VALUE
   addPageBreak();

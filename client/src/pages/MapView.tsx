@@ -10,23 +10,10 @@ import { toast } from "sonner";
 import html2canvas from "html2canvas";
 import "leaflet/dist/leaflet.css";
 
-
 export default function MapViewPage() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const [, setLocation] = useLocation();
-  // Use localStorage to persist map screenshot across page navigation
-  const setMapScreenshot = (screenshot: string | null) => {
-    try {
-      if (screenshot) {
-        localStorage.setItem('mapScreenshot', screenshot);
-      } else {
-        localStorage.removeItem('mapScreenshot');
-      }
-    } catch (e) {
-      console.error('Failed to save map screenshot to localStorage:', e);
-    }
-  };
   
   const [drawingMode, setDrawingMode] = useState<"view" | "pv" | "cable">("view");
   const [pvPoints, setPvPoints] = useState<L.LatLng[]>([]);
@@ -119,8 +106,6 @@ export default function MapViewPage() {
     const systemSize = hectares * 10;
     setPvAreaResults({ area, hectares, systemSize });
   }, [pvCompleted, pvPoints, pvPolygon]);
-
-
 
   const addPVPoint = useCallback((point: L.LatLng) => {
     setPvPoints((prev) => {
@@ -497,8 +482,7 @@ export default function MapViewPage() {
                                    element.classList.contains('leaflet-control-container');
                           }
                         });
-                        const screenshotData = canvas.toDataURL("image/png");
-                        setMapScreenshot(screenshotData);
+                        sessionStorage.setItem("mapScreenshot", canvas.toDataURL("image/png"));
                         toast.success("Map screenshot saved for PDF!");
                       } catch (innerError) {
                         // Fallback: create a simple canvas with map data
@@ -515,8 +499,7 @@ export default function MapViewPage() {
                           ctx.font = '14px Arial';
                           ctx.fillText('Map Screenshot', 10, 30);
                         }
-                        const screenshotData = canvas.toDataURL("image/png");
-                        setMapScreenshot(screenshotData);
+                        sessionStorage.setItem("mapScreenshot", canvas.toDataURL("image/png"));
                         toast.success("Map screenshot saved for PDF!");
                       }
                     }

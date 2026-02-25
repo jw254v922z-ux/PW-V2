@@ -14,7 +14,6 @@ import ResetPassword from "./pages/ResetPassword";
 import ProjectsDashboard from './pages/ProjectsDashboard';
 import Settings from './pages/Settings';
 import { useAuth } from "./_core/hooks/useAuth";
-import { MapProvider } from "./contexts/MapContext";
 
 function Router() {
   return (
@@ -49,12 +48,10 @@ function App() {
         defaultTheme="light"
         // switchable
       >
-        <MapProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
-        </MapProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );
