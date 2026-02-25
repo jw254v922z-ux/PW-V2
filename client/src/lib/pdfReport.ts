@@ -10,7 +10,7 @@ export async function generatePDFReport(params: {
   description?: string;
   mapScreenshot?: string;
 }): Promise<jsPDF> {
-  const { inputs, results, projectName, description } = params;
+  const { inputs, results, projectName, description, mapScreenshot } = params;
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -213,6 +213,29 @@ export async function generatePDFReport(params: {
   });
 
   yPosition += 48;
+
+  // Add map screenshot if available
+  if (mapScreenshot) {
+    yPosition += 5;
+    if (yPosition > pageHeight - 60) {
+      addPageBreak();
+    } else {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(0, 31, 63);
+      doc.text("Site Location Map", 15, yPosition);
+      yPosition += 8;
+
+      try {
+        const mapWidth = pageWidth - 30;
+        const mapHeight = 60;
+        doc.addImage(mapScreenshot, "PNG", 15, yPosition, mapWidth, mapHeight);
+        yPosition += mapHeight + 5;
+      } catch (e) {
+        console.error("Failed to add map image to PDF:", e);
+      }
+    }
+  }
 
   // PAGE 2: STAKEHOLDER VALUE
   addPageBreak();

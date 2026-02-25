@@ -232,13 +232,16 @@ export default function Dashboard() {
   const handleExportPDF = async () => {
     try {
       const toastId = toast.loading('Generating PDF...');
+      // Retrieve map screenshot from sessionStorage if available
+      const mapScreenshot = sessionStorage.getItem('mapScreenshot');
+      
       // Generate PDF and trigger download
       const doc = await generatePDFReport({ 
         inputs, 
         results, 
         projectName: modelName || 'Solar Project', 
         description: modelDescription,
-        mapScreenshot: undefined
+        mapScreenshot: mapScreenshot || undefined
       });
       
       // Convert PDF to blob and trigger download using anchor element

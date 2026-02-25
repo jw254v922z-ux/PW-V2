@@ -35,6 +35,7 @@ export default function MapViewPage() {
 
   const [pvCompleted, setPvCompleted] = useState(false);
   const [cableCompleted, setCableCompleted] = useState(false);
+  const [mapScreenshot, setMapScreenshot] = useState<string | null>(null);
 
   // Initialize map once on mount
   useEffect(() => {
@@ -105,7 +106,27 @@ export default function MapViewPage() {
     const hectares = area / 10000;
     const systemSize = hectares * 10;
     setPvAreaResults({ area, hectares, systemSize });
+
+    // Capture map screenshot
+    captureMapScreenshot();
   }, [pvCompleted, pvPoints, pvPolygon]);
+
+  const captureMapScreenshot = async () => {
+    if (!mapContainerRef.current) return;
+    try {
+      const canvas = await html2canvas(mapContainerRef.current, {
+        backgroundColor: "#ffffff",
+        scale: 2,
+        useCORS: true,
+      });
+      const imageData = canvas.toDataURL("image/png");
+      setMapScreenshot(imageData);
+      sessionStorage.setItem("mapScreenshot", imageData);
+      console.log("Map screenshot captured and stored");
+    } catch (e) {
+      console.error("Map screenshot capture failed:", e);
+    }
+  };
 
   const addPVPoint = useCallback((point: L.LatLng) => {
     setPvPoints((prev) => {
