@@ -9,11 +9,13 @@ import { calculatePolygonArea, calculatePolylineDistance } from "@/lib/geospatia
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
 import "leaflet/dist/leaflet.css";
+import { useMapContext } from "@/contexts/MapContext";
 
 export default function MapViewPage() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const [, setLocation] = useLocation();
+  const { setMapScreenshot } = useMapContext();
   
   const [drawingMode, setDrawingMode] = useState<"view" | "pv" | "cable">("view");
   const [pvPoints, setPvPoints] = useState<L.LatLng[]>([]);
@@ -35,7 +37,6 @@ export default function MapViewPage() {
 
   const [pvCompleted, setPvCompleted] = useState(false);
   const [cableCompleted, setCableCompleted] = useState(false);
-  const [mapScreenshot, setMapScreenshot] = useState<string | null>(null);
 
   // Initialize map once on mount
   useEffect(() => {
@@ -106,27 +107,9 @@ export default function MapViewPage() {
     const hectares = area / 10000;
     const systemSize = hectares * 10;
     setPvAreaResults({ area, hectares, systemSize });
-
-    // Capture map screenshot
-    captureMapScreenshot();
   }, [pvCompleted, pvPoints, pvPolygon]);
 
-  const captureMapScreenshot = async () => {
-    if (!mapContainerRef.current) return;
-    try {
-      const canvas = await html2canvas(mapContainerRef.current, {
-        backgroundColor: "#ffffff",
-        scale: 2,
-        useCORS: true,
-      });
-      const imageData = canvas.toDataURL("image/png");
-      setMapScreenshot(imageData);
-      sessionStorage.setItem("mapScreenshot", imageData);
-      console.log("Map screenshot captured and stored");
-    } catch (e) {
-      console.error("Map screenshot capture failed:", e);
-    }
-  };
+
 
   const addPVPoint = useCallback((point: L.LatLng) => {
     setPvPoints((prev) => {
@@ -503,7 +486,8 @@ export default function MapViewPage() {
                                    element.classList.contains('leaflet-control-container');
                           }
                         });
-                        sessionStorage.setItem("mapScreenshot", canvas.toDataURL("image/png"));
+                        const screenshotData = canvas.toDataURL("image/png");
+                        setMapScreenshot(screenshotData);
                         toast.success("Map screenshot saved for PDF!");
                       } catch (innerError) {
                         // Fallback: create a simple canvas with map data
@@ -520,7 +504,8 @@ export default function MapViewPage() {
                           ctx.font = '14px Arial';
                           ctx.fillText('Map Screenshot', 10, 30);
                         }
-                        sessionStorage.setItem("mapScreenshot", canvas.toDataURL("image/png"));
+                        const screenshotData = canvas.toDataURL("image/png");
+                        setMapScreenshot(screenshotData);
                         toast.success("Map screenshot saved for PDF!");
                       }
                     }

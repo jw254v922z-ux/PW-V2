@@ -18,6 +18,7 @@ import { GridConnectionCostBreakdown } from "../components/GridConnectionCostBre
 import { GridConnectionSliders, type GridConnectionCosts } from "../components/GridConnectionSliders";
 import { SensitivityHeatmap } from "../components/SensitivityHeatmap";
 import { CashFlowTable } from "../components/CashFlowTable";
+import { useMapContext } from "@/contexts/MapContext";
 import { StakeholderValueChart } from "../components/StakeholderValueChart";
 import LandownerPage from "./Landowner";
 import { calculateSensitivityMatrix } from "@/lib/sensitivity";
@@ -229,11 +230,12 @@ export default function Dashboard() {
 
 
 
+  const { mapScreenshot } = useMapContext();
+
   const handleExportPDF = async () => {
     try {
       const toastId = toast.loading('Generating PDF...');
-      // Retrieve map screenshot from sessionStorage if available
-      const mapScreenshot = sessionStorage.getItem('mapScreenshot');
+      // Map screenshot is retrieved from context
       
       // Generate PDF and trigger download
       const doc = await generatePDFReport({ 
