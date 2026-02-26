@@ -1,5 +1,5 @@
 /**
- * Capture Leaflet map using leaflet-image library
+ * Capture Leaflet map using leaflet-image library + SVG overlay compositing
  * This properly handles tiles, overlays, and CORS issues
  */
 export async function captureMapWithDomToImage(mapContainer: HTMLElement): Promise<string> {
@@ -15,40 +15,103 @@ export async function captureMapWithDomToImage(mapContainer: HTMLElement): Promi
       return await fallbackMapCapture(mapContainer);
     }
 
-    console.log('Found Leaflet map instance, using leaflet-image');
+    console.log('Found Leaflet map instance, using leaflet-image with SVG overlay composite');
 
     // Import leaflet-image
     const leafletImage = (await import('leaflet-image')).default;
     
-    // Use leaflet-image to export the map
-    return new Promise((resolve, reject) => {
+    // Step 1: Use leaflet-image to export the base map (tiles)
+    const baseCanvas = await new Promise<HTMLCanvasElement>((resolve, reject) => {
       try {
         leafletImage(mapInstance, (err: Error | null, canvas: HTMLCanvasElement) => {
           if (err) {
             console.warn('leaflet-image failed:', err);
-            fallbackMapCapture(mapContainer).then(resolve).catch(reject);
+            reject(err);
             return;
           }
-
-          try {
-            const dataUrl = canvas.toDataURL('image/png', 0.95);
-            console.log('Map capture complete via leaflet-image, data URL length:', dataUrl.length);
-            resolve(dataUrl);
-          } catch (e) {
-            console.error('Error converting canvas to data URL:', e);
-            reject(e);
-          }
+          resolve(canvas);
         });
       } catch (e) {
         console.error('Error calling leaflet-image:', e);
-        fallbackMapCapture(mapContainer).then(resolve).catch(reject);
+        reject(e);
       }
     });
+
+    console.log('Base map captured via leaflet-image');
+
+    // Step 2: Composite SVG overlays on top of the base canvas
+    const finalCanvas = await compositeSVGOverlays(baseCanvas, mapContainer);
+    
+    const dataUrl = finalCanvas.toDataURL('image/png', 0.95);
+    console.log('Map capture complete with SVG overlays, data URL length:', dataUrl.length);
+    return dataUrl;
+    
   } catch (error) {
-    console.error('Error capturing map:', error);
+    console.error('Error capturing map with leaflet-image:', error);
     // Fall back to simple method
     return await fallbackMapCapture(mapContainer);
   }
+}
+
+/**
+ * Composite SVG overlays (polygons, polylines) on top of the base canvas
+ */
+async function compositeSVGOverlays(baseCanvas: HTMLCanvasElement, mapContainer: HTMLElement): Promise<HTMLCanvasElement> {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Could not get canvas context');
+
+  // Set canvas size to match base canvas
+  canvas.width = baseCanvas.width;
+  canvas.height = baseCanvas.height;
+
+  // Draw the base map (tiles) first
+  ctx.drawImage(baseCanvas, 0, 0);
+  console.log('Drew base map tiles to composite canvas');
+
+  const containerRect = mapContainer.getBoundingClientRect();
+
+  // Capture all SVG overlays (polygons, polylines, markers)
+  const svgElements = mapContainer.querySelectorAll('svg');
+  console.log(`Found ${svgElements.length} SVG elements to composite`);
+
+  for (const svgElement of svgElements) {
+    try {
+      const svgRect = svgElement.getBoundingClientRect();
+      const x = svgRect.left - containerRect.left;
+      const y = svgRect.top - containerRect.top;
+      const width = svgRect.width;
+      const height = svgRect.height;
+
+      const svgString = new XMLSerializer().serializeToString(svgElement);
+      const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
+      const img = new Image();
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => {
+          try {
+            ctx.drawImage(img, x, y, width, height);
+            URL.revokeObjectURL(url);
+            console.log(`Composited SVG at (${x}, ${y}) with size ${width}x${height}`);
+            resolve();
+          } catch (e) {
+            URL.revokeObjectURL(url);
+            reject(e);
+          }
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error('Failed to load SVG'));
+        };
+        img.src = url;
+      });
+    } catch (e) {
+      console.warn('Could not composite SVG overlay:', e);
+    }
+  }
+
+  return canvas;
 }
 
 /**

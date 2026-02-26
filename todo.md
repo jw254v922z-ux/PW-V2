@@ -384,3 +384,11 @@
 - [x] Add cash flow tables and assumptions to report page
 - [x] Add print-optimized CSS for browser PDF export (Ctrl+P or Cmd+P)
 - [x] Test end-to-end report generation and browser PDF save
+
+
+## Phase 27: Report Webpage Fixes - Polygons and Color Scheme
+- [x] Fix map capture to include SVG overlays (drawn polygons) in report page
+- [x] Restore Savills Earth color scheme and branding to report page
+- [x] Match report page styling to original PDF design (colors, fonts, spacing)
+- [x] Test polygon visibility in generated report
+- [x] Test color scheme matches previous PDF exports
