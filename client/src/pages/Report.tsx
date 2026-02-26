@@ -59,6 +59,7 @@ const COLORS = {
 export default function Report() {
   const [, setLocation] = useLocation();
   const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [mapBlobUrl, setMapBlobUrl] = useState<string | null>(null);
 
   useEffect(() => {
     // Load report data from sessionStorage
@@ -72,6 +73,22 @@ export default function Report() {
     try {
       const data = JSON.parse(dataStr) as ReportData;
       setReportData(data);
+      
+      // Convert data URL to blob URL for better browser compatibility
+      if (data.mapScreenshot) {
+        fetch(data.mapScreenshot)
+          .then(res => res.blob())
+          .then(blob => {
+            const blobUrl = URL.createObjectURL(blob);
+            setMapBlobUrl(blobUrl);
+            console.log('[Report] Map blob URL created:', blobUrl);
+          })
+          .catch(err => {
+            console.error('[Report] Failed to create blob URL:', err);
+            // Fallback to data URL
+            setMapBlobUrl(data.mapScreenshot);
+          });
+      }
     } catch (error) {
       console.error("Failed to parse report data:", error);
       setLocation("/");
@@ -145,6 +162,9 @@ export default function Report() {
 
   const { projectName, mapScreenshot, metrics, stakeholders, stakeholderDistribution, cashFlow, assumptions } = reportData;
 
+  console.log('[Report] mapScreenshot exists:', !!mapScreenshot);
+  console.log('[Report] mapScreenshot length:', mapScreenshot ? mapScreenshot.length : 0);
+
   return (
     <div className="report-container bg-white text-black">
       {/* Page 1: Cover + Map + Key Metrics */}
@@ -166,14 +186,19 @@ export default function Report() {
           </p>
         </div>
 
-        {mapScreenshot && (
+        {mapBlobUrl && (
           <div className="map-section mb-8">
             <h3 className="text-xl font-bold mb-4" style={{ color: COLORS.navyBlue }}>Site Location Map</h3>
             <img 
-              src={mapScreenshot} 
+              src={mapBlobUrl} 
               alt="Site location map" 
               className="w-full border border-gray-300 rounded"
               style={{ maxHeight: "400px", objectFit: "contain" }}
+              onLoad={() => console.log('[Report] Map image loaded successfully')}
+              onError={(e) => {
+                console.error('[Report] Map image failed to load:', e);
+                console.log('[Report] mapBlobUrl:', mapBlobUrl);
+              }}
             />
           </div>
         )}

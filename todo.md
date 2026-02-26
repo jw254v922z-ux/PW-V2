@@ -392,3 +392,11 @@
 - [x] Match report page styling to original PDF design (colors, fonts, spacing)
 - [x] Test polygon visibility in generated report
 - [x] Test color scheme matches previous PDF exports
+
+
+## Phase 28: Fix Map Image Display in Report
+- [ ] Investigate why map screenshot image is not loading in Report component
+- [ ] Check if mapScreenshot is being saved to localStorage correctly
+- [ ] Check if Report.tsx is retrieving mapScreenshot from localStorage correctly
+- [ ] Fix image src attribute to use proper data URL format
+- [ ] Test map image displays correctly in report page
