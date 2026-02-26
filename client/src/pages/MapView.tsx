@@ -149,21 +149,6 @@ export default function MapViewPage() {
 
   const addPVPoint = useCallback((point: L.LatLng) => {
     setPvPoints((prev) => {
-      // Check if user clicked on first point to close polygon
-      if (prev.length >= 3) {
-        const firstPoint = prev[0];
-        const distance = point.distanceTo(firstPoint);
-        const closeThreshold = 500; // meters - increased for easier closing
-
-        if (distance < closeThreshold) {
-          // Close the polygon
-          setPvCompleted(true);
-          setDrawingMode("view");
-          toast.success("PV area completed! Polygon closed.");
-          return prev; // Don't add duplicate point
-        }
-      }
-
       const newPoints = [...prev, point];
 
       // Add marker
@@ -187,21 +172,6 @@ export default function MapViewPage() {
 
   const addCablePoint = useCallback((point: L.LatLng) => {
     setCablePoints((prev) => {
-      // Check if user clicked on first point to end cable route
-      if (prev.length >= 2) {
-        const firstPoint = prev[0];
-        const distance = point.distanceTo(firstPoint);
-        const closeThreshold = 500; // meters - increased for easier closing
-
-        if (distance < closeThreshold) {
-          // End the cable route
-          setCableCompleted(true);
-          setDrawingMode("view");
-          toast.success("Cable route completed! Route closed.");
-          return prev; // Don't add duplicate point
-        }
-      }
-
       const newPoints = [...prev, point];
 
       // Add marker
