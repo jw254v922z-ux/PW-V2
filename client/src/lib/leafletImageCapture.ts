@@ -3,7 +3,7 @@ import leafletImage from "leaflet-image";
 
 /**
  * Capture a Leaflet map as a data URL using leaflet-image library.
- * This is the most reliable method for capturing Leaflet maps with tiles and overlays.
+ * This is the most reliable method for capturing Leaflet maps with tiles.
  */
 export async function captureLeafletMapAsDataUrl(map: L.Map): Promise<string> {
   return new Promise((resolve, reject) => {

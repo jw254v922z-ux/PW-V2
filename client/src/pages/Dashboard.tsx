@@ -21,8 +21,8 @@ import { CashFlowTable } from "../components/CashFlowTable";
 import { StakeholderValueChart } from "../components/StakeholderValueChart";
 import LandownerPage from "./Landowner";
 import { calculateSensitivityMatrix } from "@/lib/sensitivity";
-import { generatePDFReport } from '@/lib/pdfReport';
-
+import { generatePDFReport } from "@/lib/pdfReport";
+import { captureMapScreenshotWithTimeout } from "@/lib/mapScreenshotWithTimeout";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -233,23 +233,28 @@ export default function Dashboard() {
     try {
       const toastId = toast.loading('Generating PDF...');
       // Retrieve map screenshot from sessionStorage if available
-      let mapScreenshot = localStorage.getItem('mapScreenshot');
-      console.log('mapScreenshot from localStorage:', mapScreenshot ? `${mapScreenshot.substring(0, 100)}...` : 'null');
-      
-      // Map screenshot is already in PNG format from the capture function
-      // No compression needed - jsPDF handles PNG efficiently
+      const mapScreenshot = localStorage.getItem('mapScreenshot');
       
       // Generate PDF and trigger download
-      console.log('Passing to generatePDFReport:', { hasMapScreenshot: !!mapScreenshot });
-      generatePDFReport({ 
-        inputs: inputs,
-        results: results,
-        projectName: modelName || 'Solar Project',
+      const doc = await generatePDFReport({ 
+        inputs, 
+        results, 
+        projectName: modelName || 'Solar Project', 
         description: modelDescription,
         mapScreenshot: mapScreenshot || undefined
       });
       
-      // PDF is saved automatically by html2pdf
+      // Convert PDF to blob and trigger download using anchor element
+      const filename = `${modelName || 'Solar Project'}-report.pdf`;
+      const pdfBlob = doc.output('blob');
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       
       toast.dismiss(toastId);
       toast.success('PDF exported successfully!');
