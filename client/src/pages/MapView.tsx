@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Zap, Trash2, Check, ArrowRight } from "lucide-react";
 import { calculatePolygonArea, calculatePolylineDistance } from "@/lib/geospatial";
 import { toast } from "sonner";
-import { captureLeafletMapAsDataUrl } from "@/lib/leafletImageCapture";
+import { captureMapWithDomToImage } from '@/lib/domToImageCapture';
+import html2canvas from 'html2canvas';
 import "leaflet/dist/leaflet.css";
 
 export default function MapViewPage() {
@@ -35,6 +36,8 @@ export default function MapViewPage() {
 
   const [pvCompleted, setPvCompleted] = useState(false);
   const [cableCompleted, setCableCompleted] = useState(false);
+  const [mapStyle, setMapStyle] = useState<'light' | 'grayscale' | 'satellite'>('light');
+  const [tileLayer, setTileLayer] = useState<L.TileLayer | null>(null);
 
   // Initialize map once on mount
   useEffect(() => {
@@ -42,21 +45,57 @@ export default function MapViewPage() {
 
     // Create map
     const map = L.map(mapContainerRef.current).setView([52.52, -1.17], 10);
+    
+    // Expose map instance globally for leaflet-image capture
+    (window as any).leafletMap = map;
 
-    // Add tile layer with CORS enabled
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+    // Add initial tile layer
+    const layer = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>',
       maxZoom: 19,
       crossOrigin: true,
     }).addTo(map);
 
     mapRef.current = map;
+    setTileLayer(layer);
 
     return () => {
       map.remove();
       mapRef.current = null;
+      (window as any).leafletMap = null;
     };
   }, []);
+
+  // Handle map style changes
+  useEffect(() => {
+    if (!mapRef.current || !tileLayer) return;
+
+    mapRef.current.removeLayer(tileLayer);
+
+    let newUrl: string;
+    let attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>';
+
+    switch (mapStyle) {
+      case 'grayscale':
+        newUrl = "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png";
+        break;
+      case 'satellite':
+        newUrl = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+        attribution = '&copy; <a href="https://www.arcgisonline.com/">Esri</a>';
+        break;
+      case 'light':
+      default:
+        newUrl = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+    }
+
+    const newLayer = L.tileLayer(newUrl, {
+      attribution,
+      maxZoom: 19,
+      crossOrigin: true,
+    }).addTo(mapRef.current);
+
+    setTileLayer(newLayer);
+  }, [mapStyle]);
 
   // Handle map clicks for drawing
   useEffect(() => {
@@ -106,7 +145,7 @@ export default function MapViewPage() {
     const hectares = area / 10000;
     const systemSize = hectares * 10;
     setPvAreaResults({ area, hectares, systemSize });
-  }, [pvCompleted, pvPoints, pvPolygon]);
+  }, [pvCompleted, pvPoints]);
 
   const addPVPoint = useCallback((point: L.LatLng) => {
     setPvPoints((prev) => {
@@ -336,10 +375,41 @@ export default function MapViewPage() {
             <CardTitle className="text-lg">Drawing Tools</CardTitle>
             <CardDescription>Click on map to place points</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-3">
+            {/* Map Style Selector */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground">Map Style</p>
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  variant={mapStyle === 'light' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setMapStyle('light')}
+                  className="text-xs"
+                >
+                  Light
+                </Button>
+                <Button
+                  variant={mapStyle === 'grayscale' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setMapStyle('grayscale')}
+                  className="text-xs"
+                >
+                  Grayscale
+                </Button>
+                <Button
+                  variant={mapStyle === 'satellite' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setMapStyle('satellite')}
+                  className="text-xs"
+                >
+                  Satellite
+                </Button>
+              </div>
+            </div>
+            <div className="border-t pt-2" />
             <Button
               variant={drawingMode === "view" ? "default" : "outline"}
-              className="w-full"
+              className="w-full mt-2"
               onClick={() => setDrawingMode("view")}
             >
               View
@@ -466,14 +536,14 @@ export default function MapViewPage() {
                 className="w-full"
                 onClick={async () => {
                   try {
-                    if (mapRef.current) {
+                    if (mapContainerRef.current) {
                       try {
-                        // Use leaflet-image to capture the map (most reliable method)
-                        const dataUrl = await captureLeafletMapAsDataUrl(mapRef.current);
+                        // Use dom-to-image to capture the map container with better SVG support for polygons
+                        const dataUrl = await captureMapWithDomToImage(mapContainerRef.current);
                         localStorage.setItem("mapScreenshot", dataUrl);
                         toast.success("Map screenshot saved for PDF!");
-                      } catch (leafletImageError) {
-                        console.error("leaflet-image capture failed:", leafletImageError);
+                      } catch (error) {
+                        console.error("Map capture failed:", error);
                         toast.error("Failed to capture map screenshot");
                       }
                     }

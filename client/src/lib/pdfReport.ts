@@ -10,7 +10,7 @@ export async function generatePDFReport(params: {
   description?: string;
   mapScreenshot?: string;
 }): Promise<jsPDF> {
-  const { inputs, results, projectName, description } = params;
+  const { inputs, results, projectName, description, mapScreenshot } = params;
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -134,7 +134,7 @@ export async function generatePDFReport(params: {
     });
   };
 
-  // PAGE 1: COVER
+  // PAGE 1: COVER WITH MAP THUMBNAIL
   doc.setFont("helvetica", "bold");
   doc.setFontSize(24);
   doc.setTextColor(0, 31, 63);
@@ -154,28 +154,50 @@ export async function generatePDFReport(params: {
     yPosition += descLines.length * 5 + 5;
   }
 
-  // Add full disclaimer
-  yPosition += 3;
+  // Add full disclaimer - reduced height for space efficiency
+  yPosition += 2;
   doc.setFillColor(255, 243, 205);
-  doc.rect(15, yPosition, pageWidth - 30, 50, "F");
+  doc.rect(15, yPosition, pageWidth - 30, 32, "F");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setTextColor(184, 134, 11);
-  doc.text("Tool Limitations & Disclaimer", 18, yPosition + 5);
+  doc.text("Tool Limitations & Disclaimer", 18, yPosition + 4);
   
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
+  doc.setFontSize(6);
   doc.setTextColor(100, 100, 100);
   
   const disclaimerText = doc.splitTextToSize(
     "This calculator provides indicative financial projections based on industry assumptions and publicly available data sources. All data and assumptions are valid as of January 2026. Results are for indicative purposes only and should not be relied upon for investment decisions. Grid costs, irradiance data, and technology assumptions may vary significantly by location. Costs and pricing may change over time. Site-specific conditions (soil, access, environmental) are not accounted for. This tool does not include all potential costs (e.g., planning, environmental surveys, financing). Results should not be relied upon for investment decisions without independent professional verification from qualified engineers, surveyors, and financial advisors.",
     pageWidth - 36
   );
-  doc.text(disclaimerText, 18, yPosition + 10);
-  yPosition += 56;
+  doc.text(disclaimerText, 18, yPosition + 8);
+  yPosition += 36;
 
-  // Key metrics grid
-  yPosition += 3;
+  // Add map thumbnail on page 1 if available
+  if (mapScreenshot) {
+    try {
+      const mapWidth = 150;
+      const mapHeight = 80;
+      const mapX = (pageWidth - mapWidth) / 2; // Center the map
+      
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(0, 31, 63);
+      doc.text("Site Location Map", mapX, yPosition);
+      yPosition += 6;
+      
+      doc.addImage(mapScreenshot, "PNG", mapX, yPosition, mapWidth, mapHeight);
+      yPosition += mapHeight + 8;
+    } catch (e) {
+      console.error("Failed to add map image to PDF:", e);
+      yPosition += 8;
+    }
+  } else {
+    yPosition += 8;
+  }
+
+  // Key metrics grid on page 1
   const metrics = [
     { label: "Total CAPEX", value: formatCurrency(results.summary.totalCapex) },
     { label: "LCOE (Real)", value: "£" + (results.summary.lcoe || 0).toFixed(2) + "/MWh" },
@@ -192,84 +214,55 @@ export async function generatePDFReport(params: {
     const row = Math.floor(idx / metricsPerRow);
     const col = idx % metricsPerRow;
     const x = 15 + col * metricWidth;
-    const y = yPosition + row * 20;
+    const y = yPosition + row * 18;
 
-    // Box
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.5);
-    doc.rect(x, y, metricWidth - 5, 18);
+    // Check if we need to add a new page
+    if (y + 18 > pageHeight - 15) {
+      addPageBreak();
+      yPosition = 15;
+      const newY = yPosition + row * 18;
+      
+      // Box
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.5);
+      doc.rect(x, newY, metricWidth - 5, 16);
 
-    // Label
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(120, 120, 120);
-    doc.text(metric.label, x + 3, y + 5);
+      // Label
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(120, 120, 120);
+      doc.text(metric.label, x + 3, newY + 5);
 
-    // Value
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(0, 0, 0);
-    doc.text(metric.value, x + 3, y + 14);
+      // Value
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+      doc.text(metric.value, x + 3, newY + 13);
+    } else {
+      // Box
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.5);
+      doc.rect(x, y, metricWidth - 5, 16);
+
+      // Label
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(120, 120, 120);
+      doc.text(metric.label, x + 3, y + 5);
+
+      // Value
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+      doc.text(metric.value, x + 3, y + 13);
+    }
   });
 
-  yPosition += 8;
-
-  // Add map section on same page
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(0, 31, 63);
-  doc.text("Site Location Map", 15, yPosition);
-  yPosition += 8;
-  
-  // Add map image if available, otherwise show placeholder
-  if (params.mapScreenshot) {
-    try {
-      const mapHeight = 50; // Smaller map to fit on page 1
-      doc.addImage(params.mapScreenshot, "PNG", 15, yPosition, pageWidth - 30, mapHeight);
-      yPosition += mapHeight + 5;
-    } catch (e) {
-      console.error("Failed to add map image:", e);
-      // Fall back to placeholder
-      doc.setDrawColor(200, 200, 200);
-      doc.rect(15, yPosition, pageWidth - 30, 50);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.setTextColor(150, 150, 150);
-      doc.text("Map screenshot unavailable", pageWidth / 2, yPosition + 25, { align: "center" });
-      yPosition += 55;
-    }
-  } else {
-    // Show placeholder when no map screenshot
-    doc.setDrawColor(200, 200, 200);
-    doc.rect(15, yPosition, pageWidth - 30, 50);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(150, 150, 150);
-    doc.text("Map will appear here when polygon is drawn", pageWidth / 2, yPosition + 25, { align: "center" });
-    yPosition += 55;
-  }
-
-  // Add page break before stakeholder section
-  addPageBreak();
-  
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(0, 31, 63);
-  doc.text("Site Information", 15, yPosition);
-  yPosition += 8;
-  
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(80, 80, 80);
-  doc.text(`System Size: ${inputs.capacity} MW`, 15, yPosition);
-  yPosition += 6;
-  doc.text(`Project Life: ${inputs.projectLife} years`, 15, yPosition);
-  yPosition += 6;
-  doc.text(`Annual Generation: ${(results.yearlyData[0]?.generation || 0).toFixed(0)} MWh`, 15, yPosition);
   yPosition += 15;
 
   // PAGE 2: STAKEHOLDER VALUE
   addPageBreak();
+  
   addBrandedHeader("Stakeholder Value Distribution");
 
   // Calculate stakeholder values from summary
@@ -314,67 +307,73 @@ export async function generatePDFReport(params: {
 
   drawPieChart(chartCenterX, chartCenterY, chartRadius, stakeholderData);
 
-  yPosition += 65;
+  yPosition += 70;
 
-  // Stakeholder metric cards
-  const boxHeight = 24;
+  // Stakeholder metric cards - 2x2 grid
+  const boxHeight = 22;
   const boxWidth = (pageWidth - 30) / 2;
+  const gap = 3;
 
+  // Row 1: Operator (left) and Offtaker (right)
   // Operator
   doc.setFillColor(200, 200, 200);
   doc.rect(15, yPosition, boxWidth - 2, boxHeight, "F");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(80, 80, 80);
-  doc.text("Operator", 18, yPosition + 5);
+  doc.text("Operator", 18, yPosition + 4);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
+  doc.setFontSize(7);
   doc.setTextColor(0, 0, 0);
-  doc.text(`Value: ${formatCurrency(operatorNPV)}`, 18, yPosition + 12);
-  doc.text(`Percentage: ${((operatorNPV / totalValue) * 100).toFixed(1)}%`, 18, yPosition + 19);
+  doc.text(`Value: ${formatCurrency(operatorNPV)}`, 18, yPosition + 11);
+  doc.text(`Percentage: ${((operatorNPV / totalValue) * 100).toFixed(1)}%`, 18, yPosition + 17);
 
   // Offtaker
   doc.setFillColor(45, 134, 89);
-  doc.rect(15 + boxWidth, yPosition, boxWidth - 2, boxHeight, "F");
+  doc.rect(15 + boxWidth + gap, yPosition, boxWidth - 2, boxHeight, "F");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(255, 255, 255);
-  doc.text("Offtaker", 18 + boxWidth, yPosition + 5);
+  doc.text("Offtaker", 18 + boxWidth + gap, yPosition + 4);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.text(`Total Savings: ${formatCurrency(offtakerSavings)}`, 18 + boxWidth, yPosition + 12);
-  doc.text(`Percentage: ${((offtakerSavings / totalValue) * 100).toFixed(1)}%`, 18 + boxWidth, yPosition + 19);
+  doc.setFontSize(7);
+  doc.text(`Total Savings: ${formatCurrency(offtakerSavings)}`, 18 + boxWidth + gap, yPosition + 11);
+  doc.text(`Percentage: ${((offtakerSavings / totalValue) * 100).toFixed(1)}%`, 18 + boxWidth + gap, yPosition + 17);
 
-  yPosition += boxHeight + 3;
+  yPosition += boxHeight + 5;
 
+  // Row 2: Landowner (left) and Developer (right)
   // Landowner
   doc.setFillColor(255, 215, 0);
   doc.rect(15, yPosition, boxWidth - 2, boxHeight, "F");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(0, 0, 0);
-  doc.text("Landowner", 18, yPosition + 5);
+  doc.text("Landowner", 18, yPosition + 4);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.text(`Total Income: ${formatCurrency(landownerIncome)}`, 18, yPosition + 12);
-  doc.text(`Percentage: ${((landownerIncome / totalValue) * 100).toFixed(1)}%`, 18, yPosition + 19);
+  doc.setFontSize(7);
+  doc.text(`Total Income: ${formatCurrency(landownerIncome)}`, 18, yPosition + 11);
+  doc.text(`Percentage: ${((landownerIncome / totalValue) * 100).toFixed(1)}%`, 18, yPosition + 17);
 
   // Developer
   doc.setFillColor(0, 31, 63);
-  doc.rect(15 + boxWidth, yPosition, boxWidth - 2, boxHeight, "F");
+  doc.rect(15 + boxWidth + gap, yPosition, boxWidth - 2, boxHeight, "F");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(255, 255, 255);
-  doc.text("Developer", 18 + boxWidth, yPosition + 5);
+  doc.text("Developer", 18 + boxWidth + gap, yPosition + 4);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.text(`Premium: ${formatCurrency(developerPremium)}`, 18 + boxWidth, yPosition + 12);
-  doc.text(`Percentage: ${((developerPremium / totalValue) * 100).toFixed(1)}%`, 18 + boxWidth, yPosition + 19);
+  doc.setFontSize(7);
+  doc.text(`Premium: ${formatCurrency(developerPremium)}`, 18 + boxWidth + gap, yPosition + 11);
+  doc.text(`Percentage: ${((developerPremium / totalValue) * 100).toFixed(1)}%`, 18 + boxWidth + gap, yPosition + 17);
 
   yPosition += boxHeight + 8;
 
   // PAGE 3: FINANCIAL METRICS
-  addPageBreak();
+  if (yPosition > pageHeight - 50) {
+    addPageBreak();
+  }
+  
   addBrandedHeader("Financial Metrics");
 
   // Generation & Revenue table
@@ -556,7 +555,7 @@ export async function generatePDFReport(params: {
     ["Cost Inflation Rate", (inputs.costInflationRate || 0).toFixed(2) + "%"],
     ["Generation Degradation", (inputs.degradationRate || 0).toFixed(4) + "% p.a."],
     ["PPA Price", "£" + (inputs.powerPrice || 0).toFixed(2) + "/MWh"],
-    ["Discount Rate", (inputs.discountRate || 0).toFixed(2) + "%"],
+    ["Discount Rate", ((inputs.discountRate || 0) * 100).toFixed(2) + "%"],
   ];
 
   assumptions.forEach((row, idx) => {
@@ -631,5 +630,8 @@ export async function generatePDFReport(params: {
     doc.text(`Page ${i} of ${totalPages}`, pageWidth - 25, pageHeight - 7, { align: "right" });
   }
 
+  // Trigger PDF download
+  doc.save(`${projectName}-report.pdf`);
+  
   return doc;
 }
