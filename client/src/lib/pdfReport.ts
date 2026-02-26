@@ -258,12 +258,10 @@ export async function generatePDFReport(params: {
     }
   });
 
-  yPosition += 40;
+  yPosition += 15;
 
   // PAGE 2: STAKEHOLDER VALUE
-  if (yPosition > pageHeight - 80) {
-    addPageBreak();
-  }
+  addPageBreak();
   
   addBrandedHeader("Stakeholder Value Distribution");
 
@@ -309,7 +307,7 @@ export async function generatePDFReport(params: {
 
   drawPieChart(chartCenterX, chartCenterY, chartRadius, stakeholderData);
 
-  yPosition += 65;
+  yPosition += 50;
 
   // Stakeholder metric cards
   const boxHeight = 22;
@@ -340,7 +338,7 @@ export async function generatePDFReport(params: {
   doc.text(`Total Savings: ${formatCurrency(offtakerSavings)}`, 18 + boxWidth, yPosition + 11);
   doc.text(`Percentage: ${((offtakerSavings / totalValue) * 100).toFixed(1)}%`, 18 + boxWidth, yPosition + 17);
 
-  yPosition += boxHeight + 2;
+  yPosition += boxHeight + 3;
 
   // Landowner
   doc.setFillColor(255, 215, 0);
@@ -353,6 +351,8 @@ export async function generatePDFReport(params: {
   doc.setFontSize(7);
   doc.text(`Total Income: ${formatCurrency(landownerIncome)}`, 18, yPosition + 11);
   doc.text(`Percentage: ${((landownerIncome / totalValue) * 100).toFixed(1)}%`, 18, yPosition + 17);
+
+  yPosition += boxHeight + 3;
 
   // Developer
   doc.setFillColor(0, 31, 63);
