@@ -45,6 +45,9 @@ export default function MapViewPage() {
 
     // Create map
     const map = L.map(mapContainerRef.current).setView([52.52, -1.17], 10);
+    
+    // Expose map instance globally for leaflet-image capture
+    (window as any).leafletMap = map;
 
     // Add initial tile layer
     const layer = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
@@ -59,6 +62,7 @@ export default function MapViewPage() {
     return () => {
       map.remove();
       mapRef.current = null;
+      (window as any).leafletMap = null;
     };
   }, []);
 
