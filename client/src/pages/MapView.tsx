@@ -540,7 +540,8 @@ export default function MapViewPage() {
                       try {
                         // Use dom-to-image to capture the map container with better SVG support for polygons
                         const dataUrl = await captureMapWithDomToImage(mapContainerRef.current);
-                        localStorage.setItem("mapScreenshot", dataUrl);
+                        sessionStorage.setItem("mapScreenshot", dataUrl);
+                        console.log('[MapView] Map screenshot saved to sessionStorage, length:', dataUrl.length);
                         toast.success("Map screenshot saved for PDF!");
                       } catch (error) {
                         console.error("Map capture failed:", error);
