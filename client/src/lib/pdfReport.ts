@@ -309,10 +309,12 @@ export async function generatePDFReport(params: {
 
   yPosition += 50;
 
-  // Stakeholder metric cards
+  // Stakeholder metric cards - 2x2 grid
   const boxHeight = 22;
   const boxWidth = (pageWidth - 30) / 2;
+  const gap = 3;
 
+  // Row 1: Operator (left) and Offtaker (right)
   // Operator
   doc.setFillColor(200, 200, 200);
   doc.rect(15, yPosition, boxWidth - 2, boxHeight, "F");
@@ -328,18 +330,19 @@ export async function generatePDFReport(params: {
 
   // Offtaker
   doc.setFillColor(45, 134, 89);
-  doc.rect(15 + boxWidth, yPosition, boxWidth - 2, boxHeight, "F");
+  doc.rect(15 + boxWidth + gap, yPosition, boxWidth - 2, boxHeight, "F");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(255, 255, 255);
-  doc.text("Offtaker", 18 + boxWidth, yPosition + 4);
+  doc.text("Offtaker", 18 + boxWidth + gap, yPosition + 4);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7);
-  doc.text(`Total Savings: ${formatCurrency(offtakerSavings)}`, 18 + boxWidth, yPosition + 11);
-  doc.text(`Percentage: ${((offtakerSavings / totalValue) * 100).toFixed(1)}%`, 18 + boxWidth, yPosition + 17);
+  doc.text(`Total Savings: ${formatCurrency(offtakerSavings)}`, 18 + boxWidth + gap, yPosition + 11);
+  doc.text(`Percentage: ${((offtakerSavings / totalValue) * 100).toFixed(1)}%`, 18 + boxWidth + gap, yPosition + 17);
 
-  yPosition += boxHeight + 3;
+  yPosition += boxHeight + gap;
 
+  // Row 2: Landowner (left) and Developer (right)
   // Landowner
   doc.setFillColor(255, 215, 0);
   doc.rect(15, yPosition, boxWidth - 2, boxHeight, "F");
@@ -352,19 +355,17 @@ export async function generatePDFReport(params: {
   doc.text(`Total Income: ${formatCurrency(landownerIncome)}`, 18, yPosition + 11);
   doc.text(`Percentage: ${((landownerIncome / totalValue) * 100).toFixed(1)}%`, 18, yPosition + 17);
 
-  yPosition += boxHeight + 3;
-
   // Developer
   doc.setFillColor(0, 31, 63);
-  doc.rect(15 + boxWidth, yPosition, boxWidth - 2, boxHeight, "F");
+  doc.rect(15 + boxWidth + gap, yPosition, boxWidth - 2, boxHeight, "F");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(255, 255, 255);
-  doc.text("Developer", 18 + boxWidth, yPosition + 4);
+  doc.text("Developer", 18 + boxWidth + gap, yPosition + 4);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7);
-  doc.text(`Premium: ${formatCurrency(developerPremium)}`, 18 + boxWidth, yPosition + 11);
-  doc.text(`Percentage: ${((developerPremium / totalValue) * 100).toFixed(1)}%`, 18 + boxWidth, yPosition + 17);
+  doc.text(`Premium: ${formatCurrency(developerPremium)}`, 18 + boxWidth + gap, yPosition + 11);
+  doc.text(`Percentage: ${((developerPremium / totalValue) * 100).toFixed(1)}%`, 18 + boxWidth + gap, yPosition + 17);
 
   yPosition += boxHeight + 8;
 
@@ -554,7 +555,7 @@ export async function generatePDFReport(params: {
     ["Cost Inflation Rate", (inputs.costInflationRate || 0).toFixed(2) + "%"],
     ["Generation Degradation", (inputs.degradationRate || 0).toFixed(4) + "% p.a."],
     ["PPA Price", "£" + (inputs.powerPrice || 0).toFixed(2) + "/MWh"],
-    ["Discount Rate", (inputs.discountRate || 0).toFixed(2) + "%"],
+    ["Discount Rate", ((inputs.discountRate || 0) * 100).toFixed(2) + "%"],
   ];
 
   assumptions.forEach((row, idx) => {
