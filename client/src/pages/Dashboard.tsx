@@ -236,17 +236,8 @@ export default function Dashboard() {
       let mapScreenshot = localStorage.getItem('mapScreenshot');
       console.log('mapScreenshot from localStorage:', mapScreenshot ? `${mapScreenshot.substring(0, 100)}...` : 'null');
       
-      // Compress map screenshot to JPEG for better PDF compatibility
-      if (mapScreenshot) {
-        try {
-          console.log('Compressing map screenshot to JPEG...');
-          mapScreenshot = await compressImageToJpeg(mapScreenshot, 0.85);
-          console.log('Compression successful, new size:', mapScreenshot.length);
-        } catch (error) {
-          console.error('Failed to compress image:', error);
-          // Continue with original PNG if compression fails
-        }
-      }
+      // Map screenshot is already in PNG format from the capture function
+      // No compression needed - jsPDF handles PNG efficiently
       
       // Generate PDF and trigger download
       console.log('Passing to generatePDFReport:', { hasMapScreenshot: !!mapScreenshot });
