@@ -1,71 +1,56 @@
 /**
  * Capture Leaflet map with all overlays (polygons, polylines, markers)
- * Uses a simple approach: render the map to a canvas, then convert to PNG
+ * Uses a direct canvas approach that avoids CSS parsing issues
  */
 export async function captureMapWithDomToImage(mapContainer: HTMLElement): Promise<string> {
   try {
-    // Ensure all tiles and overlays are fully rendered
-    await new Promise(resolve => setTimeout(resolve, 800));
+    // Wait for tiles and overlays to fully render
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Create a canvas element
+    // Create a new canvas to composite the map
     const canvas = document.createElement('canvas');
-    const rect = mapContainer.getBoundingClientRect();
-    
-    // Set canvas dimensions (2x for higher quality)
-    canvas.width = rect.width * 2;
-    canvas.height = rect.height * 2;
-    
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Could not get canvas context');
+
+    // Get the map container dimensions
+    const rect = mapContainer.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
 
     // Fill with white background
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Scale the context for higher DPI
-    ctx.scale(2, 2);
-
-    // Draw all visible elements from the map container
-    await drawElementsToCanvas(ctx, mapContainer);
-
-    // Return as PNG data URL
-    return canvas.toDataURL('image/png', 0.95);
-  } catch (error) {
-    console.error('Error capturing map:', error);
-    throw error;
-  }
-}
-
-/**
- * Draw DOM elements to canvas, handling SVG and other elements
- */
-async function drawElementsToCanvas(ctx: CanvasRenderingContext2D, element: HTMLElement): Promise<void> {
-  const children = element.children;
-  
-  for (let i = 0; i < children.length; i++) {
-    const child = children[i] as HTMLElement;
-    const style = window.getComputedStyle(child);
-    
-    // Skip hidden elements
-    if (style.display === 'none' || style.visibility === 'hidden') {
-      continue;
+    // Find and render the Leaflet tile canvas
+    const tileCanvas = mapContainer.querySelector('canvas') as HTMLCanvasElement;
+    if (tileCanvas && tileCanvas.width > 0 && tileCanvas.height > 0) {
+      try {
+        ctx.drawImage(tileCanvas, 0, 0);
+      } catch (e) {
+        console.warn('Could not draw tile canvas:', e);
+      }
     }
 
-    const rect = child.getBoundingClientRect();
-    const parentRect = element.getBoundingClientRect();
-    
-    const x = rect.left - parentRect.left;
-    const y = rect.top - parentRect.top;
-    const width = rect.width;
-    const height = rect.height;
-
-    // Handle SVG elements (polygons, polylines, markers)
-    if (child.tagName.toLowerCase() === 'svg') {
+    // Find and render all SVG overlays (polygons, polylines, markers)
+    const svgElements = mapContainer.querySelectorAll('svg');
+    for (const svgElement of svgElements) {
       try {
-        const svgString = new XMLSerializer().serializeToString(child);
-        const svgBlob = new Blob([svgString], { type: 'image/svg+xml' });
-        const url = URL.createObjectURL(svgBlob);
+        const svgRect = svgElement.getBoundingClientRect();
+        const containerRect = mapContainer.getBoundingClientRect();
         
+        const x = svgRect.left - containerRect.left;
+        const y = svgRect.top - containerRect.top;
+        const width = svgRect.width;
+        const height = svgRect.height;
+
+        // Serialize SVG to string
+        const svgString = new XMLSerializer().serializeToString(svgElement);
+        
+        // Create a blob from the SVG string
+        const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(svgBlob);
+
+        // Create an image from the SVG blob
         const img = new Image();
         await new Promise<void>((resolve, reject) => {
           img.onload = () => {
@@ -74,48 +59,50 @@ async function drawElementsToCanvas(ctx: CanvasRenderingContext2D, element: HTML
               URL.revokeObjectURL(url);
               resolve();
             } catch (e) {
+              URL.revokeObjectURL(url);
               reject(e);
             }
           };
           img.onerror = () => {
             URL.revokeObjectURL(url);
-            reject(new Error('Failed to load SVG image'));
+            reject(new Error('Failed to load SVG'));
           };
           img.src = url;
         });
       } catch (e) {
-        console.warn('Failed to draw SVG element:', e);
+        console.warn('Could not draw SVG overlay:', e);
       }
     }
-    // Handle canvas elements (Leaflet tile layers)
-    else if (child.tagName.toLowerCase() === 'canvas') {
-      try {
-        const childCanvas = child as HTMLCanvasElement;
-        ctx.drawImage(childCanvas, x, y, width, height);
-      } catch (e) {
-        console.warn('Failed to draw canvas element:', e);
-      }
-    }
-    // Recursively handle nested elements
-    else if (child.children.length > 0) {
-      await drawElementsToCanvas(ctx, child);
-    }
+
+    // Convert canvas to PNG data URL
+    const dataUrl = canvas.toDataURL('image/png', 0.95);
+    return dataUrl;
+  } catch (error) {
+    console.error('Error capturing map:', error);
+    throw error;
   }
 }
 
 /**
- * Alternative: Use canvas rendering for better performance
+ * Alternative: Just capture the Leaflet canvas directly
  */
 export async function captureMapWithDomToImageCanvas(mapContainer: HTMLElement): Promise<string> {
   try {
-    // Ensure all tiles and overlays are fully rendered
-    await new Promise(resolve => setTimeout(resolve, 800));
+    // Wait for tiles to render
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Try to find Leaflet canvas element first
+    // Find the Leaflet canvas element
     const leafletCanvas = mapContainer.querySelector('canvas') as HTMLCanvasElement;
     
     if (leafletCanvas && leafletCanvas.width > 0 && leafletCanvas.height > 0) {
-      return leafletCanvas.toDataURL('image/png');
+      // Try to get the canvas data directly
+      try {
+        return leafletCanvas.toDataURL('image/png');
+      } catch (e) {
+        console.warn('Could not export canvas directly:', e);
+        // Fall back to full capture
+        return captureMapWithDomToImage(mapContainer);
+      }
     }
 
     // Fallback to full container capture

@@ -187,7 +187,7 @@ export async function generatePDFReport(params: {
       doc.text("Site Location Map", mapX, yPosition);
       yPosition += 6;
       
-      doc.addImage(mapScreenshot, "JPEG", mapX, yPosition, mapWidth, mapHeight);
+      doc.addImage(mapScreenshot, "PNG", mapX, yPosition, mapWidth, mapHeight);
       yPosition += mapHeight + 8;
     } catch (e) {
       console.error("Failed to add map image to PDF:", e);
