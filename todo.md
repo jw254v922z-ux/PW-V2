@@ -375,3 +375,12 @@
 - [ ] Add professional footer with "SAVILLS EARTH 2026" and page numbers
 - [ ] Improve layout spacing and white space for professional appearance
 - [ ] Test PDF generation and verify brand consistency
+
+
+## Phase 26: Report Webpage for Browser PDF Export
+- [x] Create separate report webpage route (/report) that displays all PDF content
+- [x] Display map screenshot with polygons on report page
+- [x] Add stakeholder pie chart and metrics to report page  
+- [x] Add cash flow tables and assumptions to report page
+- [x] Add print-optimized CSS for browser PDF export (Ctrl+P or Cmd+P)
+- [x] Test end-to-end report generation and browser PDF save

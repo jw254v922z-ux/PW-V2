@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Dashboard from "./pages/Dashboard";
 import MapViewPage from "./pages/MapView";
+import Report from "./pages/Report";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import VerifyEmail from "./pages/VerifyEmail";
@@ -21,6 +22,7 @@ function Router() {
       {/* All routes are public - no authentication required */}
       <Route path={"/"} component={Dashboard} />
       <Route path={"/map"} component={MapViewPage} />
+      <Route path={"/report"} component={Report} />
       <Route path={"/projects"} component={ProjectsDashboard} />
       <Route path={"/settings"} component={Settings} />
       <Route path={"/login"} component={Login} />

@@ -231,31 +231,66 @@ export default function Dashboard() {
 
   const handleExportPDF = async () => {
     try {
-      const toastId = toast.loading('Generating PDF...');
-      // Retrieve map screenshot from sessionStorage if available
-      let mapScreenshot = localStorage.getItem('mapScreenshot');
-      console.log('mapScreenshot from localStorage:', mapScreenshot ? `${mapScreenshot.substring(0, 100)}...` : 'null');
+      // Retrieve map screenshot from localStorage if available
+      const mapScreenshot = localStorage.getItem('mapScreenshot');
       
-      // Map screenshot is already in PNG format from the capture function
-      // No compression needed - jsPDF handles PNG efficiently
-      
-      // Generate PDF and trigger download
-      console.log('Passing to generatePDFReport:', { hasMapScreenshot: !!mapScreenshot });
-      generatePDFReport({ 
-        inputs: inputs,
-        results: results,
+      // Prepare report data
+      const reportData = {
         projectName: modelName || 'Solar Project',
-        description: modelDescription,
-        mapScreenshot: mapScreenshot || undefined
-      });
+        mapScreenshot: mapScreenshot,
+        metrics: {
+          totalCapex: results.summary.totalCapex,
+          lcoe: results.summary.lcoe,
+          irr: results.summary.irr,
+          paybackPeriod: results.summary.paybackPeriod,
+          totalNpv: results.summary.totalDiscountedCashFlow,
+          projectLife: inputs.projectLife,
+        },
+        stakeholders: {
+          operator: { npv: results.summary.totalDiscountedCashFlow, irr: results.summary.irr },
+          offtaker: { yearlySavings: results.summary.yearlySavings, totalSavings: results.summary.totalSavings },
+          landowner: { yearlyIncome: results.summary.yearlyRentalIncome, totalIncome: results.summary.totalLandOptionIncome, yield: results.summary.landOptionYield },
+          developer: { premium: results.summary.totalDeveloperPremium },
+        },
+        stakeholderDistribution: {
+          operator: 0,
+          offtaker: results.summary.totalSavings / (results.summary.totalSavings + results.summary.totalLandOptionIncome + results.summary.totalDeveloperPremium) * 100,
+          landowner: results.summary.totalLandOptionIncome / (results.summary.totalSavings + results.summary.totalLandOptionIncome + results.summary.totalDeveloperPremium) * 100,
+          developer: results.summary.totalDeveloperPremium / (results.summary.totalSavings + results.summary.totalLandOptionIncome + results.summary.totalDeveloperPremium) * 100,
+        },
+        cashFlow: results.yearlyData.map(y => ({
+          year: y.year,
+          revenue: y.revenue,
+          opex: y.opex,
+          netCashFlow: y.cashFlow,
+          discountedCashFlow: y.discountedCashFlow,
+        })),
+        assumptions: {
+          systemSize: inputs.mw,
+          projectLife: inputs.projectLife,
+          epcCost: inputs.capexPerMW,
+          privateWireCost: inputs.privateWireCost,
+          devPremium: inputs.developmentPremiumPerMW,
+          landRentalCost: inputs.landOptionCostPerMWYear,
+          opex: inputs.opexPerMW,
+          ppaPrice: inputs.ppaPricePerMWh,
+          exportPrice: inputs.exportPricePerMWh,
+          offsetableEnergyCost: inputs.offsetableEnergyCostPerMWh,
+          discountRate: inputs.discountRate,
+          degradation: inputs.degradation,
+        },
+      };
       
-      // PDF is saved automatically by html2pdf
+      // Store report data in sessionStorage
+      sessionStorage.setItem('reportData', JSON.stringify(reportData));
       
-      toast.dismiss(toastId);
-      toast.success('PDF exported successfully!');
+      // Open report page in new tab
+      window.open('/report', '_blank');
+      
+      toast.success('Report opened in new tab. Use Ctrl+P (or Cmd+P) to save as PDF.');
     } catch (error) {
-      console.error('PDF export failed:', error);
-      toast.error('Failed to export PDF: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      console.error('Failed to open report:', error);
+      toast.error('Failed to open report: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
