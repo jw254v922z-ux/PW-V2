@@ -307,7 +307,7 @@ export async function generatePDFReport(params: {
 
   drawPieChart(chartCenterX, chartCenterY, chartRadius, stakeholderData);
 
-  yPosition += 50;
+  yPosition += 70;
 
   // Stakeholder metric cards - 2x2 grid
   const boxHeight = 22;
@@ -340,7 +340,7 @@ export async function generatePDFReport(params: {
   doc.text(`Total Savings: ${formatCurrency(offtakerSavings)}`, 18 + boxWidth + gap, yPosition + 11);
   doc.text(`Percentage: ${((offtakerSavings / totalValue) * 100).toFixed(1)}%`, 18 + boxWidth + gap, yPosition + 17);
 
-  yPosition += boxHeight + gap;
+  yPosition += boxHeight + 5;
 
   // Row 2: Landowner (left) and Developer (right)
   // Landowner
