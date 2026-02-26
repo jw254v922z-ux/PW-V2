@@ -10,7 +10,7 @@ export async function generatePDFReport(params: {
   description?: string;
   mapScreenshot?: string;
 }): Promise<jsPDF> {
-  const { inputs, results, projectName, description } = params;
+  const { inputs, results, projectName, description, mapScreenshot } = params;
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -212,43 +212,32 @@ export async function generatePDFReport(params: {
     doc.text(metric.value, x + 3, y + 14);
   });
 
-  yPosition += 48;
+  // PAGE 2: SITE LOCATION MAP (if available)
+  if (mapScreenshot) {
+    // Add page break BEFORE rendering map
+    addPageBreak();
+    yPosition = 15;
+    
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(0, 31, 63);
+    doc.text("Site Location Map", 15, yPosition);
+    yPosition += 18;
 
-  // Add simple map placeholder section
-  addPageBreak();
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(0, 31, 63);
-  doc.text("Site Location Map", 15, yPosition);
-  yPosition += 10;
-  
-  // Add a simple rectangle as placeholder for map
-  doc.setDrawColor(200, 200, 200);
-  doc.rect(15, yPosition, pageWidth - 30, 80);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(150, 150, 150);
-  doc.text("Map will appear here when polygon is drawn", pageWidth / 2, yPosition + 40, { align: "center" });
-  yPosition += 85;
-  
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(0, 31, 63);
-  doc.text("Site Information", 15, yPosition);
-  yPosition += 8;
-  
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(80, 80, 80);
-  doc.text(`System Size: ${inputs.capacity} MW`, 15, yPosition);
-  yPosition += 6;
-  doc.text(`Project Life: ${inputs.projectLife} years`, 15, yPosition);
-  yPosition += 6;
-  doc.text(`Annual Generation: ${(results.yearlyData[0]?.generation || 0).toFixed(0)} MWh`, 15, yPosition);
-  yPosition += 15;
+    try {
+      const mapWidth = pageWidth - 30;
+      const mapHeight = 150;
+      doc.addImage(mapScreenshot, "JPEG", 15, yPosition, mapWidth, mapHeight);
+      yPosition += mapHeight + 10;
+    } catch (e) {
+      console.error("Failed to add map image to PDF:", e);
+    }
+  } else {
+    // If no map, still add page break before stakeholder value
+    addPageBreak();
+  }
 
-  // PAGE 2: STAKEHOLDER VALUE
-  addPageBreak();
+  // PAGE 3 (or PAGE 2 if no map): STAKEHOLDER VALUE
   addBrandedHeader("Stakeholder Value Distribution");
 
   // Calculate stakeholder values from summary
@@ -610,5 +599,8 @@ export async function generatePDFReport(params: {
     doc.text(`Page ${i} of ${totalPages}`, pageWidth - 25, pageHeight - 7, { align: "right" });
   }
 
+  // Trigger PDF download
+  doc.save(`${projectName}-report.pdf`);
+  
   return doc;
 }

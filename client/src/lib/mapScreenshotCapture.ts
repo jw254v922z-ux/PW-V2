@@ -1,5 +1,31 @@
 import html2canvas from 'html2canvas';
 
+/**
+ * Capture a Leaflet map container as a data URL using html2canvas.
+ * This captures everything visible including tiles, polygons, polylines, and markers.
+ */
+export async function captureMapScreenshot(mapContainer: HTMLDivElement): Promise<string> {
+  try {
+    // Wait for tiles to load
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    const canvas = await html2canvas(mapContainer, {
+      backgroundColor: "#ffffff",
+      scale: 2,
+      logging: false,
+      useCORS: true,
+      allowTaint: true,
+      imageTimeout: 5000,
+    });
+
+    const dataUrl = canvas.toDataURL("image/png");
+    return dataUrl;
+  } catch (error) {
+    console.error("Map screenshot capture failed:", error);
+    throw error;
+  }
+}
+
 export async function captureMapScreenshotWithTimeout(
   timeoutMs: number = 5000
 ): Promise<string | undefined> {

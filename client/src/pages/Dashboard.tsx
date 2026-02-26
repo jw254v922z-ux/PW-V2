@@ -21,8 +21,9 @@ import { CashFlowTable } from "../components/CashFlowTable";
 import { StakeholderValueChart } from "../components/StakeholderValueChart";
 import LandownerPage from "./Landowner";
 import { calculateSensitivityMatrix } from "@/lib/sensitivity";
-import { generatePDFReport } from "@/lib/pdfReport";
+import { generateCleanPDFReport } from '@/lib/pdfReportNew';
 import { captureMapScreenshotWithTimeout } from "@/lib/mapScreenshotWithTimeout";
+import { compressImageToJpeg } from "@/lib/imageCompression";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -232,26 +233,41 @@ export default function Dashboard() {
   const handleExportPDF = async () => {
     try {
       const toastId = toast.loading('Generating PDF...');
-      // Generate PDF and trigger download
-      const doc = await generatePDFReport({ 
-        inputs, 
-        results, 
-        projectName: modelName || 'Solar Project', 
-        description: modelDescription,
-        mapScreenshot: undefined
-      });
+      // Retrieve map screenshot from sessionStorage if available
+      let mapScreenshot = localStorage.getItem('mapScreenshot');
+      console.log('mapScreenshot from localStorage:', mapScreenshot ? `${mapScreenshot.substring(0, 100)}...` : 'null');
       
-      // Convert PDF to blob and trigger download using anchor element
-      const filename = `${modelName || 'Solar Project'}-report.pdf`;
-      const pdfBlob = doc.output('blob');
-      const url = URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      // Compress map screenshot to JPEG for better PDF compatibility
+      if (mapScreenshot) {
+        try {
+          console.log('Compressing map screenshot to JPEG...');
+          mapScreenshot = await compressImageToJpeg(mapScreenshot, 0.85);
+          console.log('Compression successful, new size:', mapScreenshot.length);
+        } catch (error) {
+          console.error('Failed to compress image:', error);
+          // Continue with original PNG if compression fails
+        }
+      }
+      
+      // Generate PDF and trigger download
+      console.log('Passing to generatePDFReport:', { hasMapScreenshot: !!mapScreenshot });
+      generateCleanPDFReport({ 
+        projectName: modelName || 'Solar Project', 
+        systemSize: inputs.mw,
+        projectLife: inputs.projectLife,
+        totalCapex: results.summary?.totalCapex || 0,
+        lcoe: results.summary?.lcoe || 0,
+        irr: (results.summary?.irr || 0) * 100,
+        paybackPeriod: (results.summary?.paybackPeriod || 0) > inputs.projectLife ? '> Project Life' : `${(results.summary?.paybackPeriod || 0).toFixed(1)} years`,
+        totalNpv: results.summary?.totalDiscountedCashFlow || 0,
+        operatorNpv: results.summary?.totalDiscountedCashFlow || 0,
+        offtakerSavings: results.offtaker?.totalSavings || 0,
+        landownerIncome: results.landowner?.totalRentalIncome || 0,
+        developerPremium: results.developer?.developerPremium || 0,
+        annualOpex: results.summary?.annualOpex || 0,
+      }, mapScreenshot || undefined);
+      
+      // PDF is saved automatically by html2pdf
       
       toast.dismiss(toastId);
       toast.success('PDF exported successfully!');

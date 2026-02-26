@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Zap, Trash2, Check, ArrowRight } from "lucide-react";
 import { calculatePolygonArea, calculatePolylineDistance } from "@/lib/geospatial";
 import { toast } from "sonner";
-import html2canvas from "html2canvas";
+import { captureMapWithDomToImage } from '@/lib/domToImageCapture';
+import html2canvas from 'html2canvas';
 import "leaflet/dist/leaflet.css";
 
 export default function MapViewPage() {
@@ -35,6 +36,8 @@ export default function MapViewPage() {
 
   const [pvCompleted, setPvCompleted] = useState(false);
   const [cableCompleted, setCableCompleted] = useState(false);
+  const [mapStyle, setMapStyle] = useState<'light' | 'grayscale' | 'satellite'>('light');
+  const [tileLayer, setTileLayer] = useState<L.TileLayer | null>(null);
 
   // Initialize map once on mount
   useEffect(() => {
@@ -43,19 +46,52 @@ export default function MapViewPage() {
     // Create map
     const map = L.map(mapContainerRef.current).setView([52.52, -1.17], 10);
 
-    // Add tile layer
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    // Add initial tile layer
+    const layer = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>',
       maxZoom: 19,
+      crossOrigin: true,
     }).addTo(map);
 
     mapRef.current = map;
+    setTileLayer(layer);
 
     return () => {
       map.remove();
       mapRef.current = null;
     };
   }, []);
+
+  // Handle map style changes
+  useEffect(() => {
+    if (!mapRef.current || !tileLayer) return;
+
+    mapRef.current.removeLayer(tileLayer);
+
+    let newUrl: string;
+    let attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>';
+
+    switch (mapStyle) {
+      case 'grayscale':
+        newUrl = "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png";
+        break;
+      case 'satellite':
+        newUrl = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+        attribution = '&copy; <a href="https://www.arcgisonline.com/">Esri</a>';
+        break;
+      case 'light':
+      default:
+        newUrl = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+    }
+
+    const newLayer = L.tileLayer(newUrl, {
+      attribution,
+      maxZoom: 19,
+      crossOrigin: true,
+    }).addTo(mapRef.current);
+
+    setTileLayer(newLayer);
+  }, [mapStyle]);
 
   // Handle map clicks for drawing
   useEffect(() => {
@@ -105,7 +141,7 @@ export default function MapViewPage() {
     const hectares = area / 10000;
     const systemSize = hectares * 10;
     setPvAreaResults({ area, hectares, systemSize });
-  }, [pvCompleted, pvPoints, pvPolygon]);
+  }, [pvCompleted, pvPoints]);
 
   const addPVPoint = useCallback((point: L.LatLng) => {
     setPvPoints((prev) => {
@@ -335,10 +371,41 @@ export default function MapViewPage() {
             <CardTitle className="text-lg">Drawing Tools</CardTitle>
             <CardDescription>Click on map to place points</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-3">
+            {/* Map Style Selector */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground">Map Style</p>
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  variant={mapStyle === 'light' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setMapStyle('light')}
+                  className="text-xs"
+                >
+                  Light
+                </Button>
+                <Button
+                  variant={mapStyle === 'grayscale' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setMapStyle('grayscale')}
+                  className="text-xs"
+                >
+                  Grayscale
+                </Button>
+                <Button
+                  variant={mapStyle === 'satellite' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setMapStyle('satellite')}
+                  className="text-xs"
+                >
+                  Satellite
+                </Button>
+              </div>
+            </div>
+            <div className="border-t pt-2" />
             <Button
               variant={drawingMode === "view" ? "default" : "outline"}
-              className="w-full"
+              className="w-full mt-2"
               onClick={() => setDrawingMode("view")}
             >
               View
@@ -465,42 +532,15 @@ export default function MapViewPage() {
                 className="w-full"
                 onClick={async () => {
                   try {
-                    if (mapRef.current) {
+                    if (mapContainerRef.current) {
                       try {
-                        // Get the map container
-                        const mapContainer = mapRef.current.getContainer();
-                        // Use html2canvas on just the map container, excluding the controls
-                        const canvas = await html2canvas(mapContainer, {
-                          backgroundColor: "#ffffff",
-                          scale: 1.5,
-                          allowTaint: true,
-                          useCORS: true,
-                          logging: false,
-                          ignoreElements: (element) => {
-                            // Ignore Leaflet control elements
-                            return element.classList.contains('leaflet-control') ||
-                                   element.classList.contains('leaflet-control-container');
-                          }
-                        });
-                        sessionStorage.setItem("mapScreenshot", canvas.toDataURL("image/png"));
+                        // Use dom-to-image to capture the map container with better SVG support for polygons
+                        const dataUrl = await captureMapWithDomToImage(mapContainerRef.current);
+                        localStorage.setItem("mapScreenshot", dataUrl);
                         toast.success("Map screenshot saved for PDF!");
-                      } catch (innerError) {
-                        // Fallback: create a simple canvas with map data
-                        console.warn("html2canvas failed, using fallback", innerError);
-                        const mapContainer = mapRef.current.getContainer();
-                        const canvas = document.createElement('canvas');
-                        canvas.width = mapContainer.offsetWidth;
-                        canvas.height = mapContainer.offsetHeight;
-                        const ctx = canvas.getContext('2d');
-                        if (ctx) {
-                          ctx.fillStyle = '#ffffff';
-                          ctx.fillRect(0, 0, canvas.width, canvas.height);
-                          ctx.fillStyle = '#666666';
-                          ctx.font = '14px Arial';
-                          ctx.fillText('Map Screenshot', 10, 30);
-                        }
-                        sessionStorage.setItem("mapScreenshot", canvas.toDataURL("image/png"));
-                        toast.success("Map screenshot saved for PDF!");
+                      } catch (error) {
+                        console.error("Map capture failed:", error);
+                        toast.error("Failed to capture map screenshot");
                       }
                     }
                   } catch (e) {
