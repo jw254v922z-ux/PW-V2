@@ -59,7 +59,6 @@ const COLORS = {
 export default function Report() {
   const [, setLocation] = useLocation();
   const [reportData, setReportData] = useState<ReportData | null>(null);
-  const [mapBlobUrl, setMapBlobUrl] = useState<string | null>(null);
 
   useEffect(() => {
     // Load report data from sessionStorage
@@ -73,22 +72,6 @@ export default function Report() {
     try {
       const data = JSON.parse(dataStr) as ReportData;
       setReportData(data);
-      
-      // Convert data URL to blob URL for better browser compatibility
-      if (data.mapScreenshot) {
-        fetch(data.mapScreenshot)
-          .then(res => res.blob())
-          .then(blob => {
-            const blobUrl = URL.createObjectURL(blob);
-            setMapBlobUrl(blobUrl);
-            console.log('[Report] Map blob URL created:', blobUrl);
-          })
-          .catch(err => {
-            console.error('[Report] Failed to create blob URL:', err);
-            // Fallback to data URL
-            setMapBlobUrl(data.mapScreenshot);
-          });
-      }
     } catch (error) {
       console.error("Failed to parse report data:", error);
       setLocation("/");
@@ -152,6 +135,35 @@ export default function Report() {
     });
   }, [reportData]);
 
+  // Draw map screenshot to canvas after data is loaded
+  useEffect(() => {
+    if (!reportData || !reportData.mapScreenshot) return;
+
+    const canvas = document.getElementById('map-canvas') as HTMLCanvasElement;
+    if (!canvas) return;
+
+    const img = new Image();
+    img.onload = () => {
+      // Set canvas size to match image
+      canvas.width = img.width;
+      canvas.height = img.height;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      // Draw the image to canvas
+      ctx.drawImage(img, 0, 0);
+      console.log('[Report] Map image drawn to canvas successfully');
+    };
+    
+    img.onerror = (e) => {
+      console.error('[Report] Failed to load map image:', e);
+    };
+    
+    // Set the data URL as image source
+    img.src = reportData.mapScreenshot;
+  }, [reportData]);
+
   if (!reportData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -186,19 +198,13 @@ export default function Report() {
           </p>
         </div>
 
-        {mapBlobUrl && (
+        {mapScreenshot && (
           <div className="map-section mb-8">
             <h3 className="text-xl font-bold mb-4" style={{ color: COLORS.navyBlue }}>Site Location Map</h3>
-            <img 
-              src={mapBlobUrl} 
-              alt="Site location map" 
+            <canvas 
+              id="map-canvas"
               className="w-full border border-gray-300 rounded"
               style={{ maxHeight: "400px", objectFit: "contain" }}
-              onLoad={() => console.log('[Report] Map image loaded successfully')}
-              onError={(e) => {
-                console.error('[Report] Map image failed to load:', e);
-                console.log('[Report] mapBlobUrl:', mapBlobUrl);
-              }}
             />
           </div>
         )}
