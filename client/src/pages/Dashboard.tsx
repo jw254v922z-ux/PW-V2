@@ -231,8 +231,8 @@ export default function Dashboard() {
 
   const handleExportPDF = async () => {
     try {
-      // Retrieve map screenshot from sessionStorage if available
-      const mapScreenshot = sessionStorage.getItem('mapScreenshot');
+      // Retrieve map screenshot from localStorage if available
+      const mapScreenshot = localStorage.getItem('mapScreenshot');
       
       // Prepare report data
       const reportData = {
