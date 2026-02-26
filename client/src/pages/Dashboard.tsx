@@ -21,9 +21,8 @@ import { CashFlowTable } from "../components/CashFlowTable";
 import { StakeholderValueChart } from "../components/StakeholderValueChart";
 import LandownerPage from "./Landowner";
 import { calculateSensitivityMatrix } from "@/lib/sensitivity";
-import { generateCleanPDFReport } from '@/lib/pdfReportNew';
-import { captureMapScreenshotWithTimeout } from "@/lib/mapScreenshotWithTimeout";
-import { compressImageToJpeg } from "@/lib/imageCompression";
+import { generatePDFReport } from '@/lib/pdfReport';
+
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -251,21 +250,13 @@ export default function Dashboard() {
       
       // Generate PDF and trigger download
       console.log('Passing to generatePDFReport:', { hasMapScreenshot: !!mapScreenshot });
-      generateCleanPDFReport({ 
-        projectName: modelName || 'Solar Project', 
-        systemSize: inputs.mw,
-        projectLife: inputs.projectLife,
-        totalCapex: results.summary?.totalCapex || 0,
-        lcoe: results.summary?.lcoe || 0,
-        irr: (results.summary?.irr || 0) * 100,
-        paybackPeriod: (results.summary?.paybackPeriod || 0) > inputs.projectLife ? '> Project Life' : `${(results.summary?.paybackPeriod || 0).toFixed(1)} years`,
-        totalNpv: results.summary?.totalDiscountedCashFlow || 0,
-        operatorNpv: results.summary?.totalDiscountedCashFlow || 0,
-        offtakerSavings: results.offtaker?.totalSavings || 0,
-        landownerIncome: results.landowner?.totalRentalIncome || 0,
-        developerPremium: results.developer?.developerPremium || 0,
-        annualOpex: results.summary?.annualOpex || 0,
-      }, mapScreenshot || undefined);
+      generatePDFReport({ 
+        inputs: inputs,
+        results: results,
+        projectName: modelName || 'Solar Project',
+        description: modelDescription,
+        mapScreenshot: mapScreenshot || undefined
+      });
       
       // PDF is saved automatically by html2pdf
       
