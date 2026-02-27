@@ -39,6 +39,15 @@ export default function MapViewPage() {
   const [mapStyle, setMapStyle] = useState<'light' | 'grayscale' | 'satellite'>('light');
   const [tileLayer, setTileLayer] = useState<L.TileLayer | null>(null);
 
+  // Clear map screenshot when starting new drawing
+  useEffect(() => {
+    if (drawingMode === 'pv' || drawingMode === 'cable') {
+      // Clear old screenshot to force refresh
+      sessionStorage.removeItem('mapScreenshot');
+      console.log('[MapView] Cleared old map screenshot from sessionStorage');
+    }
+  }, [drawingMode]);
+
   // Initialize map once on mount
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
@@ -255,6 +264,8 @@ export default function MapViewPage() {
     setPvPolygon(null);
     setPvAreaResults(null);
     setPvCompleted(false);
+    // Clear old screenshot
+    sessionStorage.removeItem('mapScreenshot');
     
     // Recapture map screenshot
     setTimeout(async () => {
@@ -284,6 +295,8 @@ export default function MapViewPage() {
     setCablePolyline(null);
     setCableResults(null);
     setCableCompleted(false);
+    // Clear old screenshot
+    sessionStorage.removeItem('mapScreenshot');
     
     // Recapture map screenshot
     setTimeout(async () => {
