@@ -348,22 +348,26 @@ export default function Report() {
                 <tr style={{ backgroundColor: COLORS.navyBlue, color: 'white' }}>
                   <th className="border border-gray-300 p-1">Year</th>
                   <th className="border border-gray-300 p-1">Annual Savings (£)</th>
+                  <th className="border border-gray-300 p-1">Discounted Savings (£)</th>
                   <th className="border border-gray-300 p-1">Cumulative Savings (£)</th>
                 </tr>
               </thead>
               <tbody>
                 {cashFlow.slice(1).map((row, index) => {
                   const cumulativeSavings = stakeholders.offtaker.yearlySavings * (index + 1);
+                  const discountFactor = 1 / Math.pow(1 + assumptions.discountRate, index + 1);
+                  const discountedSavings = stakeholders.offtaker.yearlySavings * discountFactor;
                   return (
                     <tr key={row.year} style={{ backgroundColor: index % 2 === 0 ? 'white' : '#f5f5f5' }}>
                       <td className="border border-gray-300 p-1 text-center">{row.year}</td>
                       <td className="border border-gray-300 p-1 text-right">{stakeholders.offtaker.yearlySavings.toLocaleString()}</td>
+                      <td className="border border-gray-300 p-1 text-right">{discountedSavings.toLocaleString()}</td>
                       <td className="border border-gray-300 p-1 text-right">{cumulativeSavings.toLocaleString()}</td>
                     </tr>
                   );
                 })}
                 <tr style={{ backgroundColor: COLORS.forestGreen, color: 'white', fontWeight: 'bold' }}>
-                  <td className="border border-gray-300 p-1 text-center" colSpan={2}>Total Savings</td>
+                  <td className="border border-gray-300 p-1 text-center" colSpan={3}>Total NPV</td>
                   <td className="border border-gray-300 p-1 text-right">£{stakeholders.offtaker.totalSavings.toLocaleString()}</td>
                 </tr>
               </tbody>
@@ -378,22 +382,26 @@ export default function Report() {
                 <tr style={{ backgroundColor: COLORS.navyBlue, color: 'white' }}>
                   <th className="border border-gray-300 p-1">Year</th>
                   <th className="border border-gray-300 p-1">Annual Income (£)</th>
+                  <th className="border border-gray-300 p-1">Discounted Income (£)</th>
                   <th className="border border-gray-300 p-1">Cumulative Income (£)</th>
                 </tr>
               </thead>
               <tbody>
                 {cashFlow.slice(1).map((row, index) => {
                   const cumulativeIncome = stakeholders.landowner.yearlyIncome * (index + 1);
+                  const discountFactor = 1 / Math.pow(1 + assumptions.discountRate, index + 1);
+                  const discountedIncome = stakeholders.landowner.yearlyIncome * discountFactor;
                   return (
                     <tr key={row.year} style={{ backgroundColor: index % 2 === 0 ? 'white' : '#f5f5f5' }}>
                       <td className="border border-gray-300 p-1 text-center">{row.year}</td>
                       <td className="border border-gray-300 p-1 text-right">{stakeholders.landowner.yearlyIncome.toLocaleString()}</td>
+                      <td className="border border-gray-300 p-1 text-right">{discountedIncome.toLocaleString()}</td>
                       <td className="border border-gray-300 p-1 text-right">{cumulativeIncome.toLocaleString()}</td>
                     </tr>
                   );
                 })}
                 <tr style={{ backgroundColor: COLORS.yellow, color: COLORS.navyBlue, fontWeight: 'bold' }}>
-                  <td className="border border-gray-300 p-1 text-center" colSpan={2}>Total Income</td>
+                  <td className="border border-gray-300 p-1 text-center" colSpan={3}>Total NPV</td>
                   <td className="border border-gray-300 p-1 text-right">£{stakeholders.landowner.totalIncome.toLocaleString()}</td>
                 </tr>
               </tbody>
@@ -408,11 +416,13 @@ export default function Report() {
                 <tr style={{ backgroundColor: COLORS.navyBlue, color: 'white' }}>
                   <th className="border border-gray-300 p-1">Year</th>
                   <th className="border border-gray-300 p-1">Premium (£)</th>
+                  <th className="border border-gray-300 p-1">Discounted Premium (£)</th>
                 </tr>
               </thead>
               <tbody>
                 <tr style={{ backgroundColor: 'white' }}>
                   <td className="border border-gray-300 p-1 text-center">0</td>
+                  <td className="border border-gray-300 p-1 text-right">£{stakeholders.developer.premium.toLocaleString()}</td>
                   <td className="border border-gray-300 p-1 text-right">£{stakeholders.developer.premium.toLocaleString()}</td>
                 </tr>
               </tbody>
