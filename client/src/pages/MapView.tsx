@@ -145,6 +145,11 @@ export default function MapViewPage() {
     const hectares = area / 10000;
     const systemSize = hectares * 10;
     setPvAreaResults({ area, hectares, systemSize });
+
+    // Save polygon coordinates to sessionStorage for report page
+    const polygonData = pvPoints.map(p => ({ lat: p.lat, lng: p.lng }));
+    sessionStorage.setItem('pvPolygonData', JSON.stringify(polygonData));
+    console.log('[MapView] Saved PV polygon data to sessionStorage:', polygonData.length, 'points');
   }, [pvCompleted, pvPoints]);
 
   const addPVPoint = useCallback((point: L.LatLng) => {
@@ -232,6 +237,11 @@ export default function MapViewPage() {
         // Calculate distance
         const distance = calculatePolylineDistance(newPoints);
         setCableResults({ distance });
+
+        // Save cable polyline coordinates to sessionStorage for report page
+        const polylineData = newPoints.map(p => ({ lat: p.lat, lng: p.lng }));
+        sessionStorage.setItem('cablePolylineData', JSON.stringify(polylineData));
+        console.log('[MapView] Saved cable polyline data to sessionStorage:', polylineData.length, 'points');
       }
       return newPoints;
     });

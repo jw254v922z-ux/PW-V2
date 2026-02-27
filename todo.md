@@ -406,3 +406,10 @@
 - [x] Fix polygon closing - increased threshold to 500m for easier closing
 - [x] Fix step-down transformer cost bug - sliders now respect checkbox state
 - [x] Clarify wayleaves cost treatment - removed from CAPEX, will be added to recurring OPEX
+
+
+## Phase 27: Map Display on Report - Polygon Data Approach
+- [x] Save polygon/polyline coordinates to sessionStorage when user completes drawing
+- [x] Create ReportMap component that renders Leaflet map with saved polygon data
+- [x] Replace screenshot approach with live map rendering on report page
+- [x] Test map displays correctly with PV area and cable route polygons

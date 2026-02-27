@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
+import { ReportMap } from "@/components/ReportMap";
 
 interface ReportData {
   projectName: string;
@@ -135,34 +136,8 @@ export default function Report() {
     });
   }, [reportData]);
 
-  // Draw map screenshot to canvas after data is loaded
-  useEffect(() => {
-    if (!reportData || !reportData.mapScreenshot) return;
-
-    const canvas = document.getElementById('map-canvas') as HTMLCanvasElement;
-    if (!canvas) return;
-
-    const img = new Image();
-    img.onload = () => {
-      // Set canvas size to match image
-      canvas.width = img.width;
-      canvas.height = img.height;
-      
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      
-      // Draw the image to canvas
-      ctx.drawImage(img, 0, 0);
-      console.log('[Report] Map image drawn to canvas successfully');
-    };
-    
-    img.onerror = (e) => {
-      console.error('[Report] Failed to load map image:', e);
-    };
-    
-    // Set the data URL as image source
-    img.src = reportData.mapScreenshot;
-  }, [reportData]);
+  // Check if polygon data exists in sessionStorage
+  const hasMapData = sessionStorage.getItem('pvPolygonData') || sessionStorage.getItem('cablePolylineData');
 
   if (!reportData) {
     return (
@@ -198,14 +173,10 @@ export default function Report() {
           </p>
         </div>
 
-        {mapScreenshot && (
+        {hasMapData && (
           <div className="map-section mb-8">
             <h3 className="text-xl font-bold mb-4" style={{ color: COLORS.navyBlue }}>Site Location Map</h3>
-            <canvas 
-              id="map-canvas"
-              className="w-full border border-gray-300 rounded"
-              style={{ maxHeight: "400px", objectFit: "contain" }}
-            />
+            <ReportMap className="w-full border border-gray-300 rounded" />
           </div>
         )}
 
