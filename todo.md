@@ -413,3 +413,10 @@
 - [x] Create ReportMap component that renders Leaflet map with saved polygon data
 - [x] Replace screenshot approach with live map rendering on report page
 - [x] Test map displays correctly with PV area and cable route polygons
+
+
+## Phase 28: Automatic Map Screenshot on Polygon Completion
+- [x] Capture map screenshot automatically when PV area polygon is completed
+- [x] Capture map screenshot automatically when cable route is completed
+- [x] Save screenshot to sessionStorage
+- [x] Display screenshot image on report page

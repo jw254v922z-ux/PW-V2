@@ -8,7 +8,7 @@ import { MapPin, Zap, Trash2, Check, ArrowRight } from "lucide-react";
 import { calculatePolygonArea, calculatePolylineDistance } from "@/lib/geospatial";
 import { toast } from "sonner";
 import { captureMapWithDomToImage } from '@/lib/domToImageCapture';
-import html2canvas from 'html2canvas';
+import domtoimage from 'dom-to-image-more';
 import "leaflet/dist/leaflet.css";
 
 export default function MapViewPage() {
@@ -441,10 +441,31 @@ export default function MapViewPage() {
             {drawingMode === "pv" && pvPoints.length >= 3 && !pvCompleted && (
               <Button
                 className="w-full bg-green-600 hover:bg-green-700"
-                onClick={() => {
+                onClick={async () => {
                   setPvCompleted(true);
                   setDrawingMode("view");
                   toast.success("PV area completed!");
+                  
+                  // Automatically capture map screenshot
+                  setTimeout(async () => {
+                    try {
+                      const mapContainer = mapContainerRef.current;
+                      if (!mapContainer) {
+                        console.error('[MapView] Map container not found');
+                        return;
+                      }
+                      
+                      const dataUrl = await domtoimage.toPng(mapContainer, {
+                        quality: 0.95,
+                        cacheBust: true,
+                      });
+                      sessionStorage.setItem('mapScreenshot', dataUrl);
+                      console.log('[MapView] Map screenshot saved automatically:', dataUrl.length, 'characters');
+                      toast.success('Map screenshot saved for report!');
+                    } catch (error) {
+                      console.error('[MapView] Failed to capture map:', error);
+                    }
+                  }, 500); // Wait for polygon to render
                 }}
               >
                 <Check className="w-4 h-4 mr-2" /> Complete PV Area
@@ -453,10 +474,31 @@ export default function MapViewPage() {
             {drawingMode === "cable" && cablePoints.length >= 2 && !cableCompleted && (
               <Button
                 className="w-full bg-blue-600 hover:bg-blue-700"
-                onClick={() => {
+                onClick={async () => {
                   setCableCompleted(true);
                   setDrawingMode("view");
                   toast.success("Cable route completed!");
+                  
+                  // Automatically capture map screenshot
+                  setTimeout(async () => {
+                    try {
+                      const mapContainer = mapContainerRef.current;
+                      if (!mapContainer) {
+                        console.error('[MapView] Map container not found');
+                        return;
+                      }
+                      
+                      const dataUrl = await domtoimage.toPng(mapContainer, {
+                        quality: 0.95,
+                        cacheBust: true,
+                      });
+                      sessionStorage.setItem('mapScreenshot', dataUrl);
+                      console.log('[MapView] Map screenshot saved automatically:', dataUrl.length, 'characters');
+                      toast.success('Map screenshot saved for report!');
+                    } catch (error) {
+                      console.error('[MapView] Failed to capture map:', error);
+                    }
+                  }, 500); // Wait for polyline to render
                 }}
               >
                 <Check className="w-4 h-4 mr-2" /> Complete Cable Route

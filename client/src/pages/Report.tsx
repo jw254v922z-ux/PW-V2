@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { ReportMap } from "@/components/ReportMap";
 
 interface ReportData {
   projectName: string;
@@ -136,8 +135,8 @@ export default function Report() {
     });
   }, [reportData]);
 
-  // Check if polygon data exists in sessionStorage
-  const hasMapData = sessionStorage.getItem('pvPolygonData') || sessionStorage.getItem('cablePolylineData');
+  // Check if map screenshot exists in sessionStorage
+  const mapScreenshotData = sessionStorage.getItem('mapScreenshot');
 
   if (!reportData) {
     return (
@@ -173,10 +172,15 @@ export default function Report() {
           </p>
         </div>
 
-        {hasMapData && (
+        {mapScreenshotData && (
           <div className="map-section mb-8">
             <h3 className="text-xl font-bold mb-4" style={{ color: COLORS.navyBlue }}>Site Location Map</h3>
-            <ReportMap className="w-full border border-gray-300 rounded" />
+            <img 
+              src={mapScreenshotData} 
+              alt="Site location map with drawn areas" 
+              className="w-full border border-gray-300 rounded"
+              style={{ maxHeight: "500px", objectFit: "contain" }}
+            />
           </div>
         )}
 
