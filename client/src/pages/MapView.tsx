@@ -39,14 +39,8 @@ export default function MapViewPage() {
   const [mapStyle, setMapStyle] = useState<'light' | 'grayscale' | 'satellite'>('light');
   const [tileLayer, setTileLayer] = useState<L.TileLayer | null>(null);
 
-  // Clear map screenshot when starting new drawing
-  useEffect(() => {
-    if (drawingMode === 'pv' || drawingMode === 'cable') {
-      // Clear old screenshot to force refresh
-      sessionStorage.removeItem('mapScreenshot');
-      console.log('[MapView] Cleared old map screenshot from sessionStorage');
-    }
-  }, [drawingMode]);
+  // Don't clear screenshot when entering drawing mode - only clear when explicitly clearing the polygon
+  // This prevents the screenshot from disappearing before the new one is saved
 
   // Initialize map once on mount
   useEffect(() => {
