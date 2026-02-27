@@ -400,3 +400,9 @@
 - [ ] Check if Report.tsx is retrieving mapScreenshot from localStorage correctly
 - [ ] Fix image src attribute to use proper data URL format
 - [ ] Test map image displays correctly in report page
+
+
+## Phase 26: Bug Fixes - Map and Grid Cost Issues
+- [x] Fix polygon closing - increased threshold to 500m for easier closing
+- [x] Fix step-down transformer cost bug - sliders now respect checkbox state
+- [x] Clarify wayleaves cost treatment - removed from CAPEX, will be added to recurring OPEX
