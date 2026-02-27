@@ -278,6 +278,24 @@ export default function Dashboard() {
           offsetableEnergyCost: inputs.offsetableEnergyCostPerMWh,
           discountRate: inputs.discountRate,
           degradation: inputs.degradation,
+          irradiance: inputs.irradianceOverride || inputs.generationPerMW / 0.2, // kWh/m²/year (assuming 20% efficiency if not overridden)
+          gridConnectionDetails: gridConnectionCosts ? {
+            cableVoltage: gridConnectionCosts.cableVoltageKV,
+            cableDistance: gridConnectionCosts.distanceKm,
+            roadPercentage: gridConnectionCosts.roadPercentage,
+            agriculturalDistance: gridConnectionCosts.agriculturalDistanceKm,
+            roadDistance: gridConnectionCosts.roadDistanceKm,
+            stepUpTransformers: gridConnectionCosts.stepUpTransformerCount,
+            stepDownTransformers: gridConnectionCosts.stepDownTransformerCount,
+            endUserVoltage: gridConnectionCosts.endUserVoltageKV,
+            majorRoadCrossings: gridConnectionCosts.majorRoadCrossings,
+            cableCostPerKm: gridConnectionCosts.cableCostPerKm,
+            stepUpTransformerCost: gridConnectionCosts.stepUpTransformerCost,
+            stepDownTransformerCost: gridConnectionCosts.stepDownTransformerCost,
+            includeStepDownInstallation: gridConnectionCosts.includeStepDownInstallation,
+            includeStepUpTransformer: gridConnectionCosts.includeStepUpTransformer,
+            includeStepDownTransformer: gridConnectionCosts.includeStepDownTransformer,
+          } : null,
         },
       };
       

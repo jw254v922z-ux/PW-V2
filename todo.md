@@ -420,3 +420,9 @@
 - [x] Capture map screenshot automatically when cable route is completed
 - [x] Save screenshot to sessionStorage
 - [x] Display screenshot image on report page
+
+
+## Ph## Phase 29: Report Enhancements - Key Assumptions & Detailed Cash Flows
+- [x] Expand Key Assumptions section to include all calculation inputs (cable costs, transformer costs, irradiance, offset energy price)
+- [x] Replace stakeholder summary with full year-by-year cash flow tables for each stakeholderbles per stakeholder
+- [ ] Test report generation with updated sections

@@ -44,6 +44,24 @@ interface ReportData {
     offsetableEnergyCost: number;
     discountRate: number;
     degradation: number;
+    irradiance: number;
+    gridConnectionDetails: {
+      cableVoltage: number;
+      cableDistance: number;
+      roadPercentage: number;
+      agriculturalDistance: number;
+      roadDistance: number;
+      stepUpTransformers: number;
+      stepDownTransformers: number;
+      endUserVoltage: number;
+      majorRoadCrossings: number;
+      cableCostPerKm: number;
+      stepUpTransformerCost: number;
+      stepDownTransformerCost: number;
+      includeStepDownInstallation: boolean;
+      includeStepUpTransformer: boolean;
+      includeStepDownTransformer: boolean;
+    } | null;
   };
 }
 
@@ -287,25 +305,118 @@ export default function Report() {
           </table>
         </div>
 
-        <div className="cash-flow-summary">
-          <h3 className="text-xl font-bold mb-4" style={{ color: COLORS.navyBlue }}>Cash Flow Summary by Stakeholder</h3>
-          <div className="grid grid-cols-1 gap-2">
-            <div className="p-3 rounded" style={{ backgroundColor: COLORS.gray, color: 'white' }}>
-              <span className="font-bold">Operator</span>
-              <span className="float-right">NPV: £{stakeholders.operator.npv.toLocaleString()} | IRR: {stakeholders.operator.irr.toFixed(2)}%</span>
-            </div>
-            <div className="p-3 rounded" style={{ backgroundColor: COLORS.forestGreen, color: 'white' }}>
-              <span className="font-bold">Offtaker</span>
-              <span className="float-right">NPV: £{stakeholders.offtaker.totalSavings.toLocaleString()} | IRR: 0.00%</span>
-            </div>
-            <div className="p-3 rounded" style={{ backgroundColor: COLORS.yellow, color: COLORS.navyBlue }}>
-              <span className="font-bold">Landowner</span>
-              <span className="float-right">NPV: £{stakeholders.landowner.totalIncome.toLocaleString()} | IRR: 0.00%</span>
-            </div>
-            <div className="p-3 rounded" style={{ backgroundColor: COLORS.navyBlue, color: 'white' }}>
-              <span className="font-bold">Developer</span>
-              <span className="float-right">NPV: £{stakeholders.developer.premium.toLocaleString()} | IRR: 0.00%</span>
-            </div>
+        {/* Stakeholder Cash Flow Tables */}
+        <div className="stakeholder-cashflows mt-8">
+          <h3 className="text-2xl font-bold mb-6" style={{ color: COLORS.navyBlue }}>Detailed Cash Flows by Stakeholder</h3>
+          
+          {/* Operator Cash Flow */}
+          <div className="mb-6">
+            <h4 className="text-lg font-bold mb-2 p-2 rounded" style={{ backgroundColor: COLORS.gray, color: 'white' }}>Operator Cash Flow</h4>
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr style={{ backgroundColor: COLORS.navyBlue, color: 'white' }}>
+                  <th className="border border-gray-300 p-1">Year</th>
+                  <th className="border border-gray-300 p-1">Revenue (£)</th>
+                  <th className="border border-gray-300 p-1">OPEX (£)</th>
+                  <th className="border border-gray-300 p-1">Net CF (£)</th>
+                  <th className="border border-gray-300 p-1">Discounted CF (£)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cashFlow.map((row, index) => (
+                  <tr key={row.year} style={{ backgroundColor: index % 2 === 0 ? 'white' : '#f5f5f5' }}>
+                    <td className="border border-gray-300 p-1 text-center">{row.year}</td>
+                    <td className="border border-gray-300 p-1 text-right">{row.revenue.toLocaleString()}</td>
+                    <td className="border border-gray-300 p-1 text-right">{row.opex.toLocaleString()}</td>
+                    <td className="border border-gray-300 p-1 text-right">{row.netCashFlow.toLocaleString()}</td>
+                    <td className="border border-gray-300 p-1 text-right">{row.discountedCashFlow.toLocaleString()}</td>
+                  </tr>
+                ))}
+                <tr style={{ backgroundColor: COLORS.gray, color: 'white', fontWeight: 'bold' }}>
+                  <td className="border border-gray-300 p-1 text-center" colSpan={3}>Total NPV</td>
+                  <td className="border border-gray-300 p-1 text-right" colSpan={2}>£{stakeholders.operator.npv.toLocaleString()}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          {/* Offtaker Cash Flow */}
+          <div className="mb-6">
+            <h4 className="text-lg font-bold mb-2 p-2 rounded" style={{ backgroundColor: COLORS.forestGreen, color: 'white' }}>Offtaker Annual Savings</h4>
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr style={{ backgroundColor: COLORS.navyBlue, color: 'white' }}>
+                  <th className="border border-gray-300 p-1">Year</th>
+                  <th className="border border-gray-300 p-1">Annual Savings (£)</th>
+                  <th className="border border-gray-300 p-1">Cumulative Savings (£)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cashFlow.slice(1).map((row, index) => {
+                  const cumulativeSavings = stakeholders.offtaker.yearlySavings * (index + 1);
+                  return (
+                    <tr key={row.year} style={{ backgroundColor: index % 2 === 0 ? 'white' : '#f5f5f5' }}>
+                      <td className="border border-gray-300 p-1 text-center">{row.year}</td>
+                      <td className="border border-gray-300 p-1 text-right">{stakeholders.offtaker.yearlySavings.toLocaleString()}</td>
+                      <td className="border border-gray-300 p-1 text-right">{cumulativeSavings.toLocaleString()}</td>
+                    </tr>
+                  );
+                })}
+                <tr style={{ backgroundColor: COLORS.forestGreen, color: 'white', fontWeight: 'bold' }}>
+                  <td className="border border-gray-300 p-1 text-center" colSpan={2}>Total Savings</td>
+                  <td className="border border-gray-300 p-1 text-right">£{stakeholders.offtaker.totalSavings.toLocaleString()}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          {/* Landowner Cash Flow */}
+          <div className="mb-6">
+            <h4 className="text-lg font-bold mb-2 p-2 rounded" style={{ backgroundColor: COLORS.yellow, color: COLORS.navyBlue }}>Landowner Rental Income</h4>
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr style={{ backgroundColor: COLORS.navyBlue, color: 'white' }}>
+                  <th className="border border-gray-300 p-1">Year</th>
+                  <th className="border border-gray-300 p-1">Annual Income (£)</th>
+                  <th className="border border-gray-300 p-1">Cumulative Income (£)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cashFlow.slice(1).map((row, index) => {
+                  const cumulativeIncome = stakeholders.landowner.yearlyIncome * (index + 1);
+                  return (
+                    <tr key={row.year} style={{ backgroundColor: index % 2 === 0 ? 'white' : '#f5f5f5' }}>
+                      <td className="border border-gray-300 p-1 text-center">{row.year}</td>
+                      <td className="border border-gray-300 p-1 text-right">{stakeholders.landowner.yearlyIncome.toLocaleString()}</td>
+                      <td className="border border-gray-300 p-1 text-right">{cumulativeIncome.toLocaleString()}</td>
+                    </tr>
+                  );
+                })}
+                <tr style={{ backgroundColor: COLORS.yellow, color: COLORS.navyBlue, fontWeight: 'bold' }}>
+                  <td className="border border-gray-300 p-1 text-center" colSpan={2}>Total Income</td>
+                  <td className="border border-gray-300 p-1 text-right">£{stakeholders.landowner.totalIncome.toLocaleString()}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          {/* Developer Premium */}
+          <div className="mb-6">
+            <h4 className="text-lg font-bold mb-2 p-2 rounded" style={{ backgroundColor: COLORS.navyBlue, color: 'white' }}>Developer Premium (Year 0)</h4>
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr style={{ backgroundColor: COLORS.navyBlue, color: 'white' }}>
+                  <th className="border border-gray-300 p-1">Year</th>
+                  <th className="border border-gray-300 p-1">Premium (£)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style={{ backgroundColor: 'white' }}>
+                  <td className="border border-gray-300 p-1 text-center">0</td>
+                  <td className="border border-gray-300 p-1 text-right">£{stakeholders.developer.premium.toLocaleString()}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -358,6 +469,44 @@ export default function Report() {
           <div className="assumption-item p-3 border border-gray-300 rounded">
             <span className="font-bold">Panel Degradation:</span> {(assumptions.degradation * 100).toFixed(2)}%
           </div>
+          <div className="assumption-item p-3 border border-gray-300 rounded">
+            <span className="font-bold">Irradiance:</span> {assumptions.irradiance ? assumptions.irradiance.toFixed(0) : 'N/A'} kWh/m²/year
+          </div>
+          
+          {assumptions.gridConnectionDetails && (
+            <>
+              <div className="assumption-item p-3 border border-gray-300 rounded col-span-2">
+                <span className="font-bold text-lg">Grid Connection Details</span>
+              </div>
+              <div className="assumption-item p-3 border border-gray-300 rounded">
+                <span className="font-bold">Cable Voltage:</span> {assumptions.gridConnectionDetails?.cableVoltage || 'N/A'} kV
+              </div>
+              <div className="assumption-item p-3 border border-gray-300 rounded">
+                <span className="font-bold">Cable Distance:</span> {assumptions.gridConnectionDetails?.cableDistance?.toFixed(2) || 'N/A'} km
+              </div>
+              <div className="assumption-item p-3 border border-gray-300 rounded">
+                <span className="font-bold">Agricultural Distance:</span> {assumptions.gridConnectionDetails?.agriculturalDistance?.toFixed(2) || 'N/A'} km
+              </div>
+              <div className="assumption-item p-3 border border-gray-300 rounded">
+                <span className="font-bold">Road Distance:</span> {assumptions.gridConnectionDetails?.roadDistance?.toFixed(2) || 'N/A'} km
+              </div>
+              <div className="assumption-item p-3 border border-gray-300 rounded">
+                <span className="font-bold">Cable Cost:</span> £{assumptions.gridConnectionDetails?.cableCostPerKm?.toLocaleString() || 'N/A'}/km
+              </div>
+              <div className="assumption-item p-3 border border-gray-300 rounded">
+                <span className="font-bold">Major Road Crossings:</span> {assumptions.gridConnectionDetails?.majorRoadCrossings || 'N/A'}
+              </div>
+              <div className="assumption-item p-3 border border-gray-300 rounded">
+                <span className="font-bold">Step-Up Transformers:</span> {assumptions.gridConnectionDetails?.stepUpTransformers || 'N/A'} @ £{assumptions.gridConnectionDetails?.stepUpTransformerCost?.toLocaleString() || 'N/A'} each
+              </div>
+              <div className="assumption-item p-3 border border-gray-300 rounded">
+                <span className="font-bold">Step-Down Transformers:</span> {assumptions.gridConnectionDetails?.stepDownTransformers || 'N/A'} @ £{assumptions.gridConnectionDetails?.stepDownTransformerCost?.toLocaleString() || 'N/A'} each
+              </div>
+              <div className="assumption-item p-3 border border-gray-300 rounded">
+                <span className="font-bold">End-User Voltage:</span> {assumptions.gridConnectionDetails?.endUserVoltage || 'N/A'} kV
+              </div>
+            </>
+          )}
         </div>
 
         <div className="report-footer mt-8">
