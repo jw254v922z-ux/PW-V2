@@ -349,6 +349,7 @@ export default function Report() {
                   <th className="border border-gray-300 p-1">Year</th>
                   <th className="border border-gray-300 p-1">Annual Savings (£)</th>
                   <th className="border border-gray-300 p-1">Discounted Savings (£)</th>
+                  <th className="border border-gray-300 p-1">Cumulative Discounted (£)</th>
                   <th className="border border-gray-300 p-1">Cumulative Savings (£)</th>
                 </tr>
               </thead>
@@ -357,18 +358,23 @@ export default function Report() {
                   const cumulativeSavings = stakeholders.offtaker.yearlySavings * (index + 1);
                   const discountFactor = 1 / Math.pow(1 + assumptions.discountRate, index + 1);
                   const discountedSavings = stakeholders.offtaker.yearlySavings * discountFactor;
+                  const cumulativeDiscountedSavings = cashFlow.slice(1, index + 2).reduce((sum, _, i) => {
+                    const df = 1 / Math.pow(1 + assumptions.discountRate, i + 1);
+                    return sum + stakeholders.offtaker.yearlySavings * df;
+                  }, 0);
                   return (
                     <tr key={row.year} style={{ backgroundColor: index % 2 === 0 ? 'white' : '#f5f5f5' }}>
                       <td className="border border-gray-300 p-1 text-center">{row.year}</td>
                       <td className="border border-gray-300 p-1 text-right">{stakeholders.offtaker.yearlySavings.toLocaleString()}</td>
                       <td className="border border-gray-300 p-1 text-right">{discountedSavings.toLocaleString()}</td>
+                      <td className="border border-gray-300 p-1 text-right">{cumulativeDiscountedSavings.toLocaleString()}</td>
                       <td className="border border-gray-300 p-1 text-right">{cumulativeSavings.toLocaleString()}</td>
                     </tr>
                   );
                 })}
                 <tr style={{ backgroundColor: COLORS.forestGreen, color: 'white', fontWeight: 'bold' }}>
                   <td className="border border-gray-300 p-1 text-center" colSpan={3}>Total NPV</td>
-                  <td className="border border-gray-300 p-1 text-right">£{stakeholders.offtaker.totalSavings.toLocaleString()}</td>
+                  <td className="border border-gray-300 p-1 text-right" colSpan={2}>£{stakeholders.offtaker.totalSavings.toLocaleString()}</td>
                 </tr>
               </tbody>
             </table>
@@ -383,6 +389,7 @@ export default function Report() {
                   <th className="border border-gray-300 p-1">Year</th>
                   <th className="border border-gray-300 p-1">Annual Income (£)</th>
                   <th className="border border-gray-300 p-1">Discounted Income (£)</th>
+                  <th className="border border-gray-300 p-1">Cumulative Discounted (£)</th>
                   <th className="border border-gray-300 p-1">Cumulative Income (£)</th>
                 </tr>
               </thead>
@@ -391,18 +398,23 @@ export default function Report() {
                   const cumulativeIncome = stakeholders.landowner.yearlyIncome * (index + 1);
                   const discountFactor = 1 / Math.pow(1 + assumptions.discountRate, index + 1);
                   const discountedIncome = stakeholders.landowner.yearlyIncome * discountFactor;
+                  const cumulativeDiscountedIncome = cashFlow.slice(1, index + 2).reduce((sum, _, i) => {
+                    const df = 1 / Math.pow(1 + assumptions.discountRate, i + 1);
+                    return sum + stakeholders.landowner.yearlyIncome * df;
+                  }, 0);
                   return (
                     <tr key={row.year} style={{ backgroundColor: index % 2 === 0 ? 'white' : '#f5f5f5' }}>
                       <td className="border border-gray-300 p-1 text-center">{row.year}</td>
                       <td className="border border-gray-300 p-1 text-right">{stakeholders.landowner.yearlyIncome.toLocaleString()}</td>
                       <td className="border border-gray-300 p-1 text-right">{discountedIncome.toLocaleString()}</td>
+                      <td className="border border-gray-300 p-1 text-right">{cumulativeDiscountedIncome.toLocaleString()}</td>
                       <td className="border border-gray-300 p-1 text-right">{cumulativeIncome.toLocaleString()}</td>
                     </tr>
                   );
                 })}
                 <tr style={{ backgroundColor: COLORS.yellow, color: COLORS.navyBlue, fontWeight: 'bold' }}>
                   <td className="border border-gray-300 p-1 text-center" colSpan={3}>Total NPV</td>
-                  <td className="border border-gray-300 p-1 text-right">£{stakeholders.landowner.totalIncome.toLocaleString()}</td>
+                  <td className="border border-gray-300 p-1 text-right" colSpan={2}>£{stakeholders.landowner.totalIncome.toLocaleString()}</td>
                 </tr>
               </tbody>
             </table>
