@@ -158,7 +158,7 @@ export default function MapViewPage() {
       if (prev.length >= 3) {
         const firstPoint = prev[0];
         const distance = point.distanceTo(firstPoint);
-        const closeThreshold = 500; // meters - increased for easier closing
+        const closeThreshold = 30; // meters
 
         if (distance < closeThreshold) {
           // Close the polygon
@@ -196,7 +196,7 @@ export default function MapViewPage() {
       if (prev.length >= 2) {
         const firstPoint = prev[0];
         const distance = point.distanceTo(firstPoint);
-        const closeThreshold = 500; // meters - increased for easier closing
+        const closeThreshold = 30; // meters
 
         if (distance < closeThreshold) {
           // End the cable route
@@ -254,6 +254,25 @@ export default function MapViewPage() {
     setPvMarkers([]);
     setPvPolygon(null);
     setPvAreaResults(null);
+    setPvCompleted(false);
+    
+    // Recapture map screenshot
+    setTimeout(async () => {
+      try {
+        const mapContainer = mapContainerRef.current;
+        if (mapContainer) {
+          const dataUrl = await domtoimage.toPng(mapContainer, {
+            quality: 0.95,
+            cacheBust: true,
+          });
+          sessionStorage.setItem('mapScreenshot', dataUrl);
+          console.log('[MapView] Map screenshot updated after clearing PV area');
+        }
+      } catch (error) {
+        console.error('[MapView] Failed to recapture map:', error);
+      }
+    }, 300);
+    
     toast.success("PV area cleared");
   };
 
@@ -264,6 +283,25 @@ export default function MapViewPage() {
     setCableMarkers([]);
     setCablePolyline(null);
     setCableResults(null);
+    setCableCompleted(false);
+    
+    // Recapture map screenshot
+    setTimeout(async () => {
+      try {
+        const mapContainer = mapContainerRef.current;
+        if (mapContainer) {
+          const dataUrl = await domtoimage.toPng(mapContainer, {
+            quality: 0.95,
+            cacheBust: true,
+          });
+          sessionStorage.setItem('mapScreenshot', dataUrl);
+          console.log('[MapView] Map screenshot updated after clearing cable route');
+        }
+      } catch (error) {
+        console.error('[MapView] Failed to recapture map:', error);
+      }
+    }, 300);
+    
     toast.success("Cable route cleared");
   };
 
