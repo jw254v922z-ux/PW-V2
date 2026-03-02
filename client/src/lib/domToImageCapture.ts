@@ -71,9 +71,17 @@ async function compositeSVGOverlays(baseCanvas: HTMLCanvasElement, mapContainer:
 
   const containerRect = mapContainer.getBoundingClientRect();
 
-  // Capture all SVG overlays (polygons, polylines, markers)
-  const svgElements = mapContainer.querySelectorAll('svg');
-  console.log(`Found ${svgElements.length} SVG elements to composite`);
+  // Capture all SVG overlays (polygons, polylines, markers) from Leaflet overlay panes
+  const overlayPane = mapContainer.querySelector('.leaflet-overlay-pane');
+  let svgElements: NodeListOf<SVGElement>;
+  
+  if (overlayPane) {
+    svgElements = overlayPane.querySelectorAll('svg');
+    console.log(`Found ${svgElements.length} SVG elements in overlay pane`);
+  } else {
+    svgElements = mapContainer.querySelectorAll('svg');
+    console.log(`Found ${svgElements.length} SVG elements in map container`);
+  }
 
   for (const svgElement of svgElements) {
     try {

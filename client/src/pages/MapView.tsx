@@ -321,11 +321,8 @@ export default function MapViewPage() {
     // Capture map screenshot
     try {
       if (mapContainerRef.current) {
-        const canvas = await html2canvas(mapContainerRef.current, {
-          backgroundColor: "#ffffff",
-          scale: 2,
-        });
-        sessionStorage.setItem("mapScreenshot", canvas.toDataURL("image/png"));
+        const dataUrl = await captureMapWithDomToImage(mapContainerRef.current);
+        sessionStorage.setItem("mapScreenshot", dataUrl);
       }
     } catch (e) {
       console.error("Map screenshot capture failed:", e);
@@ -356,11 +353,8 @@ export default function MapViewPage() {
     // Capture map screenshot
     try {
       if (mapContainerRef.current) {
-        const canvas = await html2canvas(mapContainerRef.current, {
-          backgroundColor: "#ffffff",
-          scale: 2,
-        });
-        sessionStorage.setItem("mapScreenshot", canvas.toDataURL("image/png"));
+        const dataUrl = await captureMapWithDomToImage(mapContainerRef.current);
+        sessionStorage.setItem("mapScreenshot", dataUrl);
       }
     } catch (e) {
       console.error("Map screenshot capture failed:", e);
@@ -390,11 +384,8 @@ export default function MapViewPage() {
     // Capture map screenshot
     try {
       if (mapContainerRef.current) {
-        const canvas = await html2canvas(mapContainerRef.current, {
-          backgroundColor: "#ffffff",
-          scale: 2,
-        });
-        sessionStorage.setItem("mapScreenshot", canvas.toDataURL("image/png"));
+        const dataUrl = await captureMapWithDomToImage(mapContainerRef.current);
+        sessionStorage.setItem("mapScreenshot", dataUrl);
       }
     } catch (e) {
       console.error("Map screenshot capture failed:", e);

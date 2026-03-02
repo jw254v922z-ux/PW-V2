@@ -394,12 +394,19 @@
 - [x] Test color scheme matches previous PDF exports
 
 
-## Phase 28: Fix Map Image Display in Report
-- [ ] Investigate why map screenshot image is not loading in Report component
-- [ ] Check if mapScreenshot is being saved to localStorage correctly
-- [ ] Check if Report.tsx is retrieving mapScreenshot from localStorage correctly
-- [ ] Fix image src attribute to use proper data URL format
-- [ ] Test map image displays correctly in report page
+## Phase 28: Fix Map Image Display in Report - COMPLETED
+- [x] Investigate why map screenshot image is not loading in Report component
+- [x] Check if mapScreenshot is being saved to localStorage correctly
+- [x] Check if Report.tsx is retrieving mapScreenshot from localStorage correctly
+- [x] Fix image src attribute to use proper data URL format
+- [x] Test map image displays correctly in report page
+
+## Phase 30: Fix SVG Polygon Capture in Map Screenshot - COMPLETED
+- [x] Fixed SVG overlay detection to look in .leaflet-overlay-pane instead of map container
+- [x] Updated domToImageCapture.ts to find Leaflet SVG elements correctly
+- [x] Verified both PV area (green polygon) and cable route (blue polyline) capture correctly
+- [x] Tested end-to-end workflow: draw polygons -> save screenshot -> view in report
+- [x] Confirmed map screenshot displays both polygon types in PDF report
 
 
 ## Phase 26: Bug Fixes - Map and Grid Cost Issues
