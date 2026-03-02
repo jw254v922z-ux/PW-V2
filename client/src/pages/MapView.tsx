@@ -146,7 +146,8 @@ export default function MapViewPage() {
     // Calculate area
     const area = calculatePolygonArea(pvPoints);
     const hectares = area / 10000;
-    const systemSize = hectares * 10;
+    // 1 MW = 16,000 m² (0.0625 MW per 1,000 m²)
+    const systemSize = area / 16000;
     setPvAreaResults({ area, hectares, systemSize });
 
     // Save polygon coordinates to sessionStorage for report page
