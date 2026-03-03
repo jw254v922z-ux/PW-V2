@@ -313,3 +313,16 @@
 [2026-03-03T08:44:32.663Z] }
 [2026-03-03T08:44:32.663Z] 
 [2026-03-03T08:44:32.663Z] Node.js v22.13.0
+[2026-03-03T08:50:07.801Z] Dev server process group stopped
+[2026-03-03T08:50:07.805Z] ELIFECYCLE  Command failed.
+[2026-03-03T08:50:07.822Z] Dev server exited with code -15
+[2026-03-03T08:50:10.808Z] Starting dev server with command: pnpm run dev
+[2026-03-03T08:50:11.592Z] 
+[2026-03-03T08:50:11.593Z] > private-wire-calc-v3@1.0.0 dev /home/ubuntu/private-wire-calc-v3
+[2026-03-03T08:50:11.593Z] > NODE_ENV=development tsx watch server/_core/index.ts
+[2026-03-03T08:50:11.594Z] 
+[2026-03-03T08:50:13.336Z] [OAuth] Initialized with baseURL: https://api.manus.im
+[2026-03-03T08:50:13.633Z] Server running on http://0.0.0.0:5000/
+[2026-03-03T08:50:14.336Z] [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[2026-03-03T08:50:35.469Z] 3:50:35 AM [vite] (client) hmr update /src/pages/Report.tsx, /src/index.css
+[2026-03-03T08:51:05.189Z] 3:51:05 AM [vite] (client) hmr update /src/pages/Report.tsx, /src/index.css
