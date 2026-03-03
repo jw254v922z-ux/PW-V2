@@ -7,8 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Zap, Trash2, Check, ArrowRight } from "lucide-react";
 import { calculatePolygonArea, calculatePolylineDistance } from "@/lib/geospatial";
 import { toast } from "sonner";
-import { captureMapWithDomToImage } from '@/lib/domToImageCapture';
-import domtoimage from 'dom-to-image-more';
+import html2canvas from "html2canvas";
 import "leaflet/dist/leaflet.css";
 
 export default function MapViewPage() {
@@ -36,11 +35,6 @@ export default function MapViewPage() {
 
   const [pvCompleted, setPvCompleted] = useState(false);
   const [cableCompleted, setCableCompleted] = useState(false);
-  const [mapStyle, setMapStyle] = useState<'light' | 'grayscale' | 'satellite'>('light');
-  const [tileLayer, setTileLayer] = useState<L.TileLayer | null>(null);
-
-  // Don't clear screenshot when entering drawing mode - only clear when explicitly clearing the polygon
-  // This prevents the screenshot from disappearing before the new one is saved
 
   // Initialize map once on mount
   useEffect(() => {
@@ -48,57 +42,20 @@ export default function MapViewPage() {
 
     // Create map
     const map = L.map(mapContainerRef.current).setView([52.52, -1.17], 10);
-    
-    // Expose map instance globally for leaflet-image capture
-    (window as any).leafletMap = map;
 
-    // Add initial tile layer
-    const layer = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    // Add tile layer
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19,
-      crossOrigin: true,
     }).addTo(map);
 
     mapRef.current = map;
-    setTileLayer(layer);
 
     return () => {
       map.remove();
       mapRef.current = null;
-      (window as any).leafletMap = null;
     };
   }, []);
-
-  // Handle map style changes
-  useEffect(() => {
-    if (!mapRef.current || !tileLayer) return;
-
-    mapRef.current.removeLayer(tileLayer);
-
-    let newUrl: string;
-    let attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>';
-
-    switch (mapStyle) {
-      case 'grayscale':
-        newUrl = "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png";
-        break;
-      case 'satellite':
-        newUrl = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-        attribution = '&copy; <a href="https://www.arcgisonline.com/">Esri</a>';
-        break;
-      case 'light':
-      default:
-        newUrl = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
-    }
-
-    const newLayer = L.tileLayer(newUrl, {
-      attribution,
-      maxZoom: 19,
-      crossOrigin: true,
-    }).addTo(mapRef.current);
-
-    setTileLayer(newLayer);
-  }, [mapStyle]);
 
   // Handle map clicks for drawing
   useEffect(() => {
@@ -146,15 +103,10 @@ export default function MapViewPage() {
     // Calculate area
     const area = calculatePolygonArea(pvPoints);
     const hectares = area / 10000;
-    // 1 MW = 16,000 m² (0.0625 MW per 1,000 m²)
-    const systemSize = area / 16000;
+    // 4 acres = 1 MW, 1 hectare = 2.471 acres, so 1 MW = 1.619 hectares
+    const systemSize = hectares / 1.619;
     setPvAreaResults({ area, hectares, systemSize });
-
-    // Save polygon coordinates to sessionStorage for report page
-    const polygonData = pvPoints.map(p => ({ lat: p.lat, lng: p.lng }));
-    sessionStorage.setItem('pvPolygonData', JSON.stringify(polygonData));
-    console.log('[MapView] Saved PV polygon data to sessionStorage:', polygonData.length, 'points');
-  }, [pvCompleted, pvPoints]);
+  }, [pvCompleted, pvPoints, pvPolygon]);
 
   const addPVPoint = useCallback((point: L.LatLng) => {
     setPvPoints((prev) => {
@@ -241,11 +193,6 @@ export default function MapViewPage() {
         // Calculate distance
         const distance = calculatePolylineDistance(newPoints);
         setCableResults({ distance });
-
-        // Save cable polyline coordinates to sessionStorage for report page
-        const polylineData = newPoints.map(p => ({ lat: p.lat, lng: p.lng }));
-        sessionStorage.setItem('cablePolylineData', JSON.stringify(polylineData));
-        console.log('[MapView] Saved cable polyline data to sessionStorage:', polylineData.length, 'points');
       }
       return newPoints;
     });
@@ -258,27 +205,6 @@ export default function MapViewPage() {
     setPvMarkers([]);
     setPvPolygon(null);
     setPvAreaResults(null);
-    setPvCompleted(false);
-    // Clear old screenshot
-    sessionStorage.removeItem('mapScreenshot');
-    
-    // Recapture map screenshot
-    setTimeout(async () => {
-      try {
-        const mapContainer = mapContainerRef.current;
-        if (mapContainer) {
-          const dataUrl = await domtoimage.toPng(mapContainer, {
-            quality: 0.95,
-            cacheBust: true,
-          });
-          sessionStorage.setItem('mapScreenshot', dataUrl);
-          console.log('[MapView] Map screenshot updated after clearing PV area');
-        }
-      } catch (error) {
-        console.error('[MapView] Failed to recapture map:', error);
-      }
-    }, 300);
-    
     toast.success("PV area cleared");
   };
 
@@ -289,27 +215,6 @@ export default function MapViewPage() {
     setCableMarkers([]);
     setCablePolyline(null);
     setCableResults(null);
-    setCableCompleted(false);
-    // Clear old screenshot
-    sessionStorage.removeItem('mapScreenshot');
-    
-    // Recapture map screenshot
-    setTimeout(async () => {
-      try {
-        const mapContainer = mapContainerRef.current;
-        if (mapContainer) {
-          const dataUrl = await domtoimage.toPng(mapContainer, {
-            quality: 0.95,
-            cacheBust: true,
-          });
-          sessionStorage.setItem('mapScreenshot', dataUrl);
-          console.log('[MapView] Map screenshot updated after clearing cable route');
-        }
-      } catch (error) {
-        console.error('[MapView] Failed to recapture map:', error);
-      }
-    }, 300);
-    
     toast.success("Cable route cleared");
   };
 
@@ -322,8 +227,11 @@ export default function MapViewPage() {
     // Capture map screenshot
     try {
       if (mapContainerRef.current) {
-        const dataUrl = await captureMapWithDomToImage(mapContainerRef.current);
-        sessionStorage.setItem("mapScreenshot", dataUrl);
+        const canvas = await html2canvas(mapContainerRef.current, {
+          backgroundColor: "#ffffff",
+          scale: 2,
+        });
+        sessionStorage.setItem("mapScreenshot", canvas.toDataURL("image/png"));
       }
     } catch (e) {
       console.error("Map screenshot capture failed:", e);
@@ -354,8 +262,11 @@ export default function MapViewPage() {
     // Capture map screenshot
     try {
       if (mapContainerRef.current) {
-        const dataUrl = await captureMapWithDomToImage(mapContainerRef.current);
-        sessionStorage.setItem("mapScreenshot", dataUrl);
+        const canvas = await html2canvas(mapContainerRef.current, {
+          backgroundColor: "#ffffff",
+          scale: 2,
+        });
+        sessionStorage.setItem("mapScreenshot", canvas.toDataURL("image/png"));
       }
     } catch (e) {
       console.error("Map screenshot capture failed:", e);
@@ -385,8 +296,11 @@ export default function MapViewPage() {
     // Capture map screenshot
     try {
       if (mapContainerRef.current) {
-        const dataUrl = await captureMapWithDomToImage(mapContainerRef.current);
-        sessionStorage.setItem("mapScreenshot", dataUrl);
+        const canvas = await html2canvas(mapContainerRef.current, {
+          backgroundColor: "#ffffff",
+          scale: 2,
+        });
+        sessionStorage.setItem("mapScreenshot", canvas.toDataURL("image/png"));
       }
     } catch (e) {
       console.error("Map screenshot capture failed:", e);
@@ -422,41 +336,10 @@ export default function MapViewPage() {
             <CardTitle className="text-lg">Drawing Tools</CardTitle>
             <CardDescription>Click on map to place points</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {/* Map Style Selector */}
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground">Map Style</p>
-              <div className="grid grid-cols-3 gap-2">
-                <Button
-                  variant={mapStyle === 'light' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setMapStyle('light')}
-                  className="text-xs"
-                >
-                  Light
-                </Button>
-                <Button
-                  variant={mapStyle === 'grayscale' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setMapStyle('grayscale')}
-                  className="text-xs"
-                >
-                  Grayscale
-                </Button>
-                <Button
-                  variant={mapStyle === 'satellite' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setMapStyle('satellite')}
-                  className="text-xs"
-                >
-                  Satellite
-                </Button>
-              </div>
-            </div>
-            <div className="border-t pt-2" />
+          <CardContent className="space-y-2">
             <Button
               variant={drawingMode === "view" ? "default" : "outline"}
-              className="w-full mt-2"
+              className="w-full"
               onClick={() => setDrawingMode("view")}
             >
               View
@@ -478,31 +361,10 @@ export default function MapViewPage() {
             {drawingMode === "pv" && pvPoints.length >= 3 && !pvCompleted && (
               <Button
                 className="w-full bg-green-600 hover:bg-green-700"
-                onClick={async () => {
+                onClick={() => {
                   setPvCompleted(true);
                   setDrawingMode("view");
                   toast.success("PV area completed!");
-                  
-                  // Automatically capture map screenshot
-                  setTimeout(async () => {
-                    try {
-                      const mapContainer = mapContainerRef.current;
-                      if (!mapContainer) {
-                        console.error('[MapView] Map container not found');
-                        return;
-                      }
-                      
-                      const dataUrl = await domtoimage.toPng(mapContainer, {
-                        quality: 0.95,
-                        cacheBust: true,
-                      });
-                      sessionStorage.setItem('mapScreenshot', dataUrl);
-                      console.log('[MapView] Map screenshot saved automatically:', dataUrl.length, 'characters');
-                      toast.success('Map screenshot saved for report!');
-                    } catch (error) {
-                      console.error('[MapView] Failed to capture map:', error);
-                    }
-                  }, 500); // Wait for polygon to render
                 }}
               >
                 <Check className="w-4 h-4 mr-2" /> Complete PV Area
@@ -511,31 +373,10 @@ export default function MapViewPage() {
             {drawingMode === "cable" && cablePoints.length >= 2 && !cableCompleted && (
               <Button
                 className="w-full bg-blue-600 hover:bg-blue-700"
-                onClick={async () => {
+                onClick={() => {
                   setCableCompleted(true);
                   setDrawingMode("view");
                   toast.success("Cable route completed!");
-                  
-                  // Automatically capture map screenshot
-                  setTimeout(async () => {
-                    try {
-                      const mapContainer = mapContainerRef.current;
-                      if (!mapContainer) {
-                        console.error('[MapView] Map container not found');
-                        return;
-                      }
-                      
-                      const dataUrl = await domtoimage.toPng(mapContainer, {
-                        quality: 0.95,
-                        cacheBust: true,
-                      });
-                      sessionStorage.setItem('mapScreenshot', dataUrl);
-                      console.log('[MapView] Map screenshot saved automatically:', dataUrl.length, 'characters');
-                      toast.success('Map screenshot saved for report!');
-                    } catch (error) {
-                      console.error('[MapView] Failed to capture map:', error);
-                    }
-                  }, 500); // Wait for polyline to render
                 }}
               >
                 <Check className="w-4 h-4 mr-2" /> Complete Cable Route
@@ -625,16 +466,42 @@ export default function MapViewPage() {
                 className="w-full"
                 onClick={async () => {
                   try {
-                    if (mapContainerRef.current) {
+                    if (mapRef.current) {
                       try {
-                        // Use dom-to-image to capture the map container with better SVG support for polygons
-                        const dataUrl = await captureMapWithDomToImage(mapContainerRef.current);
-                        sessionStorage.setItem("mapScreenshot", dataUrl);
-                        console.log('[MapView] Map screenshot saved to sessionStorage, length:', dataUrl.length);
+                        // Get the map container
+                        const mapContainer = mapRef.current.getContainer();
+                        // Use html2canvas on just the map container, excluding the controls
+                        const canvas = await html2canvas(mapContainer, {
+                          backgroundColor: "#ffffff",
+                          scale: 1.5,
+                          allowTaint: true,
+                          useCORS: true,
+                          logging: false,
+                          ignoreElements: (element) => {
+                            // Ignore Leaflet control elements
+                            return element.classList.contains('leaflet-control') ||
+                                   element.classList.contains('leaflet-control-container');
+                          }
+                        });
+                        sessionStorage.setItem("mapScreenshot", canvas.toDataURL("image/png"));
                         toast.success("Map screenshot saved for PDF!");
-                      } catch (error) {
-                        console.error("Map capture failed:", error);
-                        toast.error("Failed to capture map screenshot");
+                      } catch (innerError) {
+                        // Fallback: create a simple canvas with map data
+                        console.warn("html2canvas failed, using fallback", innerError);
+                        const mapContainer = mapRef.current.getContainer();
+                        const canvas = document.createElement('canvas');
+                        canvas.width = mapContainer.offsetWidth;
+                        canvas.height = mapContainer.offsetHeight;
+                        const ctx = canvas.getContext('2d');
+                        if (ctx) {
+                          ctx.fillStyle = '#ffffff';
+                          ctx.fillRect(0, 0, canvas.width, canvas.height);
+                          ctx.fillStyle = '#666666';
+                          ctx.font = '14px Arial';
+                          ctx.fillText('Map Screenshot', 10, 30);
+                        }
+                        sessionStorage.setItem("mapScreenshot", canvas.toDataURL("image/png"));
+                        toast.success("Map screenshot saved for PDF!");
                       }
                     }
                   } catch (e) {

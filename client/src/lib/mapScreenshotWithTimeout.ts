@@ -24,6 +24,8 @@ export async function captureMapScreenshotWithTimeout(timeoutMs: number = 3000):
         const canvas = await html2canvas(mapElement as HTMLElement, {
           backgroundColor: '#ffffff',
           scale: 2,
+          useCORS: true,
+          allowTaint: true,
         });
         console.log('[PDF] Map screenshot captured successfully');
         return canvas.toDataURL('image/png');

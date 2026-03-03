@@ -57,6 +57,13 @@
       "when": 1771850431619,
       "tag": "0007_naive_luminals",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1772527364996,
+      "tag": "0008_friendly_abomination",
+      "breakpoints": true
     }
   ]
 }

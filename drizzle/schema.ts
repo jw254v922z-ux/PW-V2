@@ -1,12 +1,12 @@
-import { int, varchar, timestamp, mysqlTable } from "drizzle-orm/mysql-core";
+import { pgTable, serial, varchar, timestamp, integer, text } from "drizzle-orm/pg-core";
 
 /**
  * Core user table backing auth flow.
  * Extend this file with additional tables as your product grows.
  * Columns use camelCase to match both database fields and generated types.
  */
-export const users = mysqlTable("users", {
-  id: int("id").primaryKey().autoincrement(),
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
   /** Manus OAuth identifier (openId) - optional, for backward compatibility */
   openId: varchar("openId", { length: 64 }).unique(),
   /** Custom auth email - required for non-OAuth users */
@@ -14,7 +14,7 @@ export const users = mysqlTable("users", {
   /** Hashed password for custom auth - optional if using OAuth */
   passwordHash: varchar("passwordHash", { length: 255 }),
   /** Email verification status */
-  emailVerified: int("emailVerified").default(0).notNull(),
+  emailVerified: integer("emailVerified").default(0).notNull(),
   name: varchar("name", { length: 255 }),
   loginMethod: varchar("loginMethod", { length: 64 }).default("custom").notNull(),
   role: varchar("role", { length: 50 }).default("user").notNull(),
@@ -29,27 +29,27 @@ export type InsertUser = typeof users.$inferInsert;
 /**
  * Solar project models saved by users
  */
-export const solarModels = mysqlTable("solar_models", {
-  id: int("id").primaryKey().autoincrement(),
-  userId: int("userId").notNull(),
+export const solarModels = pgTable("solar_models", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   description: varchar("description", { length: 1000 }),
-  mw: int("mw").notNull(),
-  capexPerMW: int("capexPerMW").notNull(),
-  privateWireCost: int("privateWireCost").notNull(),
-  gridConnectionCost: int("gridConnectionCost").default(0).notNull(),
-  developmentPremiumPerMW: int("developmentPremiumPerMW").notNull(),
-  opexPerMW: int("opexPerMW").notNull(),
+  mw: integer("mw").notNull(),
+  capexPerMW: integer("capexPerMW").notNull(),
+  privateWireCost: integer("privateWireCost").notNull(),
+  gridConnectionCost: integer("gridConnectionCost").default(0).notNull(),
+  developmentPremiumPerMW: integer("developmentPremiumPerMW").notNull(),
+  opexPerMW: integer("opexPerMW").notNull(),
   opexEscalation: varchar("opexEscalation", { length: 20 }).notNull(),
   generationPerMW: varchar("generationPerMW", { length: 20 }).notNull(),
   degradationRate: varchar("degradationRate", { length: 20 }).notNull(),
-  projectLife: int("projectLife").notNull(),
+  projectLife: integer("projectLife").notNull(),
   discountRate: varchar("discountRate", { length: 20 }).notNull(),
-  powerPrice: int("powerPrice").notNull(),
-  percentConsumptionPPA: int("percentConsumptionPPA").default(100).notNull(),
-  percentConsumptionExport: int("percentConsumptionExport").default(0).notNull(),
-  exportPrice: int("exportPrice").default(50).notNull(),
-  offsetableEnergyCost: int("offsetableEnergyCost").default(120).notNull(),
+  powerPrice: integer("powerPrice").notNull(),
+  percentConsumptionPPA: integer("percentConsumptionPPA").default(100).notNull(),
+  percentConsumptionExport: integer("percentConsumptionExport").default(0).notNull(),
+  exportPrice: integer("exportPrice").default(50).notNull(),
+  offsetableEnergyCost: integer("offsetableEnergyCost").default(120).notNull(),
   lcoe: varchar("lcoe", { length: 20 }),
   irr: varchar("irr", { length: 20 }),
   paybackPeriod: varchar("paybackPeriod", { length: 20 }),
@@ -64,41 +64,41 @@ export type InsertSolarModel = typeof solarModels.$inferInsert;
 /**
  * Grid connection cost breakdown for solar projects
  */
-export const gridConnectionCosts = mysqlTable("grid_connection_costs", {
-  id: int("id").primaryKey().autoincrement(),
-  solarModelId: int("solarModelId").notNull(),
+export const gridConnectionCosts = pgTable("grid_connection_costs", {
+  id: serial("id").primaryKey(),
+  solarModelId: integer("solarModelId").notNull(),
   // Trenching costs
-  agriculturalTrenchingMin: int("agriculturalTrenchingMin").default(600000).notNull(),
-  agriculturalTrenchingMax: int("agriculturalTrenchingMax").default(1050000).notNull(),
-  roadTrenchingMin: int("roadTrenchingMin").default(1200000).notNull(),
-  roadTrenchingMax: int("roadTrenchingMax").default(2400000).notNull(),
+  agriculturalTrenchingMin: integer("agriculturalTrenchingMin").default(600000).notNull(),
+  agriculturalTrenchingMax: integer("agriculturalTrenchingMax").default(1050000).notNull(),
+  roadTrenchingMin: integer("roadTrenchingMin").default(1200000).notNull(),
+  roadTrenchingMax: integer("roadTrenchingMax").default(2400000).notNull(),
   // Major crossings
-  majorRoadCrossingsMin: int("majorRoadCrossingsMin").default(300000).notNull(),
-  majorRoadCrossingsMax: int("majorRoadCrossingsMax").default(600000).notNull(),
+  majorRoadCrossingsMin: integer("majorRoadCrossingsMin").default(300000).notNull(),
+  majorRoadCrossingsMax: integer("majorRoadCrossingsMax").default(600000).notNull(),
   // Joint bays and terminations
-  jointBaysMin: int("jointBaysMin").default(120000).notNull(),
-  jointBaysMax: int("jointBaysMax").default(240000).notNull(),
+  jointBaysMin: integer("jointBaysMin").default(120000).notNull(),
+  jointBaysMax: integer("jointBaysMax").default(240000).notNull(),
   // Transformers
-  transformersMin: int("transformersMin").default(500000).notNull(),
-  transformersMax: int("transformersMax").default(800000).notNull(),
+  transformersMin: integer("transformersMin").default(500000).notNull(),
+  transformersMax: integer("transformersMax").default(800000).notNull(),
   // Land rights - compensation
-  landRightsCompensationMin: int("landRightsCompensationMin").default(20000).notNull(),
-  landRightsCompensationMax: int("landRightsCompensationMax").default(60000).notNull(),
+  landRightsCompensationMin: integer("landRightsCompensationMin").default(20000).notNull(),
+  landRightsCompensationMax: integer("landRightsCompensationMax").default(60000).notNull(),
   // Land rights - legal fees
-  landRightsLegalMin: int("landRightsLegalMin").default(50000).notNull(),
-  landRightsLegalMax: int("landRightsLegalMax").default(90000).notNull(),
+  landRightsLegalMin: integer("landRightsLegalMin").default(50000).notNull(),
+  landRightsLegalMax: integer("landRightsLegalMax").default(90000).notNull(),
   // Planning
-  planningFeesMin: int("planningFeesMin").default(600).notNull(),
-  planningFeesMax: int("planningFeesMax").default(1200).notNull(),
-  planningConsentsMin: int("planningConsentsMin").default(15000).notNull(),
-  planningConsentsMax: int("planningConsentsMax").default(40000).notNull(),
+  planningFeesMin: integer("planningFeesMin").default(600).notNull(),
+  planningFeesMax: integer("planningFeesMax").default(1200).notNull(),
+  planningConsentsMin: integer("planningConsentsMin").default(15000).notNull(),
+  planningConsentsMax: integer("planningConsentsMax").default(40000).notNull(),
   // Calculated totals
-  constructionMin: int("constructionMin").default(3200000).notNull(),
-  constructionMax: int("constructionMax").default(4200000).notNull(),
-  softCostsMin: int("softCostsMin").default(85000).notNull(),
-  softCostsMax: int("softCostsMax").default(190000).notNull(),
-  projectMin: int("projectMin").default(3300000).notNull(),
-  projectMax: int("projectMax").default(4400000).notNull(),
+  constructionMin: integer("constructionMin").default(3200000).notNull(),
+  constructionMax: integer("constructionMax").default(4200000).notNull(),
+  softCostsMin: integer("softCostsMin").default(85000).notNull(),
+  softCostsMax: integer("softCostsMax").default(190000).notNull(),
+  projectMin: integer("projectMin").default(3300000).notNull(),
+  projectMax: integer("projectMax").default(4400000).notNull(),
   createdAt: timestamp("createdAt").defaultNow(),
   updatedAt: timestamp("updatedAt").defaultNow(),
 });
@@ -109,9 +109,9 @@ export type InsertGridConnectionCost = typeof gridConnectionCosts.$inferInsert;
 /**
  * Email verification tokens for custom auth
  */
-export const emailVerificationTokens = mysqlTable("email_verification_tokens", {
-  id: int("id").primaryKey().autoincrement(),
-  userId: int("userId").notNull(),
+export const emailVerificationTokens = pgTable("email_verification_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
   token: varchar("token", { length: 255 }).notNull().unique(),
   expiresAt: timestamp("expiresAt").notNull(),
   createdAt: timestamp("createdAt").defaultNow(),
@@ -123,9 +123,9 @@ export type InsertEmailVerificationToken = typeof emailVerificationTokens.$infer
 /**
  * Password reset tokens for custom auth
  */
-export const passwordResetTokens = mysqlTable("password_reset_tokens", {
-  id: int("id").primaryKey().autoincrement(),
-  userId: int("userId").notNull(),
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
   token: varchar("token", { length: 255 }).notNull().unique(),
   expiresAt: timestamp("expiresAt").notNull(),
   createdAt: timestamp("createdAt").defaultNow(),
@@ -137,8 +137,8 @@ export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
 /**
  * Domain whitelist for signup restrictions
  */
-export const domainWhitelist = mysqlTable("domain_whitelist", {
-  id: int("id").primaryKey().autoincrement(),
+export const domainWhitelist = pgTable("domain_whitelist", {
+  id: serial("id").primaryKey(),
   domain: varchar("domain", { length: 255 }).notNull().unique(),
   createdAt: timestamp("createdAt").defaultNow(),
 });
@@ -149,15 +149,15 @@ export type InsertDomainWhitelist = typeof domainWhitelist.$inferInsert;
 /**
  * Projects with full calculator inputs and results
  */
-export const projects = mysqlTable("projects", {
-  id: int("id").primaryKey().autoincrement(),
-  userId: int("userId").notNull(),
+export const projects = pgTable("projects", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   description: varchar("description", { length: 1000 }),
   /** Full calculator inputs as JSON */
-  inputs: varchar("inputs", { length: 65535 }).notNull(),
+  inputs: text("inputs").notNull(),
   /** Full calculator results as JSON */
-  results: varchar("results", { length: 65535 }).notNull(),
+  results: text("results").notNull(),
   createdAt: timestamp("createdAt").defaultNow(),
   updatedAt: timestamp("updatedAt").defaultNow(),
 });
@@ -168,9 +168,9 @@ export type InsertProject = typeof projects.$inferInsert;
 /**
  * Project drawings (maps, sketches)
  */
-export const projectDrawings = mysqlTable("project_drawings", {
-  id: int("id").primaryKey().autoincrement(),
-  projectId: int("projectId").notNull(),
+export const projectDrawings = pgTable("project_drawings", {
+  id: serial("id").primaryKey(),
+  projectId: integer("projectId").notNull(),
   type: varchar("type", { length: 50 }).notNull(), // 'map', 'sketch', etc.
   url: varchar("url", { length: 1024 }).notNull(), // S3 URL
   createdAt: timestamp("createdAt").defaultNow(),

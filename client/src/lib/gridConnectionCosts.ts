@@ -201,11 +201,9 @@ export function calculateGridConnectionCost(params: {
 
   // Termination costs
   const terminationCosts = TERMINATION_COSTS[cableVoltage as keyof typeof TERMINATION_COSTS] || TERMINATION_COSTS["33"];
-  const effectiveStepUpCount = includeStepUpTransformer ? stepUpTransformerCount : 0;
-  const effectiveStepDownCount = includeStepDownTransformer ? stepDownTransformerCount : 0;
   const terminationCost = {
-    min: terminationCosts.min * (effectiveStepUpCount + effectiveStepDownCount),
-    max: terminationCosts.max * (effectiveStepUpCount + effectiveStepDownCount),
+    min: terminationCosts.min * (stepUpTransformerCount + stepDownTransformerCount),
+    max: terminationCosts.max * (stepUpTransformerCount + stepDownTransformerCount),
   };
 
   // Step-down transformer installation costs (if included)
@@ -213,10 +211,9 @@ export function calculateGridConnectionCost(params: {
     ? STEPDOWN_INSTALLATION_COSTS[`${cableVoltage}/11` as keyof typeof STEPDOWN_INSTALLATION_COSTS] ||
       STEPDOWN_INSTALLATION_COSTS["33/11"]
     : { min: 0, max: 0 };
-  const effectiveStepDownCountForInstallation = (includeStepDownInstallation && includeStepDownTransformer) ? stepDownTransformerCount : 0;
   const stepDownInstallationCost = {
-    min: stepDownInstallationCosts.min * effectiveStepDownCountForInstallation,
-    max: stepDownInstallationCosts.max * effectiveStepDownCountForInstallation,
+    min: stepDownInstallationCosts.min * stepDownTransformerCount,
+    max: stepDownInstallationCosts.max * stepDownTransformerCount,
   };
 
   // HV termination costs at end-user sites
@@ -245,7 +242,7 @@ export function calculateGridConnectionCost(params: {
     max: LAND_RIGHTS_COSTS.compensation.max + LAND_RIGHTS_COSTS.legal.max + LAND_RIGHTS_COSTS.planning.max + LAND_RIGHTS_COSTS.surveys.max,
   };
 
-  // Total cost (excluding wayleaves which are recurring OPEX, not CAPEX)
+  // Total cost
   const totalCost = {
     min:
       cableCost.min +
@@ -256,6 +253,7 @@ export function calculateGridConnectionCost(params: {
       roadCrossingCost.min +
       terminationCost.min +
       hvTerminationCost.min +
+      wayleavesCost.min +
       landRightsCost.min +
       roadCableLayingCost.min,
     max:
@@ -267,6 +265,7 @@ export function calculateGridConnectionCost(params: {
       roadCrossingCost.max +
       terminationCost.max +
       hvTerminationCost.max +
+      wayleavesCost.max +
       landRightsCost.max +
       roadCableLayingCost.max,
   };

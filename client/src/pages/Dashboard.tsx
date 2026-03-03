@@ -10,7 +10,8 @@ import { calculateSolarModel, defaultInputs, SolarInputs, SolarResults } from "@
 import { getSourceDetails } from '@/lib/sources';
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatNumberWithCommas } from "@/lib/formatters";
-import { AlertCircle, Info, BatteryCharging, Coins, Download, Factory, Save, Trash2, Zap, LogOut, Leaf, TrendingUp, MapPin } from "lucide-react";
+import { AlertCircle, Info, BatteryCharging, Coins, Download, Factory, Save, Trash2, Zap, LogOut, Leaf, TrendingUp, MapPin, FileText } from "lucide-react";
+import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { MetricCard } from "../components/MetricCard";
@@ -21,8 +22,8 @@ import { CashFlowTable } from "../components/CashFlowTable";
 import { StakeholderValueChart } from "../components/StakeholderValueChart";
 import LandownerPage from "./Landowner";
 import { calculateSensitivityMatrix } from "@/lib/sensitivity";
-import { generatePDFReport } from '@/lib/pdfReport';
-
+import { generatePDFReport } from "@/lib/pdfReport";
+import { captureMapScreenshotWithTimeout } from "@/lib/mapScreenshotWithTimeout";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -30,6 +31,7 @@ import { toast } from "sonner";
 import html2canvas from "html2canvas";
 
 export default function Dashboard() {
+  const [, navigate] = useLocation();
   const { user, logout, isAuthenticated } = useAuth();
   const [inputs, setInputs] = useState<SolarInputs>(defaultInputs);
   const [results, setResults] = useState<SolarResults>(calculateSolarModel(defaultInputs));
@@ -231,84 +233,50 @@ export default function Dashboard() {
 
   const handleExportPDF = async () => {
     try {
-      // Retrieve map screenshot from sessionStorage if available
-      const mapScreenshot = sessionStorage.getItem('mapScreenshot');
+      const toastId = toast.loading('Generating PDF...');
+      // Generate PDF and trigger download
+      const doc = await generatePDFReport({ 
+        inputs, 
+        results, 
+        projectName: modelName || 'Solar Project', 
+        description: modelDescription,
+        mapScreenshot: undefined
+      });
       
-      // Prepare report data
+      // Convert PDF to blob and trigger download using anchor element
+      const filename = `${modelName || 'Solar Project'}-report.pdf`;
+      const pdfBlob = doc.output('blob');
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.dismiss(toastId);
+      toast.success('PDF exported successfully!');
+    } catch (error) {
+      console.error('PDF export failed:', error);
+      toast.error('Failed to export PDF: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
+  };
+
+  const handleViewReport = () => {
+    try {
       const reportData = {
+        inputs,
+        results,
         projectName: modelName || 'Solar Project',
-        mapScreenshot: mapScreenshot,
-        metrics: {
-          totalCapex: results.summary.totalCapex,
-          lcoe: results.summary.lcoe,
-          irr: results.summary.irr,
-          paybackPeriod: results.summary.paybackPeriod,
-          totalNpv: results.summary.totalDiscountedCashFlow,
-          projectLife: inputs.projectLife,
-        },
-        stakeholders: {
-          operator: { npv: results.summary.totalDiscountedCashFlow, irr: results.summary.irr },
-          offtaker: { yearlySavings: results.summary.yearlySavings, totalSavings: results.summary.totalSavings },
-          landowner: { yearlyIncome: results.summary.yearlyRentalIncome, totalIncome: results.summary.totalLandOptionIncome, yield: results.summary.landOptionYield },
-          developer: { premium: results.summary.totalDeveloperPremium },
-        },
-        stakeholderDistribution: {
-          operator: 0,
-          offtaker: results.summary.totalSavings / (results.summary.totalSavings + results.summary.totalLandOptionIncome + results.summary.totalDeveloperPremium) * 100,
-          landowner: results.summary.totalLandOptionIncome / (results.summary.totalSavings + results.summary.totalLandOptionIncome + results.summary.totalDeveloperPremium) * 100,
-          developer: results.summary.totalDeveloperPremium / (results.summary.totalSavings + results.summary.totalLandOptionIncome + results.summary.totalDeveloperPremium) * 100,
-        },
-        cashFlow: results.yearlyData.map(y => ({
-          year: y.year,
-          revenue: y.revenue,
-          opex: y.opex,
-          netCashFlow: y.cashFlow,
-          discountedCashFlow: y.discountedCashFlow,
-        })),
-        assumptions: {
-          systemSize: inputs.mw,
-          projectLife: inputs.projectLife,
-          epcCost: inputs.capexPerMW,
-          privateWireCost: inputs.privateWireCost,
-          devPremium: inputs.developmentPremiumPerMW,
-          landRentalCost: inputs.landOptionCostPerMWYear,
-          opex: inputs.opexPerMW,
-          ppaPrice: inputs.ppaPricePerMWh,
-          exportPrice: inputs.exportPricePerMWh,
-          offsetableEnergyCost: inputs.offsetableEnergyCostPerMWh,
-          discountRate: inputs.discountRate,
-          degradation: inputs.degradation,
-          irradiance: inputs.irradianceOverride || inputs.generationPerMW / 0.2, // kWh/m²/year (assuming 20% efficiency if not overridden)
-          gridConnectionDetails: gridConnectionCosts ? {
-            cableVoltage: gridConnectionCosts.cableVoltageKV,
-            cableDistance: gridConnectionCosts.distanceKm,
-            roadPercentage: gridConnectionCosts.roadPercentage,
-            agriculturalDistance: gridConnectionCosts.agriculturalDistanceKm,
-            roadDistance: gridConnectionCosts.roadDistanceKm,
-            stepUpTransformers: gridConnectionCosts.stepUpTransformerCount,
-            stepDownTransformers: gridConnectionCosts.stepDownTransformerCount,
-            endUserVoltage: gridConnectionCosts.endUserVoltageKV,
-            majorRoadCrossings: gridConnectionCosts.majorRoadCrossings,
-            cableCostPerKm: gridConnectionCosts.cableCostPerKm,
-            stepUpTransformerCost: gridConnectionCosts.stepUpTransformerCost,
-            stepDownTransformerCost: gridConnectionCosts.stepDownTransformerCost,
-            includeStepDownInstallation: gridConnectionCosts.includeStepDownInstallation,
-            includeStepUpTransformer: gridConnectionCosts.includeStepUpTransformer,
-            includeStepDownTransformer: gridConnectionCosts.includeStepDownTransformer,
-          } : null,
-        },
+        projectDescription: modelDescription,
       };
-      
-      // Store report data in sessionStorage
       sessionStorage.setItem('reportData', JSON.stringify(reportData));
-      
-      // Open report page in new tab
-      window.open('/report', '_blank');
-      
-      toast.success('Report opened in new tab. Use Ctrl+P (or Cmd+P) to save as PDF.');
+      navigate('/report');
+      toast.success('Opening report...');
     } catch (error) {
       console.error('Failed to open report:', error);
-      toast.error('Failed to open report: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      toast.error('Failed to open report');
     }
   };
 
@@ -424,6 +392,9 @@ export default function Dashboard() {
               </Button>
               <Button onClick={handleExportPDF} variant="outline" className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20">
                 <Download className="mr-2 h-4 w-4" /> Export PDF
+              </Button>
+              <Button onClick={handleViewReport} variant="outline" className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20">
+                <FileText className="mr-2 h-4 w-4" /> View Report
               </Button>
               {isAuthenticated && (
                 <Button onClick={() => logout()} variant="outline" className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20">
@@ -572,7 +543,7 @@ export default function Dashboard() {
                   <p className="text-sm text-muted-foreground">No saved models yet. Create one to get started!</p>
                 ) : (
                   <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {savedModels.map((model) => (
+                    {savedModels.map((model: any) => (
                       <div key={model.id} className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-800 rounded">
                         <button
                           onClick={() => setCurrentModelId(model.id)}
