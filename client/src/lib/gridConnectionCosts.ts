@@ -134,6 +134,7 @@ export function calculateGridConnectionCost(params: {
   stepUpCost: { min: number; max: number };
   stepDownCost: { min: number; max: number };
   stepDownInstallationCost: { min: number; max: number };
+  stepUpInstallationCost: { min: number; max: number };
   jointBayCost: { min: number; max: number };
   roadCrossingCost: { min: number; max: number };
   terminationCost: { min: number; max: number };
@@ -201,9 +202,11 @@ export function calculateGridConnectionCost(params: {
 
   // Termination costs
   const terminationCosts = TERMINATION_COSTS[cableVoltage as keyof typeof TERMINATION_COSTS] || TERMINATION_COSTS["33"];
+  const stepDownTerminationCount = includeStepDownTransformer ? stepDownTransformerCount : 0;
+  const stepUpTerminationCount = includeStepUpTransformer ? stepUpTransformerCount : 0;
   const terminationCost = {
-    min: terminationCosts.min * (stepUpTransformerCount + stepDownTransformerCount),
-    max: terminationCosts.max * (stepUpTransformerCount + stepDownTransformerCount),
+    min: terminationCosts.min * (stepUpTerminationCount + stepDownTerminationCount),
+    max: terminationCosts.max * (stepUpTerminationCount + stepDownTerminationCount),
   };
 
   // Step-down transformer installation costs (if included)
@@ -211,10 +214,10 @@ export function calculateGridConnectionCost(params: {
     ? STEPDOWN_INSTALLATION_COSTS[`${cableVoltage}/11` as keyof typeof STEPDOWN_INSTALLATION_COSTS] ||
       STEPDOWN_INSTALLATION_COSTS["33/11"]
     : { min: 0, max: 0 };
-  const stepDownInstallationCost = {
+  const stepDownInstallationCost = (includeStepDownInstallation && includeStepDownTransformer) ? {
     min: stepDownInstallationCosts.min * stepDownTransformerCount,
     max: stepDownInstallationCosts.max * stepDownTransformerCount,
-  };
+  } : { min: 0, max: 0 };
 
   // HV termination costs at end-user sites
   const hvTerminationCosts = HV_TERMINATION_COSTS[cableVoltage as keyof typeof HV_TERMINATION_COSTS] || HV_TERMINATION_COSTS["33"];
@@ -223,11 +226,17 @@ export function calculateGridConnectionCost(params: {
     max: hvTerminationCosts.max * stepDownTransformerCount,
   } : { min: 0, max: 0 };
 
+  // Step-up transformer installation costs (if included) - estimated at 50-100k per transformer
+  const stepUpInstallationCost = includeStepUpTransformer ? {
+    min: 50000 * stepUpTransformerCount,
+    max: 100000 * stepUpTransformerCount,
+  } : { min: 0, max: 0 };
+
   // Wayleaves costs (annual, multiplied by years, with discount applied)
   const wayleaveDiscountFactor = 1 - (wayleaveDiscount / 100);
   const wayleavesCost = {
     min: agriculturalDist * WAYLEAVE_RATES.agricultural.min * wayleaveYears * wayleaveDiscountFactor,
-    max: roadDist * WAYLEAVE_RATES.arable.max * wayleaveYears * wayleaveDiscountFactor,
+    max: agriculturalDist * WAYLEAVE_RATES.arable.max * wayleaveYears * wayleaveDiscountFactor,
   };
 
   // Road cable laying costs (one-time, applied to road portion)
@@ -249,6 +258,7 @@ export function calculateGridConnectionCost(params: {
       stepUpCost.min +
       stepDownCost.min +
       stepDownInstallationCost.min +
+      stepUpInstallationCost.min +
       jointBayCost.min +
       roadCrossingCost.min +
       terminationCost.min +
@@ -261,6 +271,7 @@ export function calculateGridConnectionCost(params: {
       stepUpCost.max +
       stepDownCost.max +
       stepDownInstallationCost.max +
+      stepUpInstallationCost.max +
       jointBayCost.max +
       roadCrossingCost.max +
       terminationCost.max +
@@ -275,6 +286,7 @@ export function calculateGridConnectionCost(params: {
     stepUpCost,
     stepDownCost,
     stepDownInstallationCost,
+    stepUpInstallationCost,
     jointBayCost,
     roadCrossingCost,
     terminationCost,

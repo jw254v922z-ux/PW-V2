@@ -326,3 +326,25 @@
 [2026-03-03T08:50:14.336Z] [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
 [2026-03-03T08:50:35.469Z] 3:50:35 AM [vite] (client) hmr update /src/pages/Report.tsx, /src/index.css
 [2026-03-03T08:51:05.189Z] 3:51:05 AM [vite] (client) hmr update /src/pages/Report.tsx, /src/index.css
+[2026-03-03T08:53:26.404Z] BadRequestError: request aborted
+[2026-03-03T08:53:26.405Z] at IncomingMessage.onAborted (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/raw-body@2.5.2/node_modules/raw-body/index.js:245:10)
+[2026-03-03T08:53:26.406Z] at IncomingMessage.emit (node:events:524:28)
+[2026-03-03T08:53:26.406Z] at IncomingMessage._destroy (node:_http_incoming:221:10)
+[2026-03-03T08:53:26.406Z] at _destroy (node:internal/streams/destroy:122:10)
+[2026-03-03T08:53:26.407Z] at IncomingMessage.destroy (node:internal/streams/destroy:84:5)
+[2026-03-03T08:53:26.407Z] at abortIncoming (node:_http_server:809:9)
+[2026-03-03T08:53:26.407Z] at socketOnClose (node:_http_server:803:3)
+[2026-03-03T08:53:26.407Z] at Socket.emit (node:events:536:35)
+[2026-03-03T08:53:26.408Z] at TCP.<anonymous> (node:net:351:12)
+[2026-03-03T08:56:48.404Z] BadRequestError: request aborted
+[2026-03-03T08:56:48.405Z] at IncomingMessage.onAborted (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/raw-body@2.5.2/node_modules/raw-body/index.js:245:10)
+[2026-03-03T08:56:48.405Z] at IncomingMessage.emit (node:events:524:28)
+[2026-03-03T08:56:48.406Z] at IncomingMessage._destroy (node:_http_incoming:221:10)
+[2026-03-03T08:56:48.406Z] at _destroy (node:internal/streams/destroy:122:10)
+[2026-03-03T08:56:48.406Z] at IncomingMessage.destroy (node:internal/streams/destroy:84:5)
+[2026-03-03T08:56:48.407Z] at abortIncoming (node:_http_server:809:9)
+[2026-03-03T08:56:48.407Z] at socketOnClose (node:_http_server:803:3)
+[2026-03-03T08:56:48.407Z] at Socket.emit (node:events:536:35)
+[2026-03-03T08:56:48.408Z] at TCP.<anonymous> (node:net:351:12)
+[2026-03-04T06:39:30.827Z] 1:39:30 AM [vite] (client) hmr update /src/index.css, /src/components/GridConnectionSliders.tsx
+[2026-03-04T06:39:54.024Z] 1:39:54 AM [vite] (client) hmr update /src/index.css, /src/components/GridConnectionSliders.tsx
