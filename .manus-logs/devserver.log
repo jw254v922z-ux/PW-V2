@@ -348,3 +348,379 @@
 [2026-03-03T08:56:48.408Z] at TCP.<anonymous> (node:net:351:12)
 [2026-03-04T06:39:30.827Z] 1:39:30 AM [vite] (client) hmr update /src/index.css, /src/components/GridConnectionSliders.tsx
 [2026-03-04T06:39:54.024Z] 1:39:54 AM [vite] (client) hmr update /src/index.css, /src/components/GridConnectionSliders.tsx
+[2026-03-04T07:58:58.816Z] 2:58:58 AM [vite] (client) hmr update /src/pages/Report.tsx, /src/index.css
+[2026-03-04T07:58:58.939Z] 2:58:58 AM [vite] (client) Pre-transform error: /home/ubuntu/private-wire-calc-v3/client/src/components/ReportMap.tsx: Expecting Unicode escape sequence \uXXXX. (1:43)
+[2026-03-04T07:58:58.940Z] 
+[2026-03-04T07:58:58.941Z] > 1 | import { useEffect, useRef } from "react";\nimport L from "leaflet";\nimport \"leaflet/dist/leaflet.css\";\nimport { SolarInputs } from "@/lib/calculator";\n\ninterface ReportMapProps {\n  inputs: SolarInputs;\n}\n\nexport default function ReportMap({ inputs }: ReportMapProps) {\n  const mapContainer = useRef<HTMLDivElement>(null);\n  const map = useRef<L.Map | null>(null);\n\n  useEffect(() => {\n    if (!mapContainer.current) return;\n\n    // Initialize map\n    if (!map.current) {\n      map.current = L.map(mapContainer.current).setView([51.5074, -0.1278], 10);\n\n      // Add tile layer\n      L.tileLayer(\"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png\", {\n        attribution: '© OpenStreetMap contributors',\n        maxZoom: 19,\n      }).addTo(map.current);\n    }\n\n    // Load and display polygons from sessionStorage\n    const pvPolygonData = sessionStorage.getItem(\"pvPolygonData\");\n    const cableRouteData = sessionStorage.getItem(\"cableRouteData\");\n\n    // Clear existing layers (except tile layer)\n    map.current.eachLayer((layer) => {\n      if (layer instanceof L.Polygon || layer instanceof L.Polyline) {\n        map.current?.removeLayer(layer);\n      }\n    });\n\n    // Add PV polygon if exists\n    if (pvPolygonData) {\n      try {\n        const coords = JSON.parse(pvPolygonData);\n        if (coords.length > 0) {\n          const polygon = L.polygon(coords, {\n            color: \"#2d8659\",\n            weight: 2,\n            opacity: 0.8,\n            fillOpacity: 0.3,\n          }).addTo(map.current);\n\n          // Fit bounds to polygon\n          map.current.fitBounds(polygon.getBounds());\n        }\n      } catch (error) {\n        console.error(\"Error loading PV polygon:\", error);\n      }\n    }\n\n    // Add cable route if exists\n    if (cableRouteData) {\n      try {\n        const coords = JSON.parse(cableRouteData);\n        if (coords.length > 0) {\n          L.polyline(coords, {\n            color: \"#1e40af\",\n            weight: 3,\n            opacity: 0.7,\n          }).addTo(map.current);\n        }\n      } catch (error) {\n        console.error(\"Error loading cable route:\", error);\n      }\n    }\n  }, [inputs]);\n\n  return (\n    <div\n      ref={mapContainer}\n      className=\"h-96 w-full rounded-lg border border-gray-200 shadow-md\"\n    />\n  );\n}\n
+[2026-03-04T07:58:58.941Z] |                                            ^
+[2026-03-04T07:58:58.942Z] 2 |
+[2026-03-04T07:58:58.942Z] Plugin: vite:react-babel
+[2026-03-04T07:58:58.942Z] File: /home/ubuntu/private-wire-calc-v3/client/src/components/ReportMap.tsx:1:43
+[2026-03-04T07:58:58.942Z] 1  |  import { useEffect, useRef } from "react";\nimport L from "leaflet";\nimport \"leaflet/dist/leaflet.css\";\nimport { ...
+[2026-03-04T07:58:58.943Z] |                                             ^
+[2026-03-04T07:58:58.943Z] 2  |
+[2026-03-04T07:58:58.945Z] 2:58:58 AM [vite] (client) Pre-transform error: /home/ubuntu/private-wire-calc-v3/client/src/components/StakeholderPieChart.tsx: Expecting Unicode escape sequence \uXXXX. (1:75)
+[2026-03-04T07:58:58.946Z] 
+[2026-03-04T07:58:58.946Z] > 1 | import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from \"recharts\";\n\ninterface StakeholderPieChartProps {\n  operatorNPV: number;\n  offtakerSavings: number;\n  landownerIncome: number;\n  developerPremium: number;\n  totalValue: number;\n}\n\nexport default function StakeholderPieChart({\n  operatorNPV,\n  offtakerSavings,\n  landownerIncome,\n  developerPremium,\n  totalValue,\n}: StakeholderPieChartProps) {\n  const data = [\n    {\n      name: \"Operator\",\n      value: operatorNPV,\n      color: \"#808080\",\n    },\n    {\n      name: \"Offtaker\",\n      value: offtakerSavings,\n      color: \"#2D8659\",\n    },\n    {\n      name: \"Landowner\",\n      value: landownerIncome,\n      color: \"#FFD700\",\n    },\n    {\n      name: \"Developer\",\n      value: developerPremium,\n      color: \"#001F3F\",\n    },\n  ].filter((item) => item.value > 0);\n\n  return (\n    <div className=\"w-full\">\n      <ResponsiveContainer width=\"100%\" height={300}>\n        <PieChart>\n          <Pie\n            data={data}\n            cx=\"50%\"\n            cy=\"50%\"\n            labelLine={false}\n            label={({ name, value, color }) => (\n              <text\n                x={0}\n                y={0}\n                fill={color}\n                textAnchor=\"middle\"\n                dominantBaseline=\"central\"\n                className=\"font-bold text-xs\"\n              >\n                {name} ({((value / totalValue) * 100).toFixed(1)}%)\n              </text>\n            )}\n            outerRadius={80}\n            fill=\"#8884d8\"\n            dataKey=\"value\"\n          >\n            {data.map((entry, index) => (\n              <Cell key={`cell-${index}`} fill={entry.color} />\n            ))}\n          </Pie>\n          <Tooltip\n            formatter={(value: number) => `£${(value / 1000000).toFixed(2)}M`}\n            contentStyle={{\n              backgroundColor: \"#fff\",\n              border: \"1px solid #ccc\",\n              borderRadius: \"4px\",\n            }}\n          />\n        </PieChart>\n      </ResponsiveContainer>\n    </div>\n  );\n}\n
+[2026-03-04T07:58:58.946Z] |                                                                            ^
+[2026-03-04T07:58:58.947Z] 2 |
+[2026-03-04T07:58:58.947Z] Plugin: vite:react-babel
+[2026-03-04T07:58:58.947Z] File: /home/ubuntu/private-wire-calc-v3/client/src/components/StakeholderPieChart.tsx:1:75
+[2026-03-04T07:58:58.950Z] 1  |  ...rt, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from \"recharts\";\n\ninterface StakeholderPieChartProps {\n...
+[2026-03-04T07:58:58.951Z] |                                                                 ^
+[2026-03-04T07:58:58.952Z] 2  |
+[2026-03-04T07:58:59.028Z] 2:58:59 AM [vite] Internal server error: /home/ubuntu/private-wire-calc-v3/client/src/components/ReportMap.tsx: Expecting Unicode escape sequence \uXXXX. (1:43)
+[2026-03-04T07:58:59.029Z] 
+[2026-03-04T07:58:59.029Z] > 1 | import { useEffect, useRef } from "react";\nimport L from "leaflet";\nimport \"leaflet/dist/leaflet.css\";\nimport { SolarInputs } from "@/lib/calculator";\n\ninterface ReportMapProps {\n  inputs: SolarInputs;\n}\n\nexport default function ReportMap({ inputs }: ReportMapProps) {\n  const mapContainer = useRef<HTMLDivElement>(null);\n  const map = useRef<L.Map | null>(null);\n\n  useEffect(() => {\n    if (!mapContainer.current) return;\n\n    // Initialize map\n    if (!map.current) {\n      map.current = L.map(mapContainer.current).setView([51.5074, -0.1278], 10);\n\n      // Add tile layer\n      L.tileLayer(\"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png\", {\n        attribution: '© OpenStreetMap contributors',\n        maxZoom: 19,\n      }).addTo(map.current);\n    }\n\n    // Load and display polygons from sessionStorage\n    const pvPolygonData = sessionStorage.getItem(\"pvPolygonData\");\n    const cableRouteData = sessionStorage.getItem(\"cableRouteData\");\n\n    // Clear existing layers (except tile layer)\n    map.current.eachLayer((layer) => {\n      if (layer instanceof L.Polygon || layer instanceof L.Polyline) {\n        map.current?.removeLayer(layer);\n      }\n    });\n\n    // Add PV polygon if exists\n    if (pvPolygonData) {\n      try {\n        const coords = JSON.parse(pvPolygonData);\n        if (coords.length > 0) {\n          const polygon = L.polygon(coords, {\n            color: \"#2d8659\",\n            weight: 2,\n            opacity: 0.8,\n            fillOpacity: 0.3,\n          }).addTo(map.current);\n\n          // Fit bounds to polygon\n          map.current.fitBounds(polygon.getBounds());\n        }\n      } catch (error) {\n        console.error(\"Error loading PV polygon:\", error);\n      }\n    }\n\n    // Add cable route if exists\n    if (cableRouteData) {\n      try {\n        const coords = JSON.parse(cableRouteData);\n        if (coords.length > 0) {\n          L.polyline(coords, {\n            color: \"#1e40af\",\n            weight: 3,\n            opacity: 0.7,\n          }).addTo(map.current);\n        }\n      } catch (error) {\n        console.error(\"Error loading cable route:\", error);\n      }\n    }\n  }, [inputs]);\n\n  return (\n    <div\n      ref={mapContainer}\n      className=\"h-96 w-full rounded-lg border border-gray-200 shadow-md\"\n    />\n  );\n}\n
+[2026-03-04T07:58:59.030Z] |                                            ^
+[2026-03-04T07:58:59.030Z] 2 |
+[2026-03-04T07:58:59.031Z] Plugin: vite:react-babel
+[2026-03-04T07:58:59.031Z] File: /home/ubuntu/private-wire-calc-v3/client/src/components/ReportMap.tsx:1:43
+[2026-03-04T07:58:59.031Z] 1  |  import { useEffect, useRef } from "react";\nimport L from "leaflet";\nimport \"leaflet/dist/leaflet.css\";\nimport { ...
+[2026-03-04T07:58:59.032Z] |                                             ^
+[2026-03-04T07:58:59.032Z] 2  |
+[2026-03-04T07:58:59.032Z] at toParseError (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parse-error.ts:95:45)
+[2026-03-04T07:58:59.033Z] at raise (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1503:19)
+[2026-03-04T07:58:59.033Z] at readWord1 (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1439:16)
+[2026-03-04T07:58:59.034Z] at readWord (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1465:23)
+[2026-03-04T07:58:59.034Z] at getTokenFromCode (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1048:14)
+[2026-03-04T07:58:59.034Z] at getTokenFromCode (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/jsx/index.ts:631:13)
+[2026-03-04T07:58:59.035Z] at getTokenFromCode (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:4094:13)
+[2026-03-04T07:58:59.035Z] at nextToken (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:278:10)
+[2026-03-04T07:58:59.035Z] at next (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:121:10)
+[2026-03-04T07:58:59.036Z] at eat (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:126:12)
+[2026-03-04T07:58:59.036Z] at isLineTerminator (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/util.ts:141:17)
+[2026-03-04T07:58:59.036Z] at semicolon (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/util.ts:148:25)
+[2026-03-04T07:58:59.036Z] at parseImportSourceAndAttributes (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:3189:10)
+[2026-03-04T07:58:59.037Z] at parseImportSpecifiersAndAfter (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:3176:17)
+[2026-03-04T07:58:59.037Z] at parseImport (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:3142:17)
+[2026-03-04T07:58:59.038Z] at parseImport (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:3011:28)
+[2026-03-04T07:58:59.038Z] at parseStatementContent (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:642:25)
+[2026-03-04T07:58:59.038Z] at parseStatementContent (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:3185:20)
+[2026-03-04T07:58:59.039Z] at parseStatementLike (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:477:17)
+[2026-03-04T07:58:59.039Z] at parseModuleItem (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:414:17)
+[2026-03-04T07:58:59.039Z] at parseBlockOrModuleBlockBody (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:1438:16)
+[2026-03-04T07:58:59.040Z] at parseBlockBody (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:1412:10)
+[2026-03-04T07:58:59.040Z] at parseProgram (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:229:10)
+[2026-03-04T07:58:59.040Z] at parseTopLevel (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:203:25)
+[2026-03-04T07:58:59.041Z] at parse (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/index.ts:93:10)
+[2026-03-04T07:58:59.041Z] at parse (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:4309:20)
+[2026-03-04T07:58:59.041Z] at parse (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/index.ts:92:38)
+[2026-03-04T07:58:59.042Z] at parser (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/parser/index.ts:28:19)
+[2026-03-04T07:58:59.042Z] at parser.next (<anonymous>)
+[2026-03-04T07:58:59.042Z] at normalizeFile (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/transformation/normalize-file.ts:49:24)
+[2026-03-04T07:58:59.043Z] at normalizeFile.next (<anonymous>)
+[2026-03-04T07:58:59.043Z] at run (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/transformation/index.ts:40:36)
+[2026-03-04T07:58:59.043Z] at run.next (<anonymous>)
+[2026-03-04T07:58:59.043Z] at transform (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/transform.ts:29:20)
+[2026-03-04T07:58:59.044Z] at transform.next (<anonymous>)
+[2026-03-04T07:58:59.044Z] at step (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:261:32)
+[2026-03-04T07:58:59.044Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-03-04T07:58:59.045Z] at async.call.result.err.err (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-03-04T07:58:59.045Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:189:28
+[2026-03-04T07:58:59.045Z] at <anonymous> (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/gensync-utils/async.ts:90:7)
+[2026-03-04T07:58:59.046Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:113:33
+[2026-03-04T07:58:59.046Z] at step (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:287:14)
+[2026-03-04T07:58:59.046Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-03-04T07:58:59.047Z] at async.call.result.err.err (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-03-04T07:58:59.047Z] 2:58:59 AM [vite] Internal server error: /home/ubuntu/private-wire-calc-v3/client/src/components/StakeholderPieChart.tsx: Expecting Unicode escape sequence \uXXXX. (1:75)
+[2026-03-04T07:58:59.048Z] 
+[2026-03-04T07:58:59.048Z] > 1 | import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from \"recharts\";\n\ninterface StakeholderPieChartProps {\n  operatorNPV: number;\n  offtakerSavings: number;\n  landownerIncome: number;\n  developerPremium: number;\n  totalValue: number;\n}\n\nexport default function StakeholderPieChart({\n  operatorNPV,\n  offtakerSavings,\n  landownerIncome,\n  developerPremium,\n  totalValue,\n}: StakeholderPieChartProps) {\n  const data = [\n    {\n      name: \"Operator\",\n      value: operatorNPV,\n      color: \"#808080\",\n    },\n    {\n      name: \"Offtaker\",\n      value: offtakerSavings,\n      color: \"#2D8659\",\n    },\n    {\n      name: \"Landowner\",\n      value: landownerIncome,\n      color: \"#FFD700\",\n    },\n    {\n      name: \"Developer\",\n      value: developerPremium,\n      color: \"#001F3F\",\n    },\n  ].filter((item) => item.value > 0);\n\n  return (\n    <div className=\"w-full\">\n      <ResponsiveContainer width=\"100%\" height={300}>\n        <PieChart>\n          <Pie\n            data={data}\n            cx=\"50%\"\n            cy=\"50%\"\n            labelLine={false}\n            label={({ name, value, color }) => (\n              <text\n                x={0}\n                y={0}\n                fill={color}\n                textAnchor=\"middle\"\n                dominantBaseline=\"central\"\n                className=\"font-bold text-xs\"\n              >\n                {name} ({((value / totalValue) * 100).toFixed(1)}%)\n              </text>\n            )}\n            outerRadius={80}\n            fill=\"#8884d8\"\n            dataKey=\"value\"\n          >\n            {data.map((entry, index) => (\n              <Cell key={`cell-${index}`} fill={entry.color} />\n            ))}\n          </Pie>\n          <Tooltip\n            formatter={(value: number) => `£${(value / 1000000).toFixed(2)}M`}\n            contentStyle={{\n              backgroundColor: \"#fff\",\n              border: \"1px solid #ccc\",\n              borderRadius: \"4px\",\n            }}\n          />\n        </PieChart>\n      </ResponsiveContainer>\n    </div>\n  );\n}\n
+[2026-03-04T07:58:59.048Z] |                                                                            ^
+[2026-03-04T07:58:59.049Z] 2 |
+[2026-03-04T07:58:59.049Z] Plugin: vite:react-babel
+[2026-03-04T07:58:59.049Z] File: /home/ubuntu/private-wire-calc-v3/client/src/components/StakeholderPieChart.tsx:1:75
+[2026-03-04T07:58:59.050Z] 1  |  ...rt, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from \"recharts\";\n\ninterface StakeholderPieChartProps {\n...
+[2026-03-04T07:58:59.050Z] |                                                                 ^
+[2026-03-04T07:58:59.051Z] 2  |
+[2026-03-04T07:58:59.051Z] at toParseError (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parse-error.ts:95:45)
+[2026-03-04T07:58:59.051Z] at raise (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1503:19)
+[2026-03-04T07:58:59.052Z] at readWord1 (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1439:16)
+[2026-03-04T07:58:59.052Z] at readWord (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1465:23)
+[2026-03-04T07:58:59.053Z] at getTokenFromCode (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1048:14)
+[2026-03-04T07:58:59.053Z] at getTokenFromCode (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/jsx/index.ts:631:13)
+[2026-03-04T07:58:59.054Z] at getTokenFromCode (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:4094:13)
+[2026-03-04T07:58:59.054Z] at nextToken (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:278:10)
+[2026-03-04T07:58:59.054Z] at next (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:121:10)
+[2026-03-04T07:58:59.055Z] at eatContextual (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/util.ts:98:12)
+[2026-03-04T07:58:59.055Z] at expectContextual (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/util.ts:110:15)
+[2026-03-04T07:58:59.056Z] at parseImportSpecifiersAndAfter (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:3174:10)
+[2026-03-04T07:58:59.056Z] at parseImport (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:3142:17)
+[2026-03-04T07:58:59.056Z] at parseImport (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:3011:28)
+[2026-03-04T07:58:59.057Z] at parseStatementContent (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:642:25)
+[2026-03-04T07:58:59.057Z] at parseStatementContent (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:3185:20)
+[2026-03-04T07:58:59.058Z] at parseStatementLike (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:477:17)
+[2026-03-04T07:58:59.058Z] at parseModuleItem (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:414:17)
+[2026-03-04T07:58:59.059Z] at parseBlockOrModuleBlockBody (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:1438:16)
+[2026-03-04T07:58:59.059Z] at parseBlockBody (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:1412:10)
+[2026-03-04T07:58:59.059Z] at parseProgram (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:229:10)
+[2026-03-04T07:58:59.059Z] at parseTopLevel (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:203:25)
+[2026-03-04T07:58:59.060Z] at parse (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/index.ts:93:10)
+[2026-03-04T07:58:59.060Z] at parse (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:4309:20)
+[2026-03-04T07:58:59.061Z] at parse (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/index.ts:92:38)
+[2026-03-04T07:58:59.061Z] at parser (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/parser/index.ts:28:19)
+[2026-03-04T07:58:59.061Z] at parser.next (<anonymous>)
+[2026-03-04T07:58:59.062Z] at normalizeFile (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/transformation/normalize-file.ts:49:24)
+[2026-03-04T07:58:59.062Z] at normalizeFile.next (<anonymous>)
+[2026-03-04T07:58:59.063Z] at run (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/transformation/index.ts:40:36)
+[2026-03-04T07:58:59.063Z] at run.next (<anonymous>)
+[2026-03-04T07:58:59.063Z] at transform (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/transform.ts:29:20)
+[2026-03-04T07:58:59.064Z] at transform.next (<anonymous>)
+[2026-03-04T07:58:59.064Z] at step (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:261:32)
+[2026-03-04T07:58:59.064Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-03-04T07:58:59.065Z] at async.call.result.err.err (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-03-04T07:58:59.065Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:189:28
+[2026-03-04T07:58:59.065Z] at <anonymous> (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/gensync-utils/async.ts:90:7)
+[2026-03-04T07:58:59.065Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:113:33
+[2026-03-04T07:58:59.066Z] at step (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:287:14)
+[2026-03-04T07:58:59.066Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-03-04T07:58:59.066Z] at async.call.result.err.err (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-03-04T07:59:10.428Z] Dev server process group stopped
+[2026-03-04T07:59:10.432Z] ELIFECYCLE  Command failed.
+[2026-03-04T07:59:10.490Z] Dev server exited with code -15
+[2026-03-04T07:59:13.432Z] Starting dev server with command: pnpm run dev
+[2026-03-04T07:59:14.100Z] 
+[2026-03-04T07:59:14.101Z] > private-wire-calc-v3@1.0.0 dev /home/ubuntu/private-wire-calc-v3
+[2026-03-04T07:59:14.102Z] > NODE_ENV=development tsx watch server/_core/index.ts
+[2026-03-04T07:59:14.102Z] 
+[2026-03-04T07:59:16.049Z] [OAuth] Initialized with baseURL: https://api.manus.im
+[2026-03-04T07:59:16.437Z] Server running on http://0.0.0.0:5000/
+[2026-03-04T07:59:16.884Z] [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[2026-03-04T07:59:17.824Z] 2:59:17 AM [vite] (client) Pre-transform error: /home/ubuntu/private-wire-calc-v3/client/src/components/ReportMap.tsx: Expecting Unicode escape sequence \uXXXX. (1:43)
+[2026-03-04T07:59:17.825Z] 
+[2026-03-04T07:59:17.825Z] > 1 | import { useEffect, useRef } from "react";\nimport L from "leaflet";\nimport \"leaflet/dist/leaflet.css\";\nimport { SolarInputs } from "@/lib/calculator";\n\ninterface ReportMapProps {\n  inputs: SolarInputs;\n}\n\nexport default function ReportMap({ inputs }: ReportMapProps) {\n  const mapContainer = useRef<HTMLDivElement>(null);\n  const map = useRef<L.Map | null>(null);\n\n  useEffect(() => {\n    if (!mapContainer.current) return;\n\n    // Initialize map\n    if (!map.current) {\n      map.current = L.map(mapContainer.current).setView([51.5074, -0.1278], 10);\n\n      // Add tile layer\n      L.tileLayer(\"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png\", {\n        attribution: '© OpenStreetMap contributors',\n        maxZoom: 19,\n      }).addTo(map.current);\n    }\n\n    // Load and display polygons from sessionStorage\n    const pvPolygonData = sessionStorage.getItem(\"pvPolygonData\");\n    const cableRouteData = sessionStorage.getItem(\"cableRouteData\");\n\n    // Clear existing layers (except tile layer)\n    map.current.eachLayer((layer) => {\n      if (layer instanceof L.Polygon || layer instanceof L.Polyline) {\n        map.current?.removeLayer(layer);\n      }\n    });\n\n    // Add PV polygon if exists\n    if (pvPolygonData) {\n      try {\n        const coords = JSON.parse(pvPolygonData);\n        if (coords.length > 0) {\n          const polygon = L.polygon(coords, {\n            color: \"#2d8659\",\n            weight: 2,\n            opacity: 0.8,\n            fillOpacity: 0.3,\n          }).addTo(map.current);\n\n          // Fit bounds to polygon\n          map.current.fitBounds(polygon.getBounds());\n        }\n      } catch (error) {\n        console.error(\"Error loading PV polygon:\", error);\n      }\n    }\n\n    // Add cable route if exists\n    if (cableRouteData) {\n      try {\n        const coords = JSON.parse(cableRouteData);\n        if (coords.length > 0) {\n          L.polyline(coords, {\n            color: \"#1e40af\",\n            weight: 3,\n            opacity: 0.7,\n          }).addTo(map.current);\n        }\n      } catch (error) {\n        console.error(\"Error loading cable route:\", error);\n      }\n    }\n  }, [inputs]);\n\n  return (\n    <div\n      ref={mapContainer}\n      className=\"h-96 w-full rounded-lg border border-gray-200 shadow-md\"\n    />\n  );\n}\n
+[2026-03-04T07:59:17.826Z] |                                            ^
+[2026-03-04T07:59:17.826Z] 2 |
+[2026-03-04T07:59:17.826Z] Plugin: vite:react-babel
+[2026-03-04T07:59:17.827Z] File: /home/ubuntu/private-wire-calc-v3/client/src/components/ReportMap.tsx:1:43
+[2026-03-04T07:59:17.827Z] 1  |  import { useEffect, useRef } from "react";\nimport L from "leaflet";\nimport \"leaflet/dist/leaflet.css\";\nimport { ...
+[2026-03-04T07:59:17.827Z] |                                             ^
+[2026-03-04T07:59:17.828Z] 2  |
+[2026-03-04T07:59:17.828Z] 2:59:17 AM [vite] (client) Pre-transform error: /home/ubuntu/private-wire-calc-v3/client/src/components/StakeholderPieChart.tsx: Expecting Unicode escape sequence \uXXXX. (1:75)
+[2026-03-04T07:59:17.829Z] 
+[2026-03-04T07:59:17.829Z] > 1 | import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from \"recharts\";\n\ninterface StakeholderPieChartProps {\n  operatorNPV: number;\n  offtakerSavings: number;\n  landownerIncome: number;\n  developerPremium: number;\n  totalValue: number;\n}\n\nexport default function StakeholderPieChart({\n  operatorNPV,\n  offtakerSavings,\n  landownerIncome,\n  developerPremium,\n  totalValue,\n}: StakeholderPieChartProps) {\n  const data = [\n    {\n      name: \"Operator\",\n      value: operatorNPV,\n      color: \"#808080\",\n    },\n    {\n      name: \"Offtaker\",\n      value: offtakerSavings,\n      color: \"#2D8659\",\n    },\n    {\n      name: \"Landowner\",\n      value: landownerIncome,\n      color: \"#FFD700\",\n    },\n    {\n      name: \"Developer\",\n      value: developerPremium,\n      color: \"#001F3F\",\n    },\n  ].filter((item) => item.value > 0);\n\n  return (\n    <div className=\"w-full\">\n      <ResponsiveContainer width=\"100%\" height={300}>\n        <PieChart>\n          <Pie\n            data={data}\n            cx=\"50%\"\n            cy=\"50%\"\n            labelLine={false}\n            label={({ name, value, color }) => (\n              <text\n                x={0}\n                y={0}\n                fill={color}\n                textAnchor=\"middle\"\n                dominantBaseline=\"central\"\n                className=\"font-bold text-xs\"\n              >\n                {name} ({((value / totalValue) * 100).toFixed(1)}%)\n              </text>\n            )}\n            outerRadius={80}\n            fill=\"#8884d8\"\n            dataKey=\"value\"\n          >\n            {data.map((entry, index) => (\n              <Cell key={`cell-${index}`} fill={entry.color} />\n            ))}\n          </Pie>\n          <Tooltip\n            formatter={(value: number) => `£${(value / 1000000).toFixed(2)}M`}\n            contentStyle={{\n              backgroundColor: \"#fff\",\n              border: \"1px solid #ccc\",\n              borderRadius: \"4px\",\n            }}\n          />\n        </PieChart>\n      </ResponsiveContainer>\n    </div>\n  );\n}\n
+[2026-03-04T07:59:17.829Z] |                                                                            ^
+[2026-03-04T07:59:17.830Z] 2 |
+[2026-03-04T07:59:17.830Z] Plugin: vite:react-babel
+[2026-03-04T07:59:17.830Z] File: /home/ubuntu/private-wire-calc-v3/client/src/components/StakeholderPieChart.tsx:1:75
+[2026-03-04T07:59:17.831Z] 1  |  ...rt, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from \"recharts\";\n\ninterface StakeholderPieChartProps {\n...
+[2026-03-04T07:59:17.831Z] |                                                                 ^
+[2026-03-04T07:59:17.831Z] 2  |
+[2026-03-04T07:59:18.152Z] 2:59:18 AM [vite] Internal server error: /home/ubuntu/private-wire-calc-v3/client/src/components/StakeholderPieChart.tsx: Expecting Unicode escape sequence \uXXXX. (1:75)
+[2026-03-04T07:59:18.153Z] 
+[2026-03-04T07:59:18.153Z] > 1 | import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from \"recharts\";\n\ninterface StakeholderPieChartProps {\n  operatorNPV: number;\n  offtakerSavings: number;\n  landownerIncome: number;\n  developerPremium: number;\n  totalValue: number;\n}\n\nexport default function StakeholderPieChart({\n  operatorNPV,\n  offtakerSavings,\n  landownerIncome,\n  developerPremium,\n  totalValue,\n}: StakeholderPieChartProps) {\n  const data = [\n    {\n      name: \"Operator\",\n      value: operatorNPV,\n      color: \"#808080\",\n    },\n    {\n      name: \"Offtaker\",\n      value: offtakerSavings,\n      color: \"#2D8659\",\n    },\n    {\n      name: \"Landowner\",\n      value: landownerIncome,\n      color: \"#FFD700\",\n    },\n    {\n      name: \"Developer\",\n      value: developerPremium,\n      color: \"#001F3F\",\n    },\n  ].filter((item) => item.value > 0);\n\n  return (\n    <div className=\"w-full\">\n      <ResponsiveContainer width=\"100%\" height={300}>\n        <PieChart>\n          <Pie\n            data={data}\n            cx=\"50%\"\n            cy=\"50%\"\n            labelLine={false}\n            label={({ name, value, color }) => (\n              <text\n                x={0}\n                y={0}\n                fill={color}\n                textAnchor=\"middle\"\n                dominantBaseline=\"central\"\n                className=\"font-bold text-xs\"\n              >\n                {name} ({((value / totalValue) * 100).toFixed(1)}%)\n              </text>\n            )}\n            outerRadius={80}\n            fill=\"#8884d8\"\n            dataKey=\"value\"\n          >\n            {data.map((entry, index) => (\n              <Cell key={`cell-${index}`} fill={entry.color} />\n            ))}\n          </Pie>\n          <Tooltip\n            formatter={(value: number) => `£${(value / 1000000).toFixed(2)}M`}\n            contentStyle={{\n              backgroundColor: \"#fff\",\n              border: \"1px solid #ccc\",\n              borderRadius: \"4px\",\n            }}\n          />\n        </PieChart>\n      </ResponsiveContainer>\n    </div>\n  );\n}\n
+[2026-03-04T07:59:18.154Z] |                                                                            ^
+[2026-03-04T07:59:18.154Z] 2 |
+[2026-03-04T07:59:18.155Z] Plugin: vite:react-babel
+[2026-03-04T07:59:18.155Z] File: /home/ubuntu/private-wire-calc-v3/client/src/components/StakeholderPieChart.tsx:1:75
+[2026-03-04T07:59:18.155Z] 1  |  ...rt, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from \"recharts\";\n\ninterface StakeholderPieChartProps {\n...
+[2026-03-04T07:59:18.155Z] |                                                                 ^
+[2026-03-04T07:59:18.156Z] 2  |
+[2026-03-04T07:59:18.156Z] at toParseError (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parse-error.ts:95:45)
+[2026-03-04T07:59:18.156Z] at raise (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1503:19)
+[2026-03-04T07:59:18.157Z] at readWord1 (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1439:16)
+[2026-03-04T07:59:18.158Z] at readWord (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1465:23)
+[2026-03-04T07:59:18.158Z] at getTokenFromCode (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1048:14)
+[2026-03-04T07:59:18.159Z] at getTokenFromCode (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/jsx/index.ts:631:13)
+[2026-03-04T07:59:18.160Z] at getTokenFromCode (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:4094:13)
+[2026-03-04T07:59:18.160Z] at nextToken (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:278:10)
+[2026-03-04T07:59:18.161Z] at next (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:121:10)
+[2026-03-04T07:59:18.161Z] at eatContextual (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/util.ts:98:12)
+[2026-03-04T07:59:18.161Z] at expectContextual (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/util.ts:110:15)
+[2026-03-04T07:59:18.162Z] at parseImportSpecifiersAndAfter (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:3174:10)
+[2026-03-04T07:59:18.162Z] at parseImport (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:3142:17)
+[2026-03-04T07:59:18.162Z] at parseImport (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:3011:28)
+[2026-03-04T07:59:18.163Z] at parseStatementContent (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:642:25)
+[2026-03-04T07:59:18.163Z] at parseStatementContent (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:3185:20)
+[2026-03-04T07:59:18.163Z] at parseStatementLike (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:477:17)
+[2026-03-04T07:59:18.164Z] at parseModuleItem (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:414:17)
+[2026-03-04T07:59:18.164Z] at parseBlockOrModuleBlockBody (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:1438:16)
+[2026-03-04T07:59:18.164Z] at parseBlockBody (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:1412:10)
+[2026-03-04T07:59:18.164Z] at parseProgram (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:229:10)
+[2026-03-04T07:59:18.166Z] at parseTopLevel (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:203:25)
+[2026-03-04T07:59:18.167Z] at parse (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/index.ts:93:10)
+[2026-03-04T07:59:18.167Z] at parse (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:4309:20)
+[2026-03-04T07:59:18.168Z] at parse (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/index.ts:92:38)
+[2026-03-04T07:59:18.168Z] at parser (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/parser/index.ts:28:19)
+[2026-03-04T07:59:18.169Z] at parser.next (<anonymous>)
+[2026-03-04T07:59:18.169Z] at normalizeFile (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/transformation/normalize-file.ts:49:24)
+[2026-03-04T07:59:18.170Z] at normalizeFile.next (<anonymous>)
+[2026-03-04T07:59:18.170Z] at run (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/transformation/index.ts:40:36)
+[2026-03-04T07:59:18.171Z] at run.next (<anonymous>)
+[2026-03-04T07:59:18.172Z] at transform (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/transform.ts:29:20)
+[2026-03-04T07:59:18.173Z] at transform.next (<anonymous>)
+[2026-03-04T07:59:18.174Z] at step (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:261:32)
+[2026-03-04T07:59:18.175Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-03-04T07:59:18.175Z] at async.call.result.err.err (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-03-04T07:59:18.176Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:189:28
+[2026-03-04T07:59:18.177Z] at <anonymous> (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/gensync-utils/async.ts:90:7)
+[2026-03-04T07:59:18.177Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:113:33
+[2026-03-04T07:59:18.177Z] at step (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:287:14)
+[2026-03-04T07:59:18.178Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-03-04T07:59:18.178Z] at async.call.result.err.err (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-03-04T07:59:18.179Z] 2:59:18 AM [vite] Internal server error: /home/ubuntu/private-wire-calc-v3/client/src/components/ReportMap.tsx: Expecting Unicode escape sequence \uXXXX. (1:43)
+[2026-03-04T07:59:18.180Z] 
+[2026-03-04T07:59:18.180Z] > 1 | import { useEffect, useRef } from "react";\nimport L from "leaflet";\nimport \"leaflet/dist/leaflet.css\";\nimport { SolarInputs } from "@/lib/calculator";\n\ninterface ReportMapProps {\n  inputs: SolarInputs;\n}\n\nexport default function ReportMap({ inputs }: ReportMapProps) {\n  const mapContainer = useRef<HTMLDivElement>(null);\n  const map = useRef<L.Map | null>(null);\n\n  useEffect(() => {\n    if (!mapContainer.current) return;\n\n    // Initialize map\n    if (!map.current) {\n      map.current = L.map(mapContainer.current).setView([51.5074, -0.1278], 10);\n\n      // Add tile layer\n      L.tileLayer(\"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png\", {\n        attribution: '© OpenStreetMap contributors',\n        maxZoom: 19,\n      }).addTo(map.current);\n    }\n\n    // Load and display polygons from sessionStorage\n    const pvPolygonData = sessionStorage.getItem(\"pvPolygonData\");\n    const cableRouteData = sessionStorage.getItem(\"cableRouteData\");\n\n    // Clear existing layers (except tile layer)\n    map.current.eachLayer((layer) => {\n      if (layer instanceof L.Polygon || layer instanceof L.Polyline) {\n        map.current?.removeLayer(layer);\n      }\n    });\n\n    // Add PV polygon if exists\n    if (pvPolygonData) {\n      try {\n        const coords = JSON.parse(pvPolygonData);\n        if (coords.length > 0) {\n          const polygon = L.polygon(coords, {\n            color: \"#2d8659\",\n            weight: 2,\n            opacity: 0.8,\n            fillOpacity: 0.3,\n          }).addTo(map.current);\n\n          // Fit bounds to polygon\n          map.current.fitBounds(polygon.getBounds());\n        }\n      } catch (error) {\n        console.error(\"Error loading PV polygon:\", error);\n      }\n    }\n\n    // Add cable route if exists\n    if (cableRouteData) {\n      try {\n        const coords = JSON.parse(cableRouteData);\n        if (coords.length > 0) {\n          L.polyline(coords, {\n            color: \"#1e40af\",\n            weight: 3,\n            opacity: 0.7,\n          }).addTo(map.current);\n        }\n      } catch (error) {\n        console.error(\"Error loading cable route:\", error);\n      }\n    }\n  }, [inputs]);\n\n  return (\n    <div\n      ref={mapContainer}\n      className=\"h-96 w-full rounded-lg border border-gray-200 shadow-md\"\n    />\n  );\n}\n
+[2026-03-04T07:59:18.181Z] |                                            ^
+[2026-03-04T07:59:18.182Z] 2 |
+[2026-03-04T07:59:18.182Z] Plugin: vite:react-babel
+[2026-03-04T07:59:18.183Z] File: /home/ubuntu/private-wire-calc-v3/client/src/components/ReportMap.tsx:1:43
+[2026-03-04T07:59:18.183Z] 1  |  import { useEffect, useRef } from "react";\nimport L from "leaflet";\nimport \"leaflet/dist/leaflet.css\";\nimport { ...
+[2026-03-04T07:59:18.184Z] |                                             ^
+[2026-03-04T07:59:18.184Z] 2  |
+[2026-03-04T07:59:18.184Z] at toParseError (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parse-error.ts:95:45)
+[2026-03-04T07:59:18.185Z] at raise (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1503:19)
+[2026-03-04T07:59:18.185Z] at readWord1 (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1439:16)
+[2026-03-04T07:59:18.186Z] at readWord (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1465:23)
+[2026-03-04T07:59:18.186Z] at getTokenFromCode (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1048:14)
+[2026-03-04T07:59:18.189Z] at getTokenFromCode (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/jsx/index.ts:631:13)
+[2026-03-04T07:59:18.190Z] at getTokenFromCode (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:4094:13)
+[2026-03-04T07:59:18.191Z] at nextToken (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:278:10)
+[2026-03-04T07:59:18.191Z] at next (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:121:10)
+[2026-03-04T07:59:18.192Z] at eat (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:126:12)
+[2026-03-04T07:59:18.192Z] at isLineTerminator (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/util.ts:141:17)
+[2026-03-04T07:59:18.193Z] at semicolon (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/util.ts:148:25)
+[2026-03-04T07:59:18.193Z] at parseImportSourceAndAttributes (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:3189:10)
+[2026-03-04T07:59:18.194Z] at parseImportSpecifiersAndAfter (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:3176:17)
+[2026-03-04T07:59:18.195Z] at parseImport (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:3142:17)
+[2026-03-04T07:59:18.195Z] at parseImport (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:3011:28)
+[2026-03-04T07:59:18.196Z] at parseStatementContent (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:642:25)
+[2026-03-04T07:59:18.196Z] at parseStatementContent (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:3185:20)
+[2026-03-04T07:59:18.197Z] at parseStatementLike (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:477:17)
+[2026-03-04T07:59:18.197Z] at parseModuleItem (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:414:17)
+[2026-03-04T07:59:18.198Z] at parseBlockOrModuleBlockBody (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:1438:16)
+[2026-03-04T07:59:18.198Z] at parseBlockBody (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:1412:10)
+[2026-03-04T07:59:18.199Z] at parseProgram (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:229:10)
+[2026-03-04T07:59:18.200Z] at parseTopLevel (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:203:25)
+[2026-03-04T07:59:18.200Z] at parse (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/index.ts:93:10)
+[2026-03-04T07:59:18.201Z] at parse (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:4309:20)
+[2026-03-04T07:59:18.201Z] at parse (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/index.ts:92:38)
+[2026-03-04T07:59:18.202Z] at parser (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/parser/index.ts:28:19)
+[2026-03-04T07:59:18.202Z] at parser.next (<anonymous>)
+[2026-03-04T07:59:18.203Z] at normalizeFile (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/transformation/normalize-file.ts:49:24)
+[2026-03-04T07:59:18.203Z] at normalizeFile.next (<anonymous>)
+[2026-03-04T07:59:18.204Z] at run (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/transformation/index.ts:40:36)
+[2026-03-04T07:59:18.204Z] at run.next (<anonymous>)
+[2026-03-04T07:59:18.204Z] at transform (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/transform.ts:29:20)
+[2026-03-04T07:59:18.205Z] at transform.next (<anonymous>)
+[2026-03-04T07:59:18.205Z] at step (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:261:32)
+[2026-03-04T07:59:18.206Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-03-04T07:59:18.206Z] at async.call.result.err.err (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-03-04T07:59:18.206Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:189:28
+[2026-03-04T07:59:18.207Z] at <anonymous> (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/gensync-utils/async.ts:90:7)
+[2026-03-04T07:59:18.207Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:113:33
+[2026-03-04T07:59:18.207Z] at step (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:287:14)
+[2026-03-04T07:59:18.208Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-03-04T07:59:18.208Z] at async.call.result.err.err (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-03-04T07:59:21.186Z] 2:59:21 AM [vite] Internal server error: /home/ubuntu/private-wire-calc-v3/client/src/components/ReportMap.tsx: Expecting Unicode escape sequence \uXXXX. (1:43)
+[2026-03-04T07:59:21.187Z] 
+[2026-03-04T07:59:21.187Z] > 1 | import { useEffect, useRef } from "react";\nimport L from "leaflet";\nimport \"leaflet/dist/leaflet.css\";\nimport { SolarInputs } from "@/lib/calculator";\n\ninterface ReportMapProps {\n  inputs: SolarInputs;\n}\n\nexport default function ReportMap({ inputs }: ReportMapProps) {\n  const mapContainer = useRef<HTMLDivElement>(null);\n  const map = useRef<L.Map | null>(null);\n\n  useEffect(() => {\n    if (!mapContainer.current) return;\n\n    // Initialize map\n    if (!map.current) {\n      map.current = L.map(mapContainer.current).setView([51.5074, -0.1278], 10);\n\n      // Add tile layer\n      L.tileLayer(\"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png\", {\n        attribution: '© OpenStreetMap contributors',\n        maxZoom: 19,\n      }).addTo(map.current);\n    }\n\n    // Load and display polygons from sessionStorage\n    const pvPolygonData = sessionStorage.getItem(\"pvPolygonData\");\n    const cableRouteData = sessionStorage.getItem(\"cableRouteData\");\n\n    // Clear existing layers (except tile layer)\n    map.current.eachLayer((layer) => {\n      if (layer instanceof L.Polygon || layer instanceof L.Polyline) {\n        map.current?.removeLayer(layer);\n      }\n    });\n\n    // Add PV polygon if exists\n    if (pvPolygonData) {\n      try {\n        const coords = JSON.parse(pvPolygonData);\n        if (coords.length > 0) {\n          const polygon = L.polygon(coords, {\n            color: \"#2d8659\",\n            weight: 2,\n            opacity: 0.8,\n            fillOpacity: 0.3,\n          }).addTo(map.current);\n\n          // Fit bounds to polygon\n          map.current.fitBounds(polygon.getBounds());\n        }\n      } catch (error) {\n        console.error(\"Error loading PV polygon:\", error);\n      }\n    }\n\n    // Add cable route if exists\n    if (cableRouteData) {\n      try {\n        const coords = JSON.parse(cableRouteData);\n        if (coords.length > 0) {\n          L.polyline(coords, {\n            color: \"#1e40af\",\n            weight: 3,\n            opacity: 0.7,\n          }).addTo(map.current);\n        }\n      } catch (error) {\n        console.error(\"Error loading cable route:\", error);\n      }\n    }\n  }, [inputs]);\n\n  return (\n    <div\n      ref={mapContainer}\n      className=\"h-96 w-full rounded-lg border border-gray-200 shadow-md\"\n    />\n  );\n}\n
+[2026-03-04T07:59:21.188Z] |                                            ^
+[2026-03-04T07:59:21.188Z] 2 |
+[2026-03-04T07:59:21.188Z] Plugin: vite:react-babel
+[2026-03-04T07:59:21.189Z] File: /home/ubuntu/private-wire-calc-v3/client/src/components/ReportMap.tsx:1:43
+[2026-03-04T07:59:21.189Z] 1  |  import { useEffect, useRef } from "react";\nimport L from "leaflet";\nimport \"leaflet/dist/leaflet.css\";\nimport { ...
+[2026-03-04T07:59:21.190Z] |                                             ^
+[2026-03-04T07:59:21.190Z] 2  |
+[2026-03-04T07:59:21.191Z] at toParseError (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parse-error.ts:95:45)
+[2026-03-04T07:59:21.191Z] at raise (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1503:19)
+[2026-03-04T07:59:21.192Z] at readWord1 (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1439:16)
+[2026-03-04T07:59:21.192Z] at readWord (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1465:23)
+[2026-03-04T07:59:21.193Z] at getTokenFromCode (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1048:14)
+[2026-03-04T07:59:21.193Z] at getTokenFromCode (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/jsx/index.ts:631:13)
+[2026-03-04T07:59:21.193Z] at getTokenFromCode (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:4094:13)
+[2026-03-04T07:59:21.194Z] at nextToken (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:278:10)
+[2026-03-04T07:59:21.194Z] at next (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:121:10)
+[2026-03-04T07:59:21.195Z] at eat (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:126:12)
+[2026-03-04T07:59:21.195Z] at isLineTerminator (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/util.ts:141:17)
+[2026-03-04T07:59:21.196Z] at semicolon (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/util.ts:148:25)
+[2026-03-04T07:59:21.196Z] at parseImportSourceAndAttributes (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:3189:10)
+[2026-03-04T07:59:21.196Z] at parseImportSpecifiersAndAfter (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:3176:17)
+[2026-03-04T07:59:21.197Z] at parseImport (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:3142:17)
+[2026-03-04T07:59:21.197Z] at parseImport (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:3011:28)
+[2026-03-04T07:59:21.198Z] at parseStatementContent (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:642:25)
+[2026-03-04T07:59:21.199Z] at parseStatementContent (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:3185:20)
+[2026-03-04T07:59:21.199Z] at parseStatementLike (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:477:17)
+[2026-03-04T07:59:21.200Z] at parseModuleItem (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:414:17)
+[2026-03-04T07:59:21.200Z] at parseBlockOrModuleBlockBody (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:1438:16)
+[2026-03-04T07:59:21.200Z] at parseBlockBody (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:1412:10)
+[2026-03-04T07:59:21.201Z] at parseProgram (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:229:10)
+[2026-03-04T07:59:21.201Z] at parseTopLevel (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:203:25)
+[2026-03-04T07:59:21.202Z] at parse (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/index.ts:93:10)
+[2026-03-04T07:59:21.202Z] at parse (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:4309:20)
+[2026-03-04T07:59:21.202Z] at parse (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/index.ts:92:38)
+[2026-03-04T07:59:21.203Z] at parser (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/parser/index.ts:28:19)
+[2026-03-04T07:59:21.203Z] at parser.next (<anonymous>)
+[2026-03-04T07:59:21.204Z] at normalizeFile (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/transformation/normalize-file.ts:49:24)
+[2026-03-04T07:59:21.204Z] at normalizeFile.next (<anonymous>)
+[2026-03-04T07:59:21.205Z] at run (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/transformation/index.ts:40:36)
+[2026-03-04T07:59:21.207Z] at run.next (<anonymous>)
+[2026-03-04T07:59:21.207Z] at transform (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/transform.ts:29:20)
+[2026-03-04T07:59:21.208Z] at transform.next (<anonymous>)
+[2026-03-04T07:59:21.208Z] at step (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:261:32)
+[2026-03-04T07:59:21.209Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-03-04T07:59:21.209Z] at async.call.result.err.err (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-03-04T07:59:21.210Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:189:28
+[2026-03-04T07:59:21.210Z] at <anonymous> (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/gensync-utils/async.ts:90:7)
+[2026-03-04T07:59:21.210Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:113:33
+[2026-03-04T07:59:21.211Z] at step (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:287:14)
+[2026-03-04T07:59:21.211Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-03-04T07:59:21.218Z] at async.call.result.err.err (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-03-04T07:59:21.219Z] 2:59:21 AM [vite] Internal server error: /home/ubuntu/private-wire-calc-v3/client/src/components/StakeholderPieChart.tsx: Expecting Unicode escape sequence \uXXXX. (1:75)
+[2026-03-04T07:59:21.220Z] 
+[2026-03-04T07:59:21.222Z] > 1 | import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from \"recharts\";\n\ninterface StakeholderPieChartProps {\n  operatorNPV: number;\n  offtakerSavings: number;\n  landownerIncome: number;\n  developerPremium: number;\n  totalValue: number;\n}\n\nexport default function StakeholderPieChart({\n  operatorNPV,\n  offtakerSavings,\n  landownerIncome,\n  developerPremium,\n  totalValue,\n}: StakeholderPieChartProps) {\n  const data = [\n    {\n      name: \"Operator\",\n      value: operatorNPV,\n      color: \"#808080\",\n    },\n    {\n      name: \"Offtaker\",\n      value: offtakerSavings,\n      color: \"#2D8659\",\n    },\n    {\n      name: \"Landowner\",\n      value: landownerIncome,\n      color: \"#FFD700\",\n    },\n    {\n      name: \"Developer\",\n      value: developerPremium,\n      color: \"#001F3F\",\n    },\n  ].filter((item) => item.value > 0);\n\n  return (\n    <div className=\"w-full\">\n      <ResponsiveContainer width=\"100%\" height={300}>\n        <PieChart>\n          <Pie\n            data={data}\n            cx=\"50%\"\n            cy=\"50%\"\n            labelLine={false}\n            label={({ name, value, color }) => (\n              <text\n                x={0}\n                y={0}\n                fill={color}\n                textAnchor=\"middle\"\n                dominantBaseline=\"central\"\n                className=\"font-bold text-xs\"\n              >\n                {name} ({((value / totalValue) * 100).toFixed(1)}%)\n              </text>\n            )}\n            outerRadius={80}\n            fill=\"#8884d8\"\n            dataKey=\"value\"\n          >\n            {data.map((entry, index) => (\n              <Cell key={`cell-${index}`} fill={entry.color} />\n            ))}\n          </Pie>\n          <Tooltip\n            formatter={(value: number) => `£${(value / 1000000).toFixed(2)}M`}\n            contentStyle={{\n              backgroundColor: \"#fff\",\n              border: \"1px solid #ccc\",\n              borderRadius: \"4px\",\n            }}\n          />\n        </PieChart>\n      </ResponsiveContainer>\n    </div>\n  );\n}\n
+[2026-03-04T07:59:21.229Z] |                                                                            ^
+[2026-03-04T07:59:21.229Z] 2 |
+[2026-03-04T07:59:21.231Z] Plugin: vite:react-babel
+[2026-03-04T07:59:21.233Z] File: /home/ubuntu/private-wire-calc-v3/client/src/components/StakeholderPieChart.tsx:1:75
+[2026-03-04T07:59:21.234Z] 1  |  ...rt, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from \"recharts\";\n\ninterface StakeholderPieChartProps {\n...
+[2026-03-04T07:59:21.236Z] |                                                                 ^
+[2026-03-04T07:59:21.237Z] 2  |
+[2026-03-04T07:59:21.239Z] at toParseError (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parse-error.ts:95:45)
+[2026-03-04T07:59:21.241Z] at raise (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1503:19)
+[2026-03-04T07:59:21.242Z] at readWord1 (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1439:16)
+[2026-03-04T07:59:21.242Z] at readWord (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1465:23)
+[2026-03-04T07:59:21.243Z] at getTokenFromCode (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1048:14)
+[2026-03-04T07:59:21.244Z] at getTokenFromCode (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/jsx/index.ts:631:13)
+[2026-03-04T07:59:21.244Z] at getTokenFromCode (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:4094:13)
+[2026-03-04T07:59:21.244Z] at nextToken (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:278:10)
+[2026-03-04T07:59:21.245Z] at next (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:121:10)
+[2026-03-04T07:59:21.245Z] at eatContextual (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/util.ts:98:12)
+[2026-03-04T07:59:21.245Z] at expectContextual (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/util.ts:110:15)
+[2026-03-04T07:59:21.246Z] at parseImportSpecifiersAndAfter (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:3174:10)
+[2026-03-04T07:59:21.246Z] at parseImport (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:3142:17)
+[2026-03-04T07:59:21.248Z] at parseImport (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:3011:28)
+[2026-03-04T07:59:21.248Z] at parseStatementContent (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:642:25)
+[2026-03-04T07:59:21.248Z] at parseStatementContent (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:3185:20)
+[2026-03-04T07:59:21.249Z] at parseStatementLike (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:477:17)
+[2026-03-04T07:59:21.249Z] at parseModuleItem (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:414:17)
+[2026-03-04T07:59:21.249Z] at parseBlockOrModuleBlockBody (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:1438:16)
+[2026-03-04T07:59:21.250Z] at parseBlockBody (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:1412:10)
+[2026-03-04T07:59:21.250Z] at parseProgram (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:229:10)
+[2026-03-04T07:59:21.251Z] at parseTopLevel (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/statement.ts:203:25)
+[2026-03-04T07:59:21.251Z] at parse (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/index.ts:93:10)
+[2026-03-04T07:59:21.251Z] at parse (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:4309:20)
+[2026-03-04T07:59:21.252Z] at parse (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/index.ts:92:38)
+[2026-03-04T07:59:21.252Z] at parser (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/parser/index.ts:28:19)
+[2026-03-04T07:59:21.252Z] at parser.next (<anonymous>)
+[2026-03-04T07:59:21.253Z] at normalizeFile (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/transformation/normalize-file.ts:49:24)
+[2026-03-04T07:59:21.253Z] at normalizeFile.next (<anonymous>)
+[2026-03-04T07:59:21.253Z] at run (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/transformation/index.ts:40:36)
+[2026-03-04T07:59:21.254Z] at run.next (<anonymous>)
+[2026-03-04T07:59:21.254Z] at transform (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/transform.ts:29:20)
+[2026-03-04T07:59:21.254Z] at transform.next (<anonymous>)
+[2026-03-04T07:59:21.254Z] at step (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:261:32)
+[2026-03-04T07:59:21.255Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-03-04T07:59:21.255Z] at async.call.result.err.err (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-03-04T07:59:21.255Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:189:28
+[2026-03-04T07:59:21.256Z] at <anonymous> (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+core@7.28.4/node_modules/@babel/core/src/gensync-utils/async.ts:90:7)
+[2026-03-04T07:59:21.256Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:113:33
+[2026-03-04T07:59:21.256Z] at step (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:287:14)
+[2026-03-04T07:59:21.256Z] at /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-03-04T07:59:21.257Z] at async.call.result.err.err (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-03-04T07:59:39.675Z] 2:59:39 AM [vite] (client) hmr update /src/index.css
+[2026-03-04T07:59:39.675Z] 2:59:39 AM [vite] (client) hmr update /src/index.css
+[2026-03-04T07:59:39.737Z] 2:59:39 AM [vite] (client) Pre-transform error: Failed to load url /src/components/ReportMap.tsx (resolved id: /home/ubuntu/private-wire-calc-v3/client/src/components/ReportMap.tsx) in /home/ubuntu/private-wire-calc-v3/client/src/pages/Report.tsx. Does the file exist?
+[2026-03-04T07:59:39.738Z] 2:59:39 AM [vite] (client) Pre-transform error: Failed to load url /src/components/StakeholderPieChart.tsx (resolved id: /home/ubuntu/private-wire-calc-v3/client/src/components/StakeholderPieChart.tsx) in /home/ubuntu/private-wire-calc-v3/client/src/pages/Report.tsx. Does the file exist?
+[2026-03-04T08:00:04.909Z] 3:00:04 AM [vite] (client) hmr update /src/pages/Report.tsx, /src/index.css
+[2026-03-04T08:01:14.561Z] 3:01:14 AM [vite] (client) hmr update /src/pages/Report.tsx, /src/index.css
