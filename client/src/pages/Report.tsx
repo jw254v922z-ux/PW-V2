@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Printer } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -75,10 +75,6 @@ export default function Report() {
 
     setLoading(false);
   }, []);
-
-  const handlePrint = () => {
-    window.print();
-  };
 
   const handleBack = () => {
     navigate('/');
@@ -158,13 +154,6 @@ export default function Report() {
             )}
           </div>
           <div className="flex gap-2 print:hidden">
-            <button
-              onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
-            >
-              <Printer size={20} />
-              Print
-            </button>
             <button
               onClick={handleBack}
               className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"

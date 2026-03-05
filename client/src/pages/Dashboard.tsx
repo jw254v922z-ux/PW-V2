@@ -203,18 +203,6 @@ export default function Dashboard() {
     }
   };
 
-  const handleExportPDF = async () => {
-    try {
-      const mapScreenshot = sessionStorage.getItem('mapScreenshot');
-      const drawnPolygons = sessionStorage.getItem('drawnPolygons');
-      await generatePDFReport(results, inputs, modelName, modelDescription, mapScreenshot, drawnPolygons);
-      toast.success('PDF exported successfully');
-    } catch (error) {
-      console.error('Failed to export PDF:', error);
-      toast.error('Failed to export PDF: ' + (error instanceof Error ? error.message : 'Unknown error'));
-    }
-  };
-
   const handleViewReport = () => {
     try {
       // Operator cash flows
@@ -402,14 +390,6 @@ export default function Dashboard() {
             className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20"
           >
             <Download className="mr-2 h-4 w-4" /> Export CSV
-          </Button>
-
-          <Button 
-            onClick={handleExportPDF}
-            variant="outline"
-            className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20"
-          >
-            <Download className="mr-2 h-4 w-4" /> Export PDF
           </Button>
 
           <Button onClick={handleViewReport} variant="outline" className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20">
