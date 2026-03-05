@@ -1130,3 +1130,9 @@
 [2026-03-05T08:17:58.491Z] 242 |        offtakerCashFlows.forEach(cf => {
 [2026-03-05T08:17:58.491Z] 243 |          offtakerCumulative += cf.discountedSavings;
 [2026-03-05T08:18:59.313Z] 3:18:59 AM [vite] (client) hmr update /src/pages/Dashboard.tsx, /src/index.css
+[2026-03-05T10:19:13.424Z] [Auth] Missing session cookie
+[2026-03-05T10:19:17.389Z] [Auth] Missing session cookie
+[2026-03-05T10:19:20.882Z] [Auth] Missing session cookie
+[2026-03-05T10:19:24.357Z] [Auth] Missing session cookie
+[2026-03-05T10:19:27.868Z] [Auth] Missing session cookie
+[2026-03-05T10:19:31.157Z] [Auth] Missing session cookie
