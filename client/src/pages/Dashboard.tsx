@@ -302,6 +302,24 @@ export default function Dashboard() {
         },
       };
       sessionStorage.setItem('reportData', JSON.stringify(reportData));
+      
+      // Try to capture map screenshot if available
+      const mapElement = document.querySelector('[data-map-container]');
+      if (mapElement) {
+        html2canvas(mapElement, { backgroundColor: '#ffffff', scale: 2 })
+          .then(canvas => {
+            const screenshot = canvas.toDataURL('image/png');
+            sessionStorage.setItem('mapScreenshot', screenshot);
+          })
+          .catch(err => console.warn('Failed to capture map screenshot:', err));
+      }
+      
+      // Get drawn polygons from sessionStorage if available
+      const drawnPolygons = sessionStorage.getItem('drawnPolygons');
+      if (drawnPolygons) {
+        // Already in sessionStorage, no need to set again
+      }
+      
       navigate('/report');
       toast.success('Opening report...');
     } catch (error) {

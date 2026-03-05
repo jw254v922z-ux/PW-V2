@@ -325,7 +325,7 @@ export default function MapViewPage() {
     <div className="flex h-screen gap-4 p-4 bg-background">
       {/* Map Container */}
       <div className="flex-1 rounded-lg border border-border overflow-hidden">
-        <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />
+        <div ref={mapContainerRef} data-map-container style={{ width: "100%", height: "100%" }} />
       </div>
 
       {/* Sidebar */}

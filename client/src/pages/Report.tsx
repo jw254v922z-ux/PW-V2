@@ -253,46 +253,44 @@ export default function Report() {
           </div>
         </section>
 
-        {drawnPolygons && (drawnPolygons.pvArea || drawnPolygons.cableRoute) && (
-          <section className="mb-12 print:mb-8">
-            <h2 className="text-2xl font-bold text-blue-900 mb-6 border-b-2 border-yellow-500 pb-3">
-              Site Location Map
-            </h2>
-            {mapScreenshot ? (
-              <div className="bg-gray-100 rounded-lg overflow-hidden border border-gray-300">
-                <img
-                  src={mapScreenshot}
-                  alt="Site location map"
-                  className="w-full h-auto"
-                  style={{ maxHeight: '500px', objectFit: 'contain' }}
-                />
-              </div>
-            ) : (
-              <div className="bg-gray-100 rounded-lg p-8 text-center border border-gray-300">
-                <p className="text-gray-600">Map screenshot not available</p>
-              </div>
-            )}
-            {drawnPolygons.pvArea && (
-              <div className="mt-4 grid grid-cols-2 gap-4">
-                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                  <p className="text-sm font-semibold text-gray-700">PV Area</p>
-                  <p className="text-lg font-bold text-green-700">
-                    {formatNumber(drawnPolygons.pvArea.area / 10000, 2)} ha
-                  </p>
-                  <p className="text-sm text-gray-600">System Size: {formatNumber(drawnPolygons.pvArea.systemSize, 2)} MW</p>
-                </div>
-              </div>
-            )}
-            {drawnPolygons.cableRoute && (
-              <div className="mt-2 bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <p className="text-sm font-semibold text-gray-700">Cable Route</p>
-                <p className="text-lg font-bold text-blue-700">
-                  {formatNumber(drawnPolygons.cableRoute.distance, 2)} km
+        <section className="mb-12 print:mb-8">
+          <h2 className="text-2xl font-bold text-blue-900 mb-6 border-b-2 border-yellow-500 pb-3">
+            Site Location Map
+          </h2>
+          {mapScreenshot ? (
+            <div className="bg-gray-100 rounded-lg overflow-hidden border border-gray-300">
+              <img
+                src={mapScreenshot}
+                alt="Site location map"
+                className="w-full h-auto"
+                style={{ maxHeight: '500px', objectFit: 'contain' }}
+              />
+            </div>
+          ) : (
+            <div className="bg-gray-100 rounded-lg p-8 text-center border border-gray-300">
+              <p className="text-gray-600">Map screenshot not available - visit the Map page to draw site boundaries</p>
+            </div>
+          )}
+          {drawnPolygons && drawnPolygons.pvArea && (
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                <p className="text-sm font-semibold text-gray-700">PV Area</p>
+                <p className="text-lg font-bold text-green-700">
+                  {formatNumber(drawnPolygons.pvArea.area / 10000, 2)} ha
                 </p>
+                <p className="text-sm text-gray-600">System Size: {formatNumber(drawnPolygons.pvArea.systemSize, 2)} MW</p>
               </div>
-            )}
-          </section>
-        )}
+            </div>
+          )}
+          {drawnPolygons && drawnPolygons.cableRoute && (
+            <div className="mt-2 bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <p className="text-sm font-semibold text-gray-700">Cable Route</p>
+              <p className="text-lg font-bold text-blue-700">
+                {formatNumber(drawnPolygons.cableRoute.distance, 2)} km
+              </p>
+            </div>
+          )}
+        </section>
 
         <section className="mb-12 print:mb-8">
           <h2 className="text-2xl font-bold text-blue-900 mb-6 border-b-2 border-yellow-500 pb-3">

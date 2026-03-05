@@ -1136,3 +1136,88 @@
 [2026-03-05T10:19:24.357Z] [Auth] Missing session cookie
 [2026-03-05T10:19:27.868Z] [Auth] Missing session cookie
 [2026-03-05T10:19:31.157Z] [Auth] Missing session cookie
+[2026-03-05T10:24:46.653Z] 5:24:46 AM [vite] (client) hmr update /src/App.tsx, /src/index.css
+[2026-03-05T10:24:46.654Z] 5:24:46 AM [vite] (client) hmr update /src/index.css, /src/components/MetricCard.tsx
+[2026-03-05T10:24:46.654Z] 5:24:46 AM [vite] (client) hmr update /src/index.css, /src/components/StakeholderValueChart.tsx
+[2026-03-05T10:24:46.656Z] 5:24:46 AM [vite] (client) hmr update /src/index.css, /src/pages/Dashboard.tsx
+[2026-03-05T10:24:46.657Z] 5:24:46 AM [vite] (client) hmr update /src/pages/Dashboard.tsx, /src/index.css
+[2026-03-05T10:24:46.658Z] 5:24:46 AM [vite] (client) hmr update /src/pages/MapView.tsx, /src/index.css
+[2026-03-05T10:24:46.659Z] 5:24:46 AM [vite] (client) hmr update /src/pages/Report.tsx, /src/index.css
+[2026-03-05T10:24:46.973Z] 5:24:46 AM [vite] (client) hmr update /src/index.css
+[2026-03-05T10:24:46.974Z] 5:24:46 AM [vite] (client) hmr update /src/index.css
+[2026-03-05T10:24:46.974Z] 5:24:46 AM [vite] (client) hmr update /src/index.css
+[2026-03-05T10:24:46.975Z] 5:24:46 AM [vite] (client) hmr update /src/contexts/MapContext.tsx, /src/index.css
+[2026-03-05T10:24:47.501Z] Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/vite@7.1.9_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.30.1_tsx@4.20.6/node_modules/vite/dist/node/chunks/dep-CCSnTAeo.js' imported from /home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/vite@7.1.9_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.30.1_tsx@4.20.6/node_modules/vite/dist/node/chunks/dep-Chhhsdoe.js
+[2026-03-05T10:24:47.502Z] at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+[2026-03-05T10:24:47.502Z] at moduleResolve (node:internal/modules/esm/resolve:932:10)
+[2026-03-05T10:24:47.503Z] at defaultResolve (node:internal/modules/esm/resolve:1056:11)
+[2026-03-05T10:24:47.504Z] at nextResolve (node:internal/modules/esm/hooks:748:28)
+[2026-03-05T10:24:47.504Z] at resolveBase (file:///home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/tsx@4.20.6/node_modules/tsx/dist/esm/index.mjs?1772615795428:2:3744)
+[2026-03-05T10:24:47.505Z] at resolveDirectory (file:///home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/tsx@4.20.6/node_modules/tsx/dist/esm/index.mjs?1772615795428:2:4243)
+[2026-03-05T10:24:47.505Z] at resolveTsPaths (file:///home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/tsx@4.20.6/node_modules/tsx/dist/esm/index.mjs?1772615795428:2:4984)
+[2026-03-05T10:24:47.505Z] at resolve (file:///home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/tsx@4.20.6/node_modules/tsx/dist/esm/index.mjs?1772615795428:2:5361)
+[2026-03-05T10:24:47.506Z] at nextResolve (node:internal/modules/esm/hooks:748:28)
+[2026-03-05T10:24:47.506Z] at o (file:///home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@tailwindcss+node@4.1.14/node_modules/@tailwindcss/node/dist/esm-cache.loader.mjs:1:69)
+[2026-03-05T10:26:16.656Z] [Auth] Missing session cookie
+[2026-03-05T10:26:21.848Z] [Auth] Missing session cookie
+[2026-03-05T10:26:28.036Z] [Auth] Missing session cookie
+[2026-03-05T10:26:34.140Z] [Auth] Missing session cookie
+[2026-03-05T10:26:38.949Z] [Auth] Missing session cookie
+[2026-03-05T10:26:42.246Z] [Auth] Missing session cookie
+[2026-03-05T10:26:45.876Z] [Auth] Missing session cookie
+[2026-03-05T10:26:49.276Z] [Auth] Missing session cookie
+[2026-03-05T10:26:52.664Z] [Auth] Missing session cookie
+[2026-03-05T10:26:56.033Z] [Auth] Missing session cookie
+[2026-03-05T10:26:59.442Z] [Auth] Missing session cookie
+[2026-03-05T10:27:02.810Z] [Auth] Missing session cookie
+[2026-03-05T10:27:06.545Z] [Auth] Missing session cookie
+[2026-03-05T10:27:10.400Z] [Auth] Missing session cookie
+[2026-03-05T10:27:15.332Z] [Auth] Missing session cookie
+[2026-03-05T10:27:20.908Z] [Auth] Missing session cookie
+[2026-03-05T10:27:27.123Z] [Auth] Missing session cookie
+[2026-03-05T10:27:32.961Z] [Auth] Missing session cookie
+[2026-03-05T10:27:39.139Z] [Auth] Missing session cookie
+[2026-03-05T10:27:48.634Z] [Auth] Missing session cookie
+[2026-03-05T10:28:10.104Z] [Auth] Missing session cookie
+[2026-03-05T10:28:14.568Z] [Auth] Missing session cookie
+[2026-03-05T10:28:20.894Z] [Auth] Missing session cookie
+[2026-03-05T10:28:27.954Z] [Auth] Missing session cookie
+[2026-03-05T10:28:34.654Z] [Auth] Missing session cookie
+[2026-03-05T10:28:40.405Z] [Auth] Missing session cookie
+[2026-03-05T10:28:45.981Z] [Auth] Missing session cookie
+[2026-03-05T10:28:52.062Z] [Auth] Missing session cookie
+[2026-03-05T10:28:58.944Z] [Auth] Missing session cookie
+[2026-03-05T10:29:05.273Z] [Auth] Missing session cookie
+[2026-03-05T10:29:11.870Z] [Auth] Missing session cookie
+[2026-03-05T10:29:15.329Z] [Auth] Missing session cookie
+[2026-03-05T10:29:23.078Z] [Auth] Missing session cookie
+[2026-03-05T10:29:27.110Z] [Auth] Missing session cookie
+[2026-03-05T10:29:30.832Z] [Auth] Missing session cookie
+[2026-03-05T10:29:34.410Z] [Auth] Missing session cookie
+[2026-03-05T10:29:37.732Z] [Auth] Missing session cookie
+[2026-03-05T10:29:41.778Z] [Auth] Missing session cookie
+[2026-03-05T10:29:52.558Z] [Auth] Missing session cookie
+[2026-03-05T10:29:56.335Z] [Auth] Missing session cookie
+[2026-03-05T10:29:59.926Z] [Auth] Missing session cookie
+[2026-03-05T10:30:03.521Z] [Auth] Missing session cookie
+[2026-03-05T10:30:07.142Z] [Auth] Missing session cookie
+[2026-03-05T10:30:10.732Z] [Auth] Missing session cookie
+[2026-03-05T10:30:14.082Z] [Auth] Missing session cookie
+[2026-03-05T10:30:17.574Z] [Auth] Missing session cookie
+[2026-03-05T10:30:21.101Z] [Auth] Missing session cookie
+[2026-03-05T10:30:24.570Z] [Auth] Missing session cookie
+[2026-03-05T10:30:28.248Z] [Auth] Missing session cookie
+[2026-03-05T10:30:31.746Z] [Auth] Missing session cookie
+[2026-03-05T10:30:35.255Z] [Auth] Missing session cookie
+[2026-03-05T10:30:38.901Z] [Auth] Missing session cookie
+[2026-03-05T10:30:42.416Z] [Auth] Missing session cookie
+[2026-03-05T10:30:46.285Z] [Auth] Missing session cookie
+[2026-03-05T10:30:51.120Z] [Auth] Missing session cookie
+[2026-03-05T10:31:00.541Z] [Auth] Missing session cookie
+[2026-03-05T10:31:05.115Z] [Auth] Missing session cookie
+[2026-03-05T10:31:09.391Z] [Auth] Missing session cookie
+[2026-03-05T10:31:14.039Z] [Auth] Missing session cookie
+[2026-03-05T10:31:18.025Z] [Auth] Missing session cookie
+[2026-03-05T20:09:09.008Z] 3:09:09 PM [vite] (client) hmr update /src/pages/Dashboard.tsx, /src/index.css
+[2026-03-05T20:09:32.811Z] 3:09:32 PM [vite] (client) hmr update /src/pages/MapView.tsx, /src/index.css
+[2026-03-05T20:10:02.123Z] 3:10:02 PM [vite] (client) hmr update /src/pages/Report.tsx, /src/index.css
