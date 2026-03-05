@@ -1,3 +1,4 @@
+import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -50,42 +51,29 @@ export default function Dashboard() {
 
   const createModelMutation = trpc.solar.create.useMutation({
     onSuccess: () => {
-      toast.success("Model saved successfully!");
       refetchModels();
       setShowSaveDialog(false);
-      setModelName("My Solar Model");
-      setModelDescription("");
+      toast.success('Model saved successfully');
     },
     onError: (error) => {
-      toast.error("Failed to save model: " + error.message);
+      toast.error('Failed to save model: ' + error.message);
     },
   });
 
   const updateModelMutation = trpc.solar.update.useMutation({
     onSuccess: () => {
-      toast.success("Model updated successfully!");
       refetchModels();
       setShowSaveDialog(false);
+      toast.success('Model updated successfully');
     },
     onError: (error) => {
-      toast.error("Failed to update model: " + error.message);
+      toast.error('Failed to update model: ' + error.message);
     },
   });
 
-  const deleteModelMutation = trpc.solar.delete.useMutation({
-    onSuccess: () => {
-      toast.success("Model deleted successfully!");
-      refetchModels();
-      if (currentModelId) setCurrentModelId(null);
-    },
-    onError: (error) => {
-      toast.error("Failed to delete model: " + error.message);
-    },
-  });
-
-  const loadModel = trpc.solar.get.useQuery(
-    { id: currentModelId! },
-    { enabled: currentModelId !== null && isAuthenticated }
+  const loadModel = trpc.solar.getById.useQuery(
+    { id: currentModelId || 0 },
+    { enabled: currentModelId !== null }
   );
 
   useEffect(() => {
@@ -215,61 +203,103 @@ export default function Dashboard() {
     }
   };
 
-  const handleDeleteModel = (id: number) => {
-    if (confirm("Are you sure you want to delete this model?")) {
-      deleteModelMutation.mutate({ id });
-    }
-  };
-
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 }).format(val);
-  };
-
-  const formatNumber = (val: number, decimals = 2) => {
-    return new Intl.NumberFormat('en-GB', { maximumFractionDigits: decimals }).format(val);
-  };
-
-
-
   const handleExportPDF = async () => {
     try {
-      const toastId = toast.loading('Generating PDF...');
-      // Generate PDF and trigger download
-      const doc = await generatePDFReport({ 
-        inputs, 
-        results, 
-        projectName: modelName || 'Solar Project', 
-        description: modelDescription,
-        mapScreenshot: undefined
-      });
-      
-      // Convert PDF to blob and trigger download using anchor element
-      const filename = `${modelName || 'Solar Project'}-report.pdf`;
-      const pdfBlob = doc.output('blob');
-      const url = URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
-      toast.dismiss(toastId);
-      toast.success('PDF exported successfully!');
+      const mapScreenshot = sessionStorage.getItem('mapScreenshot');
+      const drawnPolygons = sessionStorage.getItem('drawnPolygons');
+      await generatePDFReport(results, inputs, modelName, modelDescription, mapScreenshot, drawnPolygons);
+      toast.success('PDF exported successfully');
     } catch (error) {
-      console.error('PDF export failed:', error);
+      console.error('Failed to export PDF:', error);
       toast.error('Failed to export PDF: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
   const handleViewReport = () => {
     try {
+      // Operator cash flows
+      const operatorCashFlows = results.yearlyData.map((year, idx) => ({
+        year: idx,
+        generation: year.generation,
+        revenue: year.revenue,
+        opex: year.opex,
+        netCF: year.cashFlow,
+        discountedCF: year.discountedCashFlow,
+        cumulativeDCF: year.cumulativeDiscountedCashFlow,
+      }));
+
+      // Offtaker cash flows
+      const offtakerCashFlows = results.yearlyData.map((year, idx) => ({
+        year: idx,
+        savings: year.savings || 0,
+        discountedSavings: (year.savings || 0) * year.discountFactor,
+        cumulativeDCF: 0,
+      }));
+
+      // Calculate cumulative for offtaker
+      let offtakerCumulative = 0;
+      offtakerCashFlows.forEach(cf => {
+        offtakerCumulative += cf.discountedSavings;
+        cf.cumulativeDCF = offtakerCumulative;
+      });
+
+      // Landowner cash flows
+      const landownerCashFlows = results.yearlyData.map((year, idx) => ({
+        year: idx,
+        rental: year.landIncome || 0,
+        discountedRental: (year.landIncome || 0) * year.discountFactor,
+        cumulativeDCF: 0,
+      }));
+
+      // Calculate cumulative for landowner
+      let landownerCumulative = 0;
+      landownerCashFlows.forEach(cf => {
+        landownerCumulative += cf.discountedRental;
+        cf.cumulativeDCF = landownerCumulative;
+      });
+
+      // Developer cash flows
+      const developerCashFlows = [{
+        year: 0,
+        premium: inputs.developmentPremiumEnabled ? inputs.developmentPremiumPerMW * inputs.mw : 0,
+        discountedPremium: inputs.developmentPremiumEnabled ? inputs.developmentPremiumPerMW * inputs.mw : 0,
+      }];
+
       const reportData = {
-        inputs,
-        results,
         projectName: modelName || 'Solar Project',
         projectDescription: modelDescription,
+        systemSize: inputs.mw,
+        projectLife: inputs.projectLife,
+        capex: results.summary.totalCapex,
+        lcoe: results.summary.lcoe,
+        irr: results.summary.irr * 100,
+        npv: results.summary.totalDiscountedCashFlow,
+        paybackPeriod: results.summary.paybackPeriod,
+        operatorNPV: results.summary.totalDiscountedCashFlow,
+        operatorIRR: results.summary.irr * 100,
+        offtakerSavings: results.summary.totalSavings,
+        landownerIncome: results.summary.totalLandOptionIncome,
+        developerPremium: results.summary.totalDeveloperPremium,
+        totalValue: results.summary.totalSavings + results.summary.totalLandOptionIncome + results.summary.totalDeveloperPremium,
+        assumptions: {
+          epcCostPerMW: inputs.capexPerMW,
+          privateWireCost: inputs.privateWireCost,
+          devPremium: inputs.developmentPremiumPerMW,
+          landRentalCost: inputs.landOptionCostPerMWYear,
+          opexPerMW: inputs.opexPerMW,
+          ppaPrice: inputs.powerPrice,
+          exportPrice: inputs.exportPrice,
+          offsetableEnergy: inputs.offsetableEnergyCost,
+          discountRate: inputs.discountRate,
+          inflation: inputs.costInflationRate,
+          projectLife: inputs.projectLife,
+        },
+        cashFlows: {
+          operator: operatorCashFlows,
+          offtaker: offtakerCashFlows,
+          landowner: landownerCashFlows,
+          developer: developerCashFlows,
+        },
       };
       sessionStorage.setItem('reportData', JSON.stringify(reportData));
       navigate('/report');
@@ -288,888 +318,650 @@ export default function Dashboard() {
     ];
     
     const rows = results.yearlyData.map(y => [
-      y.year, y.capex, y.opex, y.generation, y.revenue, y.cashFlow,
-      y.cumulativeCashFlow, y.discountFactor, y.discountedCost,
-      y.discountedEnergy, y.discountedRevenue, y.discountedCashFlow, y.cumulativeDiscountedCashFlow
+      y.year,
+      y.capex,
+      y.opex,
+      y.generation.toFixed(0),
+      y.revenue.toFixed(0),
+      y.cashFlow.toFixed(0),
+      y.cumulativeCashFlow.toFixed(0),
+      y.discountFactor.toFixed(4),
+      y.discountedCost.toFixed(0),
+      y.discountedEnergy.toFixed(0),
+      y.discountedRevenue.toFixed(0),
+      y.discountedCashFlow.toFixed(0),
+      y.cumulativeDiscountedCashFlow.toFixed(0),
     ]);
 
-    const csvContent = [
-      headers.join(","),
-      ...rows.map(r => r.join(","))
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", "solar_model_results.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${modelName || 'solar-model'}-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    toast.success('CSV exported successfully');
   };
 
-  const [guestMode, setGuestMode] = useState(true); // Public access - guest mode enabled by default
-
-  if (!isAuthenticated && !guestMode) {
-    return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Welcome to Private Wire Solar Calculator</CardTitle>
-            <CardDescription>Sign in to save and manage your solar project models</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-4xl font-bold text-slate-900 mb-2">Private Wire Solar Calculator</h1>
+            <p className="text-slate-600">Welcome, User! Advanced financial modeling for solar assets with private wire integration.</p>
+          </div>
+          {isAuthenticated && (
             <Button 
-              onClick={() => window.location.href = getLoginUrl()} 
-              className="w-full"
-              size="lg"
+              onClick={logout}
+              variant="outline"
+              className="flex items-center gap-2"
             >
-              Sign In with Manus
+              <LogOut className="h-4 w-4" />
+              Logout
             </Button>
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-300"></span>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+          <a href="/map" className="block">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-green-600" />
+                  Site Mapping
+                </CardTitle>
+              </CardHeader>
+            </Card>
+          </a>
+          
+          <Button 
+            onClick={exportCSV}
+            variant="outline"
+            className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20"
+          >
+            <Download className="mr-2 h-4 w-4" /> Export CSV
+          </Button>
+
+          <Button 
+            onClick={handleExportPDF}
+            variant="outline"
+            className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20"
+          >
+            <Download className="mr-2 h-4 w-4" /> Export PDF
+          </Button>
+
+          <Button onClick={handleViewReport} variant="outline" className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20">
+            <FileText className="mr-2 h-4 w-4" /> View Report
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-slate-600 flex items-center gap-2">
+                <Factory className="h-5 w-5" />
+                Total CAPEX
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-slate-900">{formatCurrency(results.summary.totalCapex)}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-slate-600 flex items-center gap-2">
+                <Zap className="h-5 w-5" />
+                LCOE (Real)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-slate-900">£{results.summary.lcoe.toFixed(0)}/MWh</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-slate-600 flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                IRR (Unlevered)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-slate-900">{(results.summary.irr * 100).toFixed(2)}%</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-slate-600 flex items-center gap-2">
+                <Coins className="h-5 w-5" />
+                Payback Period
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-slate-900">{results.summary.paybackPeriod > inputs.projectLife ? '> Project Life' : `${results.summary.paybackPeriod.toFixed(1)} years`}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-slate-600 flex items-center gap-2">
+                <BatteryCharging className="h-5 w-5" />
+                Total NPV
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-slate-900">{formatCurrency(results.summary.totalDiscountedCashFlow)}</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Operator</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm text-slate-600">Total NPV</p>
+                <p className="text-2xl font-bold text-slate-900">{formatCurrency(results.summary.totalDiscountedCashFlow)}</p>
               </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white dark:bg-slate-950 text-gray-500">or</span>
+              <div>
+                <p className="text-sm text-slate-600">IRR</p>
+                <p className="text-2xl font-bold text-slate-900">{(results.summary.irr * 100).toFixed(2)}%</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Offtaker</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm text-slate-600">Yearly Savings</p>
+                <p className="text-2xl font-bold text-slate-900">{formatCurrency(results.summary.yearlySavings)}/year</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-600">Total Savings</p>
+                <p className="text-2xl font-bold text-slate-900">{formatCurrency(results.summary.totalSavings)}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Landowner</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm text-slate-600">Yearly Rental Income</p>
+                <p className="text-2xl font-bold text-slate-900">{formatCurrency(results.summary.yearlyRentalIncome)}/year</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-600">Total Rental Income</p>
+                <p className="text-2xl font-bold text-slate-900">{formatCurrency(results.summary.totalLandOptionIncome)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-600">Land Rental Yield</p>
+                <p className="text-2xl font-bold text-slate-900">{results.summary.landOptionYield.toFixed(2)}%</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Developer</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm text-slate-600">Developer Premium</p>
+                <p className="text-2xl font-bold text-slate-900">{formatCurrency(results.summary.totalDeveloperPremium)}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Stakeholder Value Distribution</CardTitle>
+            <CardDescription>Proportional value created for each party based on project NPV, offtaker savings, landowner rental income, and developer premium</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StakeholderValueChart results={results} />
+          </CardContent>
+        </Card>
+
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Project Details</CardTitle>
+            <CardDescription>Name and identify your solar model</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <Label htmlFor="project-name">Project Name</Label>
+              <Input
+                id="project-name"
+                placeholder="e.g. North Ridge Solar"
+                value={modelName}
+                onChange={(e) => setModelName(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="project-description">Description (Optional)</Label>
+              <Input
+                id="project-description"
+                placeholder="Brief project overview"
+                value={modelDescription}
+                onChange={(e) => setModelDescription(e.target.value)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Project Parameters</CardTitle>
+            <CardDescription>Adjust inputs to update the model</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-8">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">System Size</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Capacity (MW)</Label>
+                  <Input
+                    type="number"
+                    value={inputs.mw}
+                    onChange={(e) => handleInputChange('mw', parseFloat(e.target.value))}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">{inputs.mw} MW</p>
+                </div>
+                <div>
+                  <Label>Project Life (Years)</Label>
+                  <Input
+                    type="number"
+                    value={inputs.projectLife}
+                    onChange={(e) => handleInputChange('projectLife', parseInt(e.target.value))}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">{inputs.projectLife} years</p>
+                </div>
               </div>
             </div>
-            <Button 
-              onClick={() => setGuestMode(true)} 
-              variant="outline"
-              className="w-full"
-              size="lg"
-            >
-              Continue as Guest (Read-Only)
-            </Button>
-            <p className="text-xs text-gray-500 text-center mt-4">
-              Guest mode allows you to explore the calculator but you won't be able to save your models.
+
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Costs (Capex)</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>EPC Cost per MW (£)</Label>
+                  <Input
+                    type="number"
+                    value={inputs.capexPerMW}
+                    onChange={(e) => handleInputChange('capexPerMW', parseFloat(e.target.value))}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">{formatNumberWithCommas(inputs.capexPerMW)}</p>
+                </div>
+                <div>
+                  <Label>Private Wire Cost (£)</Label>
+                  <Input
+                    type="number"
+                    value={inputs.privateWireCost}
+                    onChange={(e) => handleInputChange('privateWireCost', parseFloat(e.target.value))}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Grid Connection Estimate:</p>
+                  <p className="text-sm font-semibold text-slate-900">{formatCurrency(inputs.privateWireCost)}</p>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Dev Premium per MW (£)</Label>
+                  <Input
+                    type="number"
+                    value={inputs.developmentPremiumPerMW}
+                    onChange={(e) => handleInputChange('developmentPremiumPerMW', parseFloat(e.target.value))}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="devPremiumEnabled"
+                    checked={inputs.developmentPremiumEnabled}
+                    onCheckedChange={(checked) => handleInputChange('developmentPremiumEnabled', checked as boolean)}
+                  />
+                  <Label htmlFor="devPremiumEnabled" className="text-sm">Include Developer Premium in CAPEX</Label>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Dev Premium Discount (%)</Label>
+                  <Input
+                    type="number"
+                    value={inputs.developmentPremiumDiscount}
+                    onChange={(e) => handleInputChange('developmentPremiumDiscount', parseFloat(e.target.value))}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">{inputs.developmentPremiumDiscount.toFixed(1)}%</p>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Land Rental Cost per MW/year (£)</Label>
+                  <Input
+                    type="number"
+                    value={inputs.landOptionCostPerMWYear}
+                    onChange={(e) => handleInputChange('landOptionCostPerMWYear', parseFloat(e.target.value))}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="landOptionEnabled"
+                    checked={inputs.landOptionEnabled}
+                    onCheckedChange={(checked) => handleInputChange('landOptionEnabled', checked as boolean)}
+                  />
+                  <Label htmlFor="landOptionEnabled" className="text-sm">Include Land Rental Cost in OPEX</Label>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Land Rental Discount (%)</Label>
+                  <Input
+                    type="number"
+                    value={inputs.landOptionDiscount}
+                    onChange={(e) => handleInputChange('landOptionDiscount', parseFloat(e.target.value))}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">{inputs.landOptionDiscount.toFixed(1)}%</p>
+                </div>
+                <div>
+                  <Label>Land Value (£)</Label>
+                  <Input
+                    type="number"
+                    value={inputs.landValue}
+                    onChange={(e) => handleInputChange('landValue', parseFloat(e.target.value))}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <Label>Cost Inflation Rate (CPI %)</Label>
+                <Input
+                  type="number"
+                  value={inputs.costInflationRate}
+                  onChange={(e) => handleInputChange('costInflationRate', parseFloat(e.target.value))}
+                  step="0.1"
+                />
+                <p className="text-xs text-slate-500 mt-1">{inputs.costInflationRate.toFixed(2)}%</p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Operational</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Opex per MW (£/year)</Label>
+                  <Input
+                    type="number"
+                    value={inputs.opexPerMW}
+                    onChange={(e) => handleInputChange('opexPerMW', parseFloat(e.target.value))}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">{formatNumberWithCommas(inputs.opexPerMW)}</p>
+                </div>
+                <div>
+                  <Label>PPA Price (£/MWh)</Label>
+                  <Input
+                    type="number"
+                    value={inputs.powerPrice}
+                    onChange={(e) => handleInputChange('powerPrice', parseFloat(e.target.value))}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">{inputs.powerPrice}</p>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                <div>
+                  <Label>% Consumption at PPA</Label>
+                  <Input
+                    type="number"
+                    value={inputs.percentConsumptionPPA}
+                    onChange={(e) => handleInputChange('percentConsumptionPPA', parseFloat(e.target.value))}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">{inputs.percentConsumptionPPA.toFixed(1)}%</p>
+                </div>
+                <div>
+                  <Label>% Consumption at Export</Label>
+                  <Input
+                    type="number"
+                    value={inputs.percentConsumptionExport}
+                    onChange={(e) => handleInputChange('percentConsumptionExport', parseFloat(e.target.value))}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">{inputs.percentConsumptionExport.toFixed(1)}%</p>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Export Price (£/MWh)</Label>
+                  <Input
+                    type="number"
+                    value={inputs.exportPrice}
+                    onChange={(e) => handleInputChange('exportPrice', parseFloat(e.target.value))}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">{inputs.exportPrice}</p>
+                </div>
+                <div>
+                  <Label>Offsetable Energy Cost (£/MWh)</Label>
+                  <Input
+                    type="number"
+                    value={inputs.offsetableEnergyCost}
+                    onChange={(e) => handleInputChange('offsetableEnergyCost', parseFloat(e.target.value))}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">{inputs.offsetableEnergyCost}</p>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <p className="text-sm text-slate-600 mb-2">Use energy pricing tool for accurate site-specific info</p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Override Grid Connection Costs</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Irradiance Override (kWh/m²/year)</Label>
+                  <Input
+                    type="number"
+                    placeholder="0 = use default from generation/MW"
+                    value={inputs.irradianceOverride}
+                    onChange={(e) => handleInputChange('irradianceOverride', parseFloat(e.target.value))}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Financial Parameters</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Discount Rate (%)</Label>
+                  <Input
+                    type="number"
+                    value={inputs.discountRate}
+                    onChange={(e) => handleInputChange('discountRate', parseFloat(e.target.value))}
+                    step="0.1"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">{inputs.discountRate.toFixed(2)}%</p>
+                </div>
+                <div>
+                  <Label>Panel Degradation (%)</Label>
+                  <Input
+                    type="number"
+                    value={inputs.degradationRate * 100}
+                    onChange={(e) => handleInputChange('degradationRate', parseFloat(e.target.value) / 100)}
+                    step="0.01"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">{(inputs.degradationRate * 100).toFixed(2)}%</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <Button 
+                onClick={handleSaveModel}
+                className="bg-slate-900 hover:bg-slate-800 text-white"
+              >
+                <Save className="mr-2 h-4 w-4" /> Save Model
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Tabs defaultValue="gridcosts" className="mb-8">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="gridcosts">Private Wire Parameters</TabsTrigger>
+            <TabsTrigger value="cashflow">Cash Flow Analysis</TabsTrigger>
+            <TabsTrigger value="cumulative">Cumulative Returns</TabsTrigger>
+            <TabsTrigger value="generation">Generation & Revenue</TabsTrigger>
+            <TabsTrigger value="sensitivity">Sensitivity Analysis</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="gridcosts">
+            <GridConnectionSliders 
+              onCostsUpdate={setGridConnectionCosts}
+              setShowSourceInfo={setShowSourceInfo}
+              initialDistance={inputs.distanceKm}
+            />
+          </TabsContent>
+
+          <TabsContent value="cashflow">
+            <Card>
+              <CardHeader>
+                <CardTitle>15-Year Cash Flow Analysis</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CashFlowTable data={results.yearlyData} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="cumulative">
+            <Card>
+              <CardHeader>
+                <CardTitle>Cumulative Discounted Cash Flow</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={400}>
+                  <LineChart data={results.yearlyData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="year" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="cumulativeDiscountedCashFlow" 
+                      stroke="#001F3F" 
+                      name="Cumulative DCF"
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="generation">
+            <Card>
+              <CardHeader>
+                <CardTitle>Generation & Revenue Analysis</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={400}>
+                  <BarChart data={results.yearlyData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="year" />
+                    <YAxis yAxisId="left" />
+                    <YAxis yAxisId="right" orientation="right" />
+                    <Tooltip />
+                    <Legend />
+                    <Bar yAxisId="left" dataKey="generation" fill="#2D8659" name="Generation (MWh)" />
+                    <Bar yAxisId="right" dataKey="revenue" fill="#FFD700" name="Revenue (£)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="sensitivity">
+            <Card>
+              <CardHeader>
+                <CardTitle>Sensitivity Analysis</CardTitle>
+                <CardDescription>IRR sensitivity to key parameters</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <SensitivityHeatmap matrix={sensitivityMatrix} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        <Card className="bg-yellow-50 border-yellow-200">
+          <CardHeader>
+            <CardTitle className="text-yellow-900">Disclaimer</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-yellow-800">
+              Indicative projections based on Jan 2026 data. Not for investment decisions without professional verification.
             </p>
           </CardContent>
         </Card>
-      </div>
-    );
-  }
 
-  return (
-    <div className="min-h-screen bg-gray-100 pb-12">
-      {/* Disclaimer Banner - Top */}
-      <div className="bg-amber-50 dark:bg-amber-950 border-b-2 border-amber-400 p-3">
-        <div className="container">
-          <div className="flex gap-2 items-center justify-between">
-            <div className="flex gap-2 items-center flex-1">
-              <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-              <p className="text-xs text-amber-800 dark:text-amber-200">
-                <strong>Disclaimer:</strong> Indicative projections based on Jan 2026 data. Not for investment decisions without professional verification.
-                <button onClick={() => setShowDisclaimerModal(true)} className="ml-2 font-semibold text-amber-700 dark:text-amber-300 hover:underline cursor-pointer">View full details</button>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+        {!isAuthenticated && (
+          <Card className="mt-8 bg-slate-50">
+            <CardHeader>
+              <CardTitle>Guest Mode</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-slate-600 mb-4">You're using the calculator in read-only mode. Sign in to save your models.</p>
+              <a href={getLoginUrl()}>
+                <Button className="bg-slate-900 hover:bg-slate-800">Sign In</Button>
+              </a>
+            </CardContent>
+          </Card>
+        )}
 
-      {/* Hero Header */}
-      <div className="relative bg-gray-100 text-slate-900 pb-24 pt-12 overflow-hidden border-b-4 border-yellow-400">
-        <div className="container relative z-10">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight font-display mb-2">
-                Private Wire Solar Calculator
-              </h1>
-              <p className="text-slate-700 max-w-2xl text-lg">
-                Welcome, {user?.name || "User"}! Advanced financial modeling for solar assets with private wire integration.
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button asChild variant="outline" className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20">
-                <a href="/map" className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  Site Mapping
-                </a>
-              </Button>
-              <Button onClick={exportCSV} variant="outline" className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20">
-                <Download className="mr-2 h-4 w-4" /> Export CSV
-              </Button>
-              <Button onClick={handleExportPDF} variant="outline" className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20">
-                <Download className="mr-2 h-4 w-4" /> Export PDF
-              </Button>
-              <Button onClick={handleViewReport} variant="outline" className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20">
-                <FileText className="mr-2 h-4 w-4" /> View Report
-              </Button>
-              {isAuthenticated && (
-                <Button onClick={() => logout()} variant="outline" className="bg-slate-900/10 text-slate-900 border-slate-900/20 hover:bg-slate-900/20">
-                  <LogOut className="mr-2 h-4 w-4" /> Sign Out
-                </Button>
+        {isAuthenticated && (
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle>Saved Models</CardTitle>
+              <CardDescription>Load or manage your project models</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {savedModels.length === 0 ? (
+                <p className="text-slate-600">No saved models yet. Create one to get started!</p>
+              ) : (
+                <div className="space-y-2">
+                  {savedModels.map((model) => (
+                    <div 
+                      key={model.id}
+                      className="p-4 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50"
+                      onClick={() => setCurrentModelId(model.id)}
+                    >
+                      <p className="font-semibold text-slate-900">{model.name}</p>
+                      <p className="text-sm text-slate-600">{model.description}</p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        LCOE: £{model.lcoe}/MWh | IRR: {model.irr}% | NPV: {formatCurrency(parseFloat(model.totalNpv))}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               )}
-            </div>
-          </div>
-
-          {/* Project Details Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mt-8">
-            <MetricCard 
-              title="Total CAPEX" 
-              value={formatCurrency(results.summary.totalCapex)} 
-              icon={Factory}
-              className="bg-white/5 border-l-orange-400 text-white border-white/10 backdrop-blur-sm"
-            />
-            <MetricCard 
-              title="LCOE (Real)" 
-              value={formatCurrency(results.summary.lcoe) + "/MWh"} 
-              icon={Coins}
-              className="bg-white/5 border-l-emerald-400 text-white border-white/10 backdrop-blur-sm"
-            />
-            <MetricCard 
-              title="IRR (Unlevered)" 
-              value={(results.summary.irr * 100).toFixed(2) + "%"} 
-              icon={Zap}
-              className="bg-white/5 border-l-yellow-400 text-white border-white/10 backdrop-blur-sm"
-            />
-            <MetricCard 
-              title="Payback Period" 
-              value={results.summary.paybackPeriod > inputs.projectLife ? "> Project Life" : results.summary.paybackPeriod.toFixed(1) + " Years"} 
-              icon={BatteryCharging}
-              className="bg-white/5 border-l-blue-400 text-white border-white/10 backdrop-blur-sm"
-            />
-            <MetricCard 
-              title="Total NPV" 
-              value={formatCurrency(results.summary.totalDiscountedCashFlow)} 
-              icon={Factory}
-              className="bg-white/5 border-l-purple-400 text-white border-white/10 backdrop-blur-sm"
-            />
-          </div>
-
-          {/* Operator Card */}
-          <div className="mt-4 p-6 rounded-lg bg-white border-4 border-gray-200 border-l-[16px] shadow-sm" style={{ borderLeftColor: '#808080' }}>
-            <h3 className="text-sm font-semibold mb-4" style={{ color: '#808080' }}>Operator</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-              <MetricCard 
-                title="Total NPV" 
-                value={formatCurrency(results.summary.totalDiscountedCashFlow)} 
-                icon={Factory}
-                className="bg-white/5 border-l-gray-400 text-white border-white/10 backdrop-blur-sm"
-              />
-              <MetricCard 
-                title="IRR" 
-                value={(results.summary.irr * 100).toFixed(2) + "%"} 
-                icon={Zap}
-                className="bg-white/5 border-l-gray-400 text-white border-white/10 backdrop-blur-sm"
-              />
-            </div>
-          </div>
-
-          {/* Offtaker Card */}
-          <div className="mt-4 p-6 rounded-lg bg-white border-4 border-gray-200 border-l-[16px] shadow-sm" style={{ borderLeftColor: '#2D8659' }}>
-            <h3 className="text-sm font-semibold mb-4" style={{ color: '#2D8659' }}>Offtaker</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-              <MetricCard 
-                title="Yearly Savings" 
-                value={formatCurrency(results.summary.yearlySavings) + "/year"} 
-                icon={Zap}
-                className="bg-white/5 border-l-green-400 text-white border-white/10 backdrop-blur-sm"
-              />
-              <MetricCard 
-                title="Total Savings" 
-                value={formatCurrency(results.summary.totalSavings)} 
-                icon={Zap}
-                className="bg-white/5 border-l-emerald-400 text-white border-white/10 backdrop-blur-sm"
-              />
-            </div>
-          </div>
-
-          {/* Landowner Card */}
-          <div className="mt-4 p-6 rounded-lg bg-white border-4 border-gray-200 border-l-[16px] shadow-sm" style={{ borderLeftColor: '#FFD700' }}>
-            <h3 className="text-sm font-semibold mb-4" style={{ color: '#FFD700' }}>Landowner</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
-            <MetricCard 
-              title="Yearly Rental Income" 
-              value={formatCurrency(results.summary.yearlyRentalIncome) + "/year"} 
-              icon={Leaf}
-              className="bg-white/5 border-l-green-500 text-white border-white/10 backdrop-blur-sm"
-            />
-            <MetricCard 
-              title="Total Rental Income" 
-              value={formatCurrency(results.summary.totalLandOptionIncome)} 
-              icon={TrendingUp}
-              className="bg-white/5 border-l-emerald-400 text-white border-white/10 backdrop-blur-sm"
-            />
-            <MetricCard 
-              title="Land Rental Yield" 
-              value={results.summary.landOptionYield.toFixed(2) + "%"} 
-              icon={TrendingUp}
-              className="bg-white/5 border-l-blue-400 text-white border-white/10 backdrop-blur-sm"
-            />
-            </div>
-          </div>
-
-          {/* Developer Card */}
-          <div className="mt-4 p-6 rounded-lg bg-white border-4 border-gray-200 border-l-[16px] shadow-sm" style={{ borderLeftColor: '#001F3F' }}>
-            <h3 className="text-sm font-semibold mb-4" style={{ color: '#001F3F' }}>Developer</h3>
-            <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-4">
-            <MetricCard 
-              title="Developer Premium" 
-              value={formatCurrency(results.summary.totalDeveloperPremium)} 
-              icon={Coins}
-              className="bg-white/5 border-l-purple-400 text-white border-white/10 backdrop-blur-sm"
-            />
-            </div>
-          </div>
-        </div>
-        
-        {/* Stakeholder Value Distribution Chart */}
-        <StakeholderValueChart results={results} />
+            </CardContent>
+          </Card>
+        )}
       </div>
-
-      {guestMode && (
-              <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded p-3 text-sm">
-                <p className="text-blue-900 dark:text-blue-100">
-                  <strong>Guest Mode:</strong> You're using the calculator in read-only mode. Sign in to save your models.
-                </p>
-              </div>
-            )}
-
-            <div className="container -mt-16 relative z-20">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* Sidebar with Model Management */}
-          <div className="lg:col-span-4 space-y-6">
-            {/* Model Management Card */}
-            <Card className="shadow-lg border-t-4 border-t-primary">
-              <CardHeader>
-                <CardTitle>Saved Models</CardTitle>
-                <CardDescription>Load or manage your project models</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {savedModels.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No saved models yet. Create one to get started!</p>
-                ) : (
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {savedModels.map((model: any) => (
-                      <div key={model.id} className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-800 rounded">
-                        <button
-                          onClick={() => setCurrentModelId(model.id)}
-                          className={cn(
-                            "flex-1 text-left text-sm font-medium truncate",
-                            currentModelId === model.id ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                          )}
-                        >
-                          {model.name}
-                        </button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleDeleteModel(model.id)}
-                          className="h-6 w-6 p-0"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Parameters Card */}
-            <Card className="shadow-lg border-t-4 border-t-primary">
-              <CardHeader>
-                <CardTitle>Project Details</CardTitle>
-                <CardDescription>Name and identify your solar model</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="project-name">Project Name</Label>
-                  <Input 
-                    id="project-name"
-                    value={modelName} 
-                    onChange={(e) => setModelName(e.target.value)} 
-                    placeholder="e.g. North Ridge Solar"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="project-description">Description (Optional)</Label>
-                  <Input 
-                    id="project-description"
-                    value={modelDescription} 
-                    onChange={(e) => setModelDescription(e.target.value)} 
-                    placeholder="Brief project overview"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Parameters Card */}
-            <Card className="shadow-lg border-t-4 border-t-primary">
-              <CardHeader>
-                <CardTitle>Project Parameters</CardTitle>
-                <CardDescription>Adjust inputs to update the model</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                
-                <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">System Size</h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>Capacity (MW)</Label>
-                      <span className="text-sm font-mono">{formatNumberWithCommas(inputs.mw)} MW</span>
-                    </div>
-                    <Slider 
-                      value={[inputs.mw]} 
-                      min={1} max={100} step={0.5} 
-                      onValueChange={(v) => handleInputChange("mw", v[0])} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>Project Life (Years)</Label>
-                      <span className="text-sm font-mono">{inputs.projectLife} years</span>
-                    </div>
-                    <Slider 
-                      value={[inputs.projectLife]} 
-                      min={5} max={40} step={1} 
-                      onValueChange={(v) => handleInputChange("projectLife", v[0])} 
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Costs (Capex)</h3>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>EPC Cost per MW (£)</Label>
-                      <span className="text-sm font-mono">{formatNumberWithCommas(inputs.capexPerMW)}</span>
-                    </div>
-                    <Input 
-                      type="text" 
-                      value={formatNumberWithCommas(inputs.capexPerMW)} 
-                      onChange={(e) => handleInputChange("capexPerMW", Number(e.target.value.replace(/,/g, '')))} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <Label>Private Wire Cost (£)</Label>
-                      <span className="text-sm font-mono">{formatNumberWithCommas(inputs.privateWireCost)}</span>
-                    </div>
-                    {gridConnectionCosts && (
-                      <div className="text-xs text-slate-500 bg-blue-50 p-2 rounded">
-                        <div className="flex items-center justify-between font-semibold">
-                          <span>Grid Connection Estimate:</span>
-                          <button 
-                            onClick={() => setShowSourceInfo('gridCost')}
-                            className="text-blue-500 hover:text-blue-700 p-0 h-4 w-4"
-                            title="View source information"
-                          >
-                            <Info className="h-4 w-4" />
-                          </button>
-                        </div>
-                        <div>{formatCurrency((gridConnectionCosts.totalCostMin + gridConnectionCosts.totalCostMax) / 2)}</div>
-                      </div>
-                    )}
-                    <Input 
-                      type="text" 
-                      value={formatNumberWithCommas(inputs.privateWireCost)} 
-                      onChange={(e) => handleInputChange("privateWireCost", Number(e.target.value.replace(/,/g, '')))} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>Dev Premium per MW (£)</Label>
-                      <span className="text-sm font-mono">{formatNumberWithCommas(inputs.developmentPremiumPerMW)}</span>
-                    </div>
-                    <Input 
-                      type="text" 
-                      value={formatNumberWithCommas(inputs.developmentPremiumPerMW)} 
-                      onChange={(e) => handleInputChange("developmentPremiumPerMW", Number(e.target.value.replace(/,/g, '')))} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="checkbox" 
-                        id="devPremiumEnabled"
-                        checked={inputs.developmentPremiumEnabled}
-                        onChange={(e) => handleInputChange("developmentPremiumEnabled", e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-300"
-                      />
-                      <Label htmlFor="devPremiumEnabled" className="cursor-pointer">Include Developer Premium in CAPEX</Label>
-                    </div>
-                  </div>
-
-                  {inputs.developmentPremiumEnabled && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <Label>Dev Premium Discount (%)</Label>
-                        <span className="text-sm font-mono">{inputs.developmentPremiumDiscount.toFixed(1)}%</span>
-                      </div>
-                      <Slider 
-                        value={[inputs.developmentPremiumDiscount]} 
-                        min={0} max={100} step={0.5} 
-                        onValueChange={(v) => handleInputChange("developmentPremiumDiscount", v[0])} 
-                      />
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>Land Rental Cost per MW/year (£)</Label>
-                      <span className="text-sm font-mono">{formatNumberWithCommas(inputs.landOptionCostPerMWYear)}</span>
-                    </div>
-                    <Input 
-                      type="text" 
-                      value={formatNumberWithCommas(inputs.landOptionCostPerMWYear)} 
-                      onChange={(e) => handleInputChange("landOptionCostPerMWYear", Number(e.target.value.replace(/,/g, '')))} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="checkbox" 
-                        id="landOptionEnabled"
-                        checked={inputs.landOptionEnabled}
-                        onChange={(e) => handleInputChange("landOptionEnabled", e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-300"
-                      />
-                      <Label htmlFor="landOptionEnabled" className="cursor-pointer">Include Land Rental Cost in OPEX</Label>
-                    </div>
-                  </div>
-
-                  {inputs.landOptionEnabled && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <Label>Land Rental Discount (%)</Label>
-                        <span className="text-sm font-mono">{inputs.landOptionDiscount.toFixed(1)}%</span>
-                      </div>
-                      <Slider 
-                        value={[inputs.landOptionDiscount]} 
-                        min={0} max={100} step={0.5} 
-                        onValueChange={(v) => handleInputChange("landOptionDiscount", v[0])} 
-                      />
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>Land Value (£)</Label>
-                      <span className="text-sm font-mono">{formatNumberWithCommas(inputs.landValue)}</span>
-                    </div>
-                    <Input 
-                      type="text" 
-                      value={formatNumberWithCommas(inputs.landValue)} 
-                      onChange={(e) => handleInputChange("landValue", Number(e.target.value.replace(/,/g, '')))} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>Cost Inflation Rate (CPI %)</Label>
-                      <span className="text-sm font-mono">{inputs.costInflationRate.toFixed(2)}%</span>
-                    </div>
-                    <Slider 
-                      value={[inputs.costInflationRate]} 
-                      min={0} max={10} step={0.1} 
-                      onValueChange={(v) => handleInputChange("costInflationRate", v[0])} 
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Operational</h3>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>Opex per MW (£/year)</Label>
-                      <span className="text-sm font-mono">{formatNumberWithCommas(inputs.opexPerMW)}</span>
-                    </div>
-                    <Input 
-                      type="text" 
-                      value={formatNumberWithCommas(inputs.opexPerMW)} 
-                      onChange={(e) => handleInputChange("opexPerMW", Number(e.target.value.replace(/,/g, '')))} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>PPA Price (£/MWh)</Label>
-                      <span className="text-sm font-mono">{formatNumberWithCommas(inputs.powerPrice)}</span>
-                    </div>
-                    <Input 
-                      type="text" 
-                      value={formatNumberWithCommas(inputs.powerPrice)} 
-                      onChange={(e) => handleInputChange("powerPrice", Number(e.target.value.replace(/,/g, '')))} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>% Consumption at PPA</Label>
-                      <span className="text-sm font-mono">{inputs.percentConsumptionPPA.toFixed(1)}%</span>
-                    </div>
-                    <Slider 
-                      value={[inputs.percentConsumptionPPA]} 
-                      min={0} max={100} step={1} 
-                      onValueChange={(v) => handleInputChange("percentConsumptionPPA", v[0])} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>% Consumption at Export</Label>
-                      <span className="text-sm font-mono">{inputs.percentConsumptionExport.toFixed(1)}%</span>
-                    </div>
-                    <Slider 
-                      value={[inputs.percentConsumptionExport]} 
-                      min={0} max={100} step={1} 
-                      onValueChange={(v) => handleInputChange("percentConsumptionExport", v[0])} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>Export Price (£/MWh)</Label>
-                      <span className="text-sm font-mono">{formatNumberWithCommas(inputs.exportPrice)}</span>
-                    </div>
-                    <Input 
-                      type="text" 
-                      value={formatNumberWithCommas(inputs.exportPrice)} 
-                      onChange={(e) => handleInputChange("exportPrice", Number(e.target.value.replace(/,/g, '')))} 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>Offsetable Energy Cost (£/MWh)</Label>
-                      <span className="text-sm font-mono">{formatNumberWithCommas(inputs.offsetableEnergyCost)}</span>
-                    </div>
-                    <p className="text-xs text-gray-500 mb-2">Use energy pricing tool for accurate site-specific info</p>
-                    <Input 
-                      type="text" 
-                      value={formatNumberWithCommas(inputs.offsetableEnergyCost)} 
-                      onChange={(e) => handleInputChange("offsetableEnergyCost", Number(e.target.value.replace(/,/g, '')))} 
-                    />
-                  </div>
-
-                  {/* Grid Cost Override Section */}
-                  <div className="border-t pt-4 mt-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Checkbox 
-                        checked={inputs.gridCostOverrideEnabled}
-                        onCheckedChange={(checked: boolean) => handleInputChange("gridCostOverrideEnabled", checked)}
-                      />
-                      <Label className="font-semibold">Override Grid Connection Costs</Label>
-                    </div>
-                    
-                    {inputs.gridCostOverrideEnabled && (
-                      <div className="space-y-2 bg-blue-50 dark:bg-blue-950 p-3 rounded">
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                          Enter total grid connection cost (£). This overrides all calculated grid costs.
-                        </p>
-                        <div className="flex justify-between">
-                          <Label>Total Grid Cost (£)</Label>
-                          <span className="text-sm font-mono">{formatNumberWithCommas(inputs.gridCostOverride)}</span>
-                        </div>
-                        <Input 
-                          type="text" 
-                          value={formatNumberWithCommas(inputs.gridCostOverride)} 
-                          onChange={(e) => handleInputChange("gridCostOverride", Number(e.target.value.replace(/,/g, '')))} 
-                          placeholder="Enter total grid cost"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>Irradiance Override (kWh/m²/year)</Label>
-                      <span className="text-sm font-mono">{inputs.irradianceOverride === 0 ? "Default" : inputs.irradianceOverride.toFixed(2)}</span>
-                    </div>
-                    <Input 
-                      type="number" 
-                      step="0.01"
-                      value={inputs.irradianceOverride} 
-                      onChange={(e) => handleInputChange("irradianceOverride", Number(e.target.value))} 
-                      placeholder="0 = use default from generation/MW"
-                    />
-                  </div>
-
-                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <Label>Discount Rate (%)</Label>
-                        <span className="text-sm font-mono">{(inputs.discountRate * 100).toFixed(2)}%</span>
-                      </div>
-                      <Input 
-                        type="number" 
-                        step="0.01"
-                        value={inputs.discountRate * 100} 
-                        onChange={(e) => handleInputChange("discountRate", Number(e.target.value) / 100)} 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Panel Degradation (%)</Label>
-                      <div className="relative">
-                        <Input 
-                          type="number" 
-                          step="0.001"
-                          value={inputs.degradationRate} 
-                          onChange={(e) => handleInputChange("degradationRate", Number(e.target.value))} 
-                        />
-                        <span className="absolute right-3 top-2.5 text-xs text-muted-foreground">%</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
-                  <DialogTrigger asChild>
-                    <Button className="w-full" size="lg" disabled={guestMode}>
-                      <Save className="mr-2 h-4 w-4" /> {currentModelId ? "Update" : "Save"} Model
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>{currentModelId ? "Update" : "Save"} Model</DialogTitle>
-                      <DialogDescription>Give your model a name and description</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Model Name</Label>
-                        <Input 
-                          value={modelName} 
-                          onChange={(e) => setModelName(e.target.value)} 
-                          placeholder="e.g., 28MW Solar Farm - High Price Scenario"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Description (Optional)</Label>
-                        <Input 
-                          value={modelDescription} 
-                          onChange={(e) => setModelDescription(e.target.value)} 
-                          placeholder="Add notes about this model..."
-                        />
-                      </div>
-                      <Button 
-                        onClick={handleSaveModel} 
-                        className="w-full"
-                        disabled={createModelMutation.isPending || updateModelMutation.isPending}
-                      >
-                        {createModelMutation.isPending || updateModelMutation.isPending ? "Saving..." : "Save Model"}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Main Charts Area */}
-          <div className="lg:col-span-8 space-y-6">
-            
-            <Tabs defaultValue="gridcosts" className="w-full">
-              <TabsList className="grid w-full grid-cols-6 mb-4">
-                <TabsTrigger value="gridcosts">Private Wire Parameters</TabsTrigger>
-                <TabsTrigger value="cashflow">Cash Flow Analysis</TabsTrigger>
-                <TabsTrigger value="cumulative">Cumulative Returns</TabsTrigger>
-                <TabsTrigger value="generation">Generation & Revenue</TabsTrigger>
-                <TabsTrigger value="sensitivity">Sensitivity Analysis</TabsTrigger>
-
-              </TabsList>
-              
-              <TabsContent value="cashflow">
-                <CashFlowTable yearlyData={results.yearlyData} projectName={modelName || "Solar Project"} />
-              </TabsContent>
-
-              <TabsContent value="cumulative">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Cumulative Discounted Cash Flow</CardTitle>
-                    <CardDescription>Project NPV trajectory showing payback period</CardDescription>
-                  </CardHeader>
-                  <CardContent className="h-[400px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={results.yearlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                        <defs>
-                          <linearGradient id="colorCumulative" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
-                            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis dataKey="year" />
-                        <YAxis tickFormatter={(val) => `£${val/1000000}m`} />
-                        <Tooltip formatter={(val: number) => formatCurrency(val)} />
-                        <Legend />
-                        <Area type="monotone" dataKey="cumulativeDiscountedCashFlow" name="Cumulative Discounted CF" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorCumulative)" />
-                        <Line type="monotone" dataKey={() => 0} stroke="#64748b" strokeDasharray="5 5" strokeWidth={1} dot={false} activeDot={false} legendType="none" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="generation">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Generation & Revenue</CardTitle>
-                    <CardDescription>Energy production vs. Revenue over time (accounting for degradation)</CardDescription>
-                  </CardHeader>
-                  <CardContent className="h-[400px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={results.yearlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis dataKey="year" />
-                        <YAxis yAxisId="left" tickFormatter={(val) => `${val/1000}k`} label={{ value: 'MWh', angle: -90, position: 'insideLeft' }} />
-                        <YAxis yAxisId="right" orientation="right" tickFormatter={(val) => `£${val/1000000}m`} label={{ value: 'Revenue', angle: 90, position: 'insideRight' }} />
-                        <Tooltip formatter={(val: number, name: string) => [name === 'Revenue' ? formatCurrency(val) : formatNumber(val) + ' MWh', name]} />
-                        <Legend />
-                        <Line yAxisId="left" type="monotone" dataKey="generation" name="Generation (MWh)" stroke="#f59e0b" strokeWidth={2} />
-                        <Line yAxisId="right" type="monotone" dataKey="revenue" name="Revenue (£)" stroke="#10b981" strokeWidth={2} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              
-              <TabsContent value="gridcosts">
-                <GridConnectionSliders
-                  initialDistance={inputs.distanceKm}
-                  onCostsUpdate={(costs) => {
-                    setGridConnectionCosts(costs);
-                    const avgCost = (costs.totalCostMin + costs.totalCostMax) / 2;
-                    handleInputChange("gridConnectionCost", Math.round(avgCost));
-                    // Also update Private Wire Cost with grid connection estimate
-                    handleInputChange("privateWireCost", Math.round(avgCost));
-                  }}
-                  setShowSourceInfo={setShowSourceInfo}
-                />
-              </TabsContent>
-              
-              <TabsContent value="sensitivity">
-                <div className="space-y-6">
-                  <SensitivityHeatmap 
-                    matrix={sensitivityMatrix} 
-                    currentInputs={inputs}
-                    title="LCOE Sensitivity Analysis"
-                    metric="lcoe"
-                  />
-                  <SensitivityHeatmap 
-                    matrix={sensitivityMatrix} 
-                    currentInputs={inputs}
-                    title="IRR Sensitivity Analysis"
-                    metric="irr"
-                  />
-                </div>
-              </TabsContent>
-
-            </Tabs>
-
-            {/* Detailed Table Preview - Only show on non-gridcosts tabs */}
-            {/* Hidden from Private Wire Parameters tab */}
-
-          </div>
-        </div>
-      </div>
-
-      {/* Source Info Modal */}
-      <Dialog open={!!showSourceInfo} onOpenChange={() => setShowSourceInfo(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Source Information</DialogTitle>
-          </DialogHeader>
-          <div className="text-sm space-y-4">
-            {showSourceInfo && (() => {
-              const source = getSourceDetails(showSourceInfo);
-              if (!source) {
-                return <p className="text-gray-500">Source information not available</p>;
-              }
-              return (
-                <>
-                  <div className="bg-blue-50 border border-blue-200 rounded p-4">
-                    <p className="font-bold text-blue-900">{source.title}</p>
-                    <p className="text-sm text-blue-800 mt-1">{source.organization} ({source.year})</p>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <h4 className="font-semibold text-gray-900">Description</h4>
-                      <p className="text-gray-700">{source.description}</p>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-semibold text-gray-900">Methodology</h4>
-                      <p className="text-gray-700">{source.methodology}</p>
-                    </div>
-                    
-                    {source.link && (
-                      <div>
-                        <h4 className="font-semibold text-gray-900">Reference Link</h4>
-                        <a href={source.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline break-all">
-                          {source.link}
-                        </a>
-                      </div>
-                    )}
-                    
-                    <div className="bg-gray-50 p-3 rounded">
-                      <p className="text-xs text-gray-600">
-                        <strong>Confidence Level:</strong> {source && source.confidence ? source.confidence.charAt(0).toUpperCase() + source.confidence.slice(1) : 'High'}
-                      </p>
-                      <p className="text-xs text-gray-600 mt-1">
-                        <strong>Last Updated:</strong> {source && source.lastUpdated ? source.lastUpdated : 'January 2026'}
-                      </p>
-                    </div>
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-
-      {/* Disclaimer Modal */}
-      <Dialog open={showDisclaimerModal} onOpenChange={setShowDisclaimerModal}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Tool Limitations & Disclaimer</DialogTitle>
-            <DialogDescription>Important information about this calculator</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 text-sm">
-            <div>
-              <h3 className="font-semibold mb-2">Validity & Data Sources</h3>
-              <p>This calculator provides indicative financial projections based on industry assumptions and publicly available data sources. All data and assumptions are valid as of January 2026.</p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">Limitations</h3>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Results are for indicative purposes only and should not be relied upon for investment decisions</li>
-                <li>Grid costs, irradiance data, and technology assumptions may vary significantly by location</li>
-                <li>Costs and pricing may change over time</li>
-                <li>Site-specific conditions (soil, access, environmental) are not accounted for</li>
-                <li>This tool does not include all potential costs (e.g., planning, environmental surveys, financing)</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">Professional Verification Required</h3>
-              <p>Results should not be relied upon for investment decisions without independent professional verification from qualified engineers, surveyors, and financial advisors.</p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">Data Sources</h3>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Grid connection costs: SSEN Distribution Cost Estimates (2025)</li>
-                <li>Solar irradiance: UK Met Office historical averages</li>
-                <li>EPC costs: Industry benchmarks (2026)</li>
-                <li>Transformer costs: Manufacturer quotes</li>
-                <li>Cable costs: Supplier pricing data</li>
-              </ul>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

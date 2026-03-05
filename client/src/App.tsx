@@ -4,7 +4,8 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Dashboard from "./pages/Dashboard";
+import Dashboard from '@/pages/Dashboard';
+import Report from '@/pages/Report';
 import MapViewPage from "./pages/MapView";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -13,26 +14,22 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ProjectsDashboard from './pages/ProjectsDashboard';
 import Settings from './pages/Settings';
-import Report from './pages/Report';
 import { useAuth } from "./_core/hooks/useAuth";
 
 function Router() {
   return (
     <Switch>
-      {/* All routes are public - no authentication required */}
-      <Route path={"/"} component={Dashboard} />
-      <Route path={"/map"} component={MapViewPage} />
-      <Route path={"/report"} component={Report} />
-      <Route path={"/projects"} component={ProjectsDashboard} />
-      <Route path={"/settings"} component={Settings} />
-      <Route path={"/login"} component={Login} />
-      <Route path={"/signup"} component={Signup} />
-      <Route path={"/verify-email"} component={VerifyEmail} />
-      <Route path={"/forgot-password"} component={ForgotPassword} />
-      <Route path={"/reset-password"} component={ResetPassword} />
-      
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
+      <Route path="/" component={Dashboard} />
+      <Route path="/report" component={Report} />
+      <Route path="/map" component={MapViewPage} />
+      <Route path="/login" component={Login} />
+      <Route path="/signup" component={Signup} />
+      <Route path="/verify-email" component={VerifyEmail} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
+      <Route path="/projects" component={ProjectsDashboard} />
+      <Route path="/settings" component={Settings} />
+      <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
   );
