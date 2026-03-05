@@ -1221,3 +1221,21 @@
 [2026-03-05T20:09:09.008Z] 3:09:09 PM [vite] (client) hmr update /src/pages/Dashboard.tsx, /src/index.css
 [2026-03-05T20:09:32.811Z] 3:09:32 PM [vite] (client) hmr update /src/pages/MapView.tsx, /src/index.css
 [2026-03-05T20:10:02.123Z] 3:10:02 PM [vite] (client) hmr update /src/pages/Report.tsx, /src/index.css
+[2026-03-05T20:17:54.603Z] [Auth] Missing session cookie
+[2026-03-05T20:17:57.443Z] [Auth] Missing session cookie
+[2026-03-05T20:18:00.241Z] [Auth] Missing session cookie
+[2026-03-05T20:18:02.995Z] [Auth] Missing session cookie
+[2026-03-05T20:18:05.904Z] [Auth] Missing session cookie
+[2026-03-05T20:18:08.639Z] [Auth] Missing session cookie
+[2026-03-05T20:18:12.070Z] [Auth] Missing session cookie
+[2026-03-05T20:18:13.954Z] BadRequestError: request aborted
+[2026-03-05T20:18:13.954Z] at IncomingMessage.onAborted (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/raw-body@2.5.2/node_modules/raw-body/index.js:245:10)
+[2026-03-05T20:18:13.955Z] at IncomingMessage.emit (node:events:524:28)
+[2026-03-05T20:18:13.955Z] at IncomingMessage._destroy (node:_http_incoming:221:10)
+[2026-03-05T20:18:13.955Z] at _destroy (node:internal/streams/destroy:122:10)
+[2026-03-05T20:18:13.956Z] at IncomingMessage.destroy (node:internal/streams/destroy:84:5)
+[2026-03-05T20:18:13.956Z] at abortIncoming (node:_http_server:809:9)
+[2026-03-05T20:18:13.956Z] at socketOnClose (node:_http_server:803:3)
+[2026-03-05T20:18:13.956Z] at Socket.emit (node:events:536:35)
+[2026-03-05T20:18:13.957Z] at TCP.<anonymous> (node:net:351:12)
+[2026-03-05T20:20:11.095Z] 3:20:11 PM [vite] (client) hmr update /src/pages/MapView.tsx, /src/index.css

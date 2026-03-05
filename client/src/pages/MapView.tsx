@@ -114,7 +114,7 @@ export default function MapViewPage() {
       if (prev.length >= 3) {
         const firstPoint = prev[0];
         const distance = point.distanceTo(firstPoint);
-        const closeThreshold = 30; // meters
+        const closeThreshold = 20; // meters
 
         if (distance < closeThreshold) {
           // Close the polygon
@@ -152,7 +152,7 @@ export default function MapViewPage() {
       if (prev.length >= 2) {
         const firstPoint = prev[0];
         const distance = point.distanceTo(firstPoint);
-        const closeThreshold = 30; // meters
+        const closeThreshold = 20; // meters
 
         if (distance < closeThreshold) {
           // End the cable route
