@@ -114,8 +114,9 @@ export function StakeholderValueChart({ results }: StakeholderValueChartProps) {
       </CardHeader>
       <CardContent>
         {showChart && (
-          <div className="w-full h-80 flex justify-center">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="flex justify-center">
+            <div className="w-full max-w-2xl h-80">
+              <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={data}
@@ -137,7 +138,8 @@ export function StakeholderValueChart({ results }: StakeholderValueChartProps) {
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
               </PieChart>
-            </ResponsiveContainer>
+              </ResponsiveContainer>
+            </div>
           </div>
         )}
         

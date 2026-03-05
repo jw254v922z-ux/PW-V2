@@ -1244,3 +1244,101 @@
 [2026-03-05T20:26:41.616Z] 3:26:41 PM [vite] (client) hmr update /src/pages/Report.tsx, /src/index.css
 [2026-03-05T20:27:07.667Z] 3:27:07 PM [vite] (client) hmr update /src/pages/Dashboard.tsx, /src/index.css
 [2026-03-05T20:37:51.957Z] 3:37:51 PM [vite] (client) hmr update /src/pages/Dashboard.tsx, /src/index.css
+[2026-03-05T20:44:44.116Z] [Auth] Missing session cookie
+[2026-03-05T20:44:47.029Z] [Auth] Missing session cookie
+[2026-03-05T20:44:49.480Z] BadRequestError: request aborted
+[2026-03-05T20:44:49.481Z] at IncomingMessage.onAborted (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/raw-body@2.5.2/node_modules/raw-body/index.js:245:10)
+[2026-03-05T20:44:49.481Z] at IncomingMessage.emit (node:events:524:28)
+[2026-03-05T20:44:49.481Z] at IncomingMessage._destroy (node:_http_incoming:221:10)
+[2026-03-05T20:44:49.482Z] at _destroy (node:internal/streams/destroy:122:10)
+[2026-03-05T20:44:49.482Z] at IncomingMessage.destroy (node:internal/streams/destroy:84:5)
+[2026-03-05T20:44:49.482Z] at abortIncoming (node:_http_server:809:9)
+[2026-03-05T20:44:49.483Z] at socketOnClose (node:_http_server:803:3)
+[2026-03-05T20:44:49.483Z] at Socket.emit (node:events:536:35)
+[2026-03-05T20:44:49.483Z] at TCP.<anonymous> (node:net:351:12)
+[2026-03-05T20:46:13.098Z] 3:46:13 PM [vite] (client) hmr update /src/index.css, /src/components/StakeholderValueChart.tsx
+[2026-03-05T20:46:13.151Z] 3:46:13 PM [vite] Internal server error: /home/ubuntu/private-wire-calc-v3/client/src/components/StakeholderValueChart.tsx: Expected corresponding JSX closing tag for <div>. (161:6)
+[2026-03-05T20:46:13.152Z] 
+[2026-03-05T20:46:13.152Z] 159 |           ))}
+[2026-03-05T20:46:13.152Z] 160 |         </div>
+[2026-03-05T20:46:13.153Z] > 161 |       </CardContent>
+[2026-03-05T20:46:13.153Z] |       ^
+[2026-03-05T20:46:13.153Z] 162 |     </Card>
+[2026-03-05T20:46:13.154Z] 163 |   );
+[2026-03-05T20:46:13.154Z] 164 | }
+[2026-03-05T20:46:13.154Z] Plugin: vite:react-babel
+[2026-03-05T20:46:13.154Z] File: /home/ubuntu/private-wire-calc-v3/client/src/components/StakeholderValueChart.tsx:161:6
+[2026-03-05T20:46:13.155Z] 159 |            ))}
+[2026-03-05T20:46:13.155Z] 160 |          </div>
+[2026-03-05T20:46:13.155Z] 161 |        </CardContent>
+[2026-03-05T20:46:13.156Z] |        ^
+[2026-03-05T20:46:13.156Z] 162 |      </Card>
+[2026-03-05T20:46:13.156Z] 163 |    );
+[2026-03-05T20:46:13.156Z] at toParseError (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parse-error.ts:95:45)
+[2026-03-05T20:46:13.157Z] at raise (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/tokenizer/index.ts:1503:19)
+[2026-03-05T20:46:13.157Z] at jsxParseElementAt (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/jsx/index.ts:527:18)
+[2026-03-05T20:46:13.157Z] at jsxParseElement (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/jsx/index.ts:559:19)
+[2026-03-05T20:46:13.158Z] at parseExprAtom (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/jsx/index.ts:573:21)
+[2026-03-05T20:46:13.158Z] at parseExprSubscripts (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:734:23)
+[2026-03-05T20:46:13.159Z] at parseUpdate (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:713:21)
+[2026-03-05T20:46:13.159Z] at parseMaybeUnary (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:675:23)
+[2026-03-05T20:46:13.160Z] at parseMaybeUnary (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:3855:20)
+[2026-03-05T20:46:13.160Z] at parseMaybeUnaryOrPrivate (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:409:14)
+[2026-03-05T20:46:13.161Z] at parseExprOps (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:421:23)
+[2026-03-05T20:46:13.161Z] at parseMaybeConditional (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:376:23)
+[2026-03-05T20:46:13.162Z] at parseMaybeAssign (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:301:21)
+[2026-03-05T20:46:13.163Z] at fn (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:3708:23)
+[2026-03-05T20:46:13.163Z] at tryParse (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/util.ts:174:20)
+[2026-03-05T20:46:13.164Z] at parseMaybeAssign (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:3707:20)
+[2026-03-05T20:46:13.164Z] at callback (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:257:12)
+[2026-03-05T20:46:13.165Z] at allowInAnd (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:3192:12)
+[2026-03-05T20:46:13.165Z] at parseMaybeAssignAllowIn (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:256:17)
+[2026-03-05T20:46:13.166Z] at parseMaybeAssignAllowInOrVoidPattern (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:3306:17)
+[2026-03-05T20:46:13.166Z] at parseParenAndDistinguishExpression (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:1813:16)
+[2026-03-05T20:46:13.167Z] at parseExprAtom (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:1162:21)
+[2026-03-05T20:46:13.168Z] at parseExprAtom (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/jsx/index.ts:583:22)
+[2026-03-05T20:46:13.169Z] at parseExprSubscripts (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:734:23)
+[2026-03-05T20:46:13.170Z] at parseUpdate (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:713:21)
+[2026-03-05T20:46:13.171Z] at parseMaybeUnary (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:675:23)
+[2026-03-05T20:46:13.171Z] at parseMaybeUnary (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:3855:20)
+[2026-03-05T20:46:13.172Z] at parseMaybeUnaryOrPrivate (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:409:14)
+[2026-03-05T20:46:13.173Z] at parseExprOpBaseRightExpr (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:589:12)
+[2026-03-05T20:46:13.173Z] at parseExprOpRightExpr (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:574:21)
+[2026-03-05T20:46:13.174Z] at parseExprOp (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:505:27)
+[2026-03-05T20:46:13.175Z] at parseExprOp (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:2913:20)
+[2026-03-05T20:46:13.175Z] at parseExprOps (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:427:17)
+[2026-03-05T20:46:13.176Z] at parseMaybeConditional (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:376:23)
+[2026-03-05T20:46:13.176Z] at parseMaybeAssign (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:301:21)
+[2026-03-05T20:46:13.177Z] at parseMaybeAssign (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:3727:22)
+[2026-03-05T20:46:13.177Z] at parseExpressionBase (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:226:23)
+[2026-03-05T20:46:13.177Z] at callback (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:217:39)
+[2026-03-05T20:46:13.178Z] at allowInAnd (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:3192:12)
+[2026-03-05T20:46:13.178Z] at parseExpression (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:217:17)
+[2026-03-05T20:46:13.179Z] at jsxParseExpressionContainer (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/jsx/index.ts:376:33)
+[2026-03-05T20:46:13.179Z] at jsxParseElementAt (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/jsx/index.ts:500:24)
+[2026-03-05T20:46:13.180Z] at jsxParseElementAt (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/jsx/index.ts:483:34)
+[2026-03-05T20:46:13.180Z] at jsxParseElement (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/jsx/index.ts:559:19)
+[2026-03-05T20:46:13.181Z] at parseExprAtom (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/jsx/index.ts:573:21)
+[2026-03-05T20:46:13.181Z] at parseExprSubscripts (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:734:23)
+[2026-03-05T20:46:13.182Z] at parseUpdate (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:713:21)
+[2026-03-05T20:46:13.182Z] at parseMaybeUnary (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:675:23)
+[2026-03-05T20:46:13.183Z] at parseMaybeUnary (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/plugins/typescript/index.ts:3855:20)
+[2026-03-05T20:46:13.183Z] at parseMaybeUnaryOrPrivate (/home/ubuntu/private-wire-calc-v3/node_modules/.pnpm/@babel+parser@7.28.4/node_modules/@babel/parser/src/parser/expression.ts:409:14)
+[2026-03-05T20:46:13.186Z] 3:46:13 PM [vite] (client) Pre-transform error: /home/ubuntu/private-wire-calc-v3/client/src/components/StakeholderValueChart.tsx: Expected corresponding JSX closing tag for <div>. (161:6)
+[2026-03-05T20:46:13.187Z] 
+[2026-03-05T20:46:13.187Z] 159 |           ))}
+[2026-03-05T20:46:13.188Z] 160 |         </div>
+[2026-03-05T20:46:13.188Z] > 161 |       </CardContent>
+[2026-03-05T20:46:13.188Z] |       ^
+[2026-03-05T20:46:13.188Z] 162 |     </Card>
+[2026-03-05T20:46:13.189Z] 163 |   );
+[2026-03-05T20:46:13.189Z] 164 | }
+[2026-03-05T20:46:13.189Z] Plugin: vite:react-babel
+[2026-03-05T20:46:13.190Z] File: /home/ubuntu/private-wire-calc-v3/client/src/components/StakeholderValueChart.tsx:161:6
+[2026-03-05T20:46:13.190Z] 159 |            ))}
+[2026-03-05T20:46:13.190Z] 160 |          </div>
+[2026-03-05T20:46:13.190Z] 161 |        </CardContent>
+[2026-03-05T20:46:13.191Z] |        ^
+[2026-03-05T20:46:13.191Z] 162 |      </Card>
+[2026-03-05T20:46:13.191Z] 163 |    );
+[2026-03-05T20:46:24.112Z] 3:46:24 PM [vite] (client) hmr update /src/index.css, /src/components/StakeholderValueChart.tsx
