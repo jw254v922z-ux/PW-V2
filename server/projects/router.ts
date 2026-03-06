@@ -36,7 +36,7 @@ export const projectsRouter = router({
 
   list: protectedProcedure.query(async ({ ctx }) => {
     const projectsList = await getProjectsByUserId(Number(ctx.user.id));
-    return projectsList.map((p) => ({
+    return projectsList.map((p: any) => ({
       id: p.id,
       name: p.name,
       description: p.description,

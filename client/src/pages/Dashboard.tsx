@@ -71,7 +71,7 @@ export default function Dashboard() {
     },
   });
 
-  const loadModel = trpc.solar.getById.useQuery(
+  const loadModel = trpc.solar.get.useQuery(
     { id: currentModelId || 0 },
     { enabled: currentModelId !== null }
   );
@@ -292,7 +292,7 @@ export default function Dashboard() {
       sessionStorage.setItem('reportData', JSON.stringify(reportData));
       
       // Try to capture map screenshot if available
-      const mapElement = document.querySelector('[data-map-container]');
+      const mapElement = document.querySelector('[data-map-container]') as HTMLElement;
       if (mapElement) {
         html2canvas(mapElement, { backgroundColor: '#ffffff', scale: 2 })
           .then(canvas => {
@@ -841,7 +841,7 @@ export default function Dashboard() {
                 <CardTitle>15-Year Cash Flow Analysis</CardTitle>
               </CardHeader>
               <CardContent>
-                <CashFlowTable data={results.yearlyData} />
+                <CashFlowTable yearlyData={results.yearlyData} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -943,7 +943,7 @@ export default function Dashboard() {
                 <p className="text-slate-600">No saved models yet. Create one to get started!</p>
               ) : (
                 <div className="space-y-2">
-                  {savedModels.map((model) => (
+                  {savedModels.map((model: any) => (
                     <div 
                       key={model.id}
                       className="p-4 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50"

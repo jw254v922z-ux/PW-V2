@@ -96,7 +96,7 @@ export async function generatePDFReport(params: {
       }
 
       doc.lineTo(x, y);
-      doc.fill("FD");
+      doc.fill("FD" as any);
 
       currentAngle = endAngle;
     });
@@ -545,7 +545,7 @@ export async function generatePDFReport(params: {
 
   sourcesList.forEach((source) => {
     const lines = doc.splitTextToSize("• " + source, pageWidth - 35);
-    lines.forEach((line) => {
+    lines.forEach((line: string) => {
       if (yPosition > pageHeight - 15) {
         addPageBreak();
       }

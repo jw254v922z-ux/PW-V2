@@ -143,7 +143,7 @@ export default function ProjectsDashboard() {
             </Card>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {projects.map((project) => (
+              {projects.map((project: any) => (
                 <Card key={project.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <CardTitle className="line-clamp-2">{project.name}</CardTitle>

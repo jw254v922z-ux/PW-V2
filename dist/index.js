@@ -480,8 +480,8 @@ var SDKServer = class {
         await upsertUser({
           openId: userInfo.openId,
           name: userInfo.name || void 0,
-          email: userInfo.email ?? void 0,
-          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? void 0,
+          email: userInfo.email || `oauth-${userInfo.openId}@internal.local`,
+          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? "oauth",
           lastSignedIn: signedInAt
         });
         user = await getUserByOpenId(userInfo.openId);
@@ -495,6 +495,7 @@ var SDKServer = class {
     }
     await upsertUser({
       openId: user.openId,
+      email: user.email || `oauth-${user.openId}@internal.local`,
       lastSignedIn: signedInAt
     });
     return user;
