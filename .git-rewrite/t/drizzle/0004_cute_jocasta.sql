@@ -1,1 +1,0 @@
-ALTER TABLE `solar_models` ADD `offsetableEnergyCost` int DEFAULT 120 NOT NULL;

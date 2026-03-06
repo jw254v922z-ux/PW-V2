@@ -1,1 +1,0 @@
-Checkpoint: Removed PDF export button from Dashboard and Print button from Report page. Cleaned up associated functions (handleExportPDF, handlePrint) and unused imports (Printer icon, generatePDFReport). Users can still export CSV and view reports, but PDF functionality has been removed as requested.

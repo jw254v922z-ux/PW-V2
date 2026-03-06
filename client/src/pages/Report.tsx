@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts';
+import { formatCurrency, formatPercentage } from '@/lib/formatters';
 
 interface ReportData {
   projectName: string;
@@ -181,7 +182,7 @@ export default function Report() {
             </div>
             <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
               <p className="text-gray-600 text-sm font-semibold mb-2">IRR Unlevered</p>
-              <p className="text-2xl font-bold text-blue-900">{formatNumber(reportData.irr, 2)}%</p>
+              <p className="text-2xl font-bold text-blue-900">{formatPercentage(reportData.irr)}</p>
             </div>
             <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
               <p className="text-gray-600 text-sm font-semibold mb-2">Payback Period</p>
@@ -450,7 +451,7 @@ export default function Report() {
                     <td className="px-4 py-3 text-gray-800">
                       {typeof value === 'number'
                         ? key.toLowerCase().includes('rate') || key.toLowerCase().includes('percent')
-                          ? `${formatNumber(value, 2)}%`
+                          ? `${formatPercentage(value)}`
                           : key.toLowerCase().includes('cost') || key.toLowerCase().includes('price')
                           ? formatCurrency(value)
                           : formatNumber(value, 2)
