@@ -1361,3 +1361,65 @@
 [2026-03-06T06:53:10.473Z] c[OAuth] Initialized with baseURL: https://api.manus.im
 [2026-03-06T06:53:10.755Z] Server running on http://0.0.0.0:5000/
 [2026-03-06T06:53:11.361Z] [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[2026-03-06T09:01:22.678Z] [Auth] Missing session cookie
+[2026-03-06T09:01:28.674Z] [Auth] Missing session cookie
+[2026-03-06T09:01:34.260Z] [Auth] Missing session cookie
+[2026-03-06T09:01:39.238Z] [Auth] Missing session cookie
+[2026-03-06T09:01:44.267Z] [Auth] Missing session cookie
+[2026-03-06T09:01:49.250Z] [Auth] Missing session cookie
+[2026-03-06T09:01:54.243Z] [Auth] Missing session cookie
+[2026-03-06T09:01:59.233Z] [Auth] Missing session cookie
+[2026-03-06T09:02:04.235Z] [Auth] Missing session cookie
+[2026-03-06T09:02:09.239Z] [Auth] Missing session cookie
+[2026-03-06T09:02:15.207Z] [Auth] Missing session cookie
+[2026-03-06T09:02:20.273Z] [Auth] Missing session cookie
+[2026-03-06T09:02:25.268Z] [Auth] Missing session cookie
+[2026-03-06T09:02:30.340Z] [Auth] Missing session cookie
+[2026-03-06T09:02:35.321Z] [Auth] Missing session cookie
+[2026-03-06T09:02:40.256Z] [Auth] Missing session cookie
+[2026-03-06T09:02:45.321Z] [Auth] Missing session cookie
+[2026-03-06T09:02:50.967Z] [Auth] Missing session cookie
+[2026-03-06T09:02:56.291Z] [Auth] Missing session cookie
+[2026-03-06T09:03:01.459Z] [Auth] Missing session cookie
+[2026-03-06T09:03:06.260Z] [Auth] Missing session cookie
+[2026-03-06T09:03:11.363Z] [Auth] Missing session cookie
+[2026-03-06T09:03:16.251Z] [Auth] Missing session cookie
+[2026-03-06T09:03:21.262Z] [Auth] Missing session cookie
+[2026-03-06T09:03:26.265Z] [Auth] Missing session cookie
+[2026-03-06T09:03:31.384Z] [Auth] Missing session cookie
+[2026-03-06T09:03:36.282Z] [Auth] Missing session cookie
+[2026-03-06T09:03:41.321Z] [Auth] Missing session cookie
+[2026-03-06T09:03:46.240Z] [Auth] Missing session cookie
+[2026-03-06T09:03:51.261Z] [Auth] Missing session cookie
+[2026-03-06T09:03:56.253Z] [Auth] Missing session cookie
+[2026-03-06T09:04:01.282Z] [Auth] Missing session cookie
+[2026-03-06T09:04:06.266Z] [Auth] Missing session cookie
+[2026-03-06T09:04:11.309Z] [Auth] Missing session cookie
+[2026-03-06T09:04:16.258Z] [Auth] Missing session cookie
+[2026-03-06T09:04:21.249Z] [Auth] Missing session cookie
+[2026-03-06T09:04:26.243Z] [Auth] Missing session cookie
+[2026-03-06T09:04:31.269Z] [Auth] Missing session cookie
+[2026-03-06T09:04:36.255Z] [Auth] Missing session cookie
+[2026-03-06T09:04:42.158Z] [Auth] Missing session cookie
+[2026-03-06T09:04:47.250Z] [Auth] Missing session cookie
+[2026-03-06T09:04:52.235Z] [Auth] Missing session cookie
+[2026-03-06T09:04:57.254Z] [Auth] Missing session cookie
+[2026-03-06T09:05:02.381Z] [Auth] Missing session cookie
+[2026-03-06T09:05:07.300Z] [Auth] Missing session cookie
+[2026-03-06T09:05:12.270Z] [Auth] Missing session cookie
+[2026-03-06T09:05:17.280Z] [Auth] Missing session cookie
+[2026-03-06T09:05:22.279Z] [Auth] Missing session cookie
+[2026-03-06T09:05:27.247Z] [Auth] Missing session cookie
+[2026-03-06T09:05:32.323Z] [Auth] Missing session cookie
+[2026-03-06T09:05:37.273Z] [Auth] Missing session cookie
+[2026-03-06T09:05:42.256Z] [Auth] Missing session cookie
+[2026-03-06T09:05:47.255Z] [Auth] Missing session cookie
+[2026-03-06T09:05:52.269Z] [Auth] Missing session cookie
+[2026-03-06T09:05:57.264Z] [Auth] Missing session cookie
+[2026-03-06T09:06:02.243Z] [Auth] Missing session cookie
+[2026-03-06T09:06:07.238Z] [Auth] Missing session cookie
+[2026-03-06T09:31:16.324Z] 4:31:16 AM [vite] (client) hmr update /src/pages/MapView.tsx, /src/index.css
+[2026-03-06T09:31:29.614Z] [Auth] Missing session cookie
+[2026-03-06T09:32:15.468Z] 4:32:15 AM [vite] (client) hmr update /src/pages/MapView.tsx, /src/index.css
+[2026-03-06T09:33:12.913Z] 4:33:12 AM [vite] (client) hmr update /src/pages/MapView.tsx, /src/index.css
+[2026-03-06T09:33:19.347Z] [Auth] Missing session cookie
