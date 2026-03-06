@@ -1575,3 +1575,5 @@
 [2026-03-06T17:22:55.914Z] 12:22:55 PM [vite] (client) hmr update /src/pages/Report.tsx, /src/index.css
 [2026-03-06T17:25:00.530Z] c12:25:00 PM [tsx] unlink in ./shared/const.ts Restarting...
 [2026-03-06T17:25:01.675Z] [OAuth] Initialized with baseURL: https://api.manus.im
+[2026-03-06T17:25:03.420Z] c[OAuth] Initialized with baseURL: https://api.manus.im
+[2026-03-06T17:25:03.684Z] Server running on http://0.0.0.0:5000/
