@@ -114,24 +114,36 @@ export default function Dashboard() {
   }, [loadModel.data]);
 
   useEffect(() => {
-    const mapResultsStr = sessionStorage.getItem('mapResults');
-    console.log('[Dashboard] mapResults from sessionStorage:', mapResultsStr);
-    if (mapResultsStr) {
+    // Check for PV area data from map
+    const pvAreaDataStr = sessionStorage.getItem('pvAreaData');
+    if (pvAreaDataStr) {
       try {
-        const mapResults = JSON.parse(mapResultsStr);
-        console.log('[Dashboard] Parsed mapResults:', mapResults);
-        if (mapResults.systemSize !== null && mapResults.systemSize !== undefined) {
-          setInputs(prev => ({ ...prev, mw: mapResults.systemSize }));
-          toast.success(`System size: ${mapResults.systemSize.toFixed(2)} MW from map`);
+        const pvAreaData = JSON.parse(pvAreaDataStr);
+        console.log('[Dashboard] Parsed pvAreaData:', pvAreaData);
+        if (pvAreaData.systemSize !== null && pvAreaData.systemSize !== undefined) {
+          setInputs(prev => ({ ...prev, mw: pvAreaData.systemSize }));
+          toast.success(`System size: ${pvAreaData.systemSize.toFixed(2)} MW from map`);
         }
-        if (mapResults.cableDistance !== null && mapResults.cableDistance !== undefined) {
-          console.log('[Dashboard] Setting cable distance to:', mapResults.cableDistance);
-          setInputs(prev => ({ ...prev, distanceKm: mapResults.cableDistance }));
-          toast.success(`Cable distance: ${mapResults.cableDistance.toFixed(2)} km from map`);
-        }
-        sessionStorage.removeItem('mapResults');
+        sessionStorage.removeItem('pvAreaData');
       } catch (error) {
-        console.error('[Dashboard] Failed to parse map results:', error);
+        console.error('[Dashboard] Failed to parse pvAreaData:', error);
+      }
+    }
+
+    // Check for cable route data from map
+    const cableRouteDataStr = sessionStorage.getItem('cableRouteData');
+    if (cableRouteDataStr) {
+      try {
+        const cableRouteData = JSON.parse(cableRouteDataStr);
+        console.log('[Dashboard] Parsed cableRouteData:', cableRouteData);
+        if (cableRouteData.distance !== null && cableRouteData.distance !== undefined) {
+          console.log('[Dashboard] Setting cable distance to:', cableRouteData.distance);
+          setInputs(prev => ({ ...prev, distanceKm: cableRouteData.distance }));
+          toast.success(`Cable distance: ${cableRouteData.distance.toFixed(2)} km from map`);
+        }
+        sessionStorage.removeItem('cableRouteData');
+      } catch (error) {
+        console.error('[Dashboard] Failed to parse cableRouteData:', error);
       }
     }
   }, []);

@@ -406,14 +406,17 @@ export default function MapViewPage() {
                         // Use html2canvas on just the map container, excluding the controls
                         const canvas = await html2canvas(mapContainer, {
                           backgroundColor: "#ffffff",
-                          scale: 2,
+                          scale: 1.5,
                           allowTaint: true,
                           useCORS: true,
                           logging: false,
+                          timeout: 5000,
                           ignoreElements: (element) => {
                             // Ignore Leaflet control elements
                             return element.classList.contains('leaflet-control') ||
-                                   element.classList.contains('leaflet-control-container');
+                                   element.classList.contains('leaflet-control-container') ||
+                                   element.classList.contains('leaflet-top') ||
+                                   element.classList.contains('leaflet-bottom');
                           }
                         });
                         const dataUrl = canvas.toDataURL("image/png");

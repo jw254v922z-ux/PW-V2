@@ -251,6 +251,10 @@
 - [ ] Save checkpoint and push to GitHub
 
 
+## Current Issues to Fix
+- [ ] Fix cable route distance not updating calculator
+- [ ] Fix map screenshot showing empty in report page
+
 ## Phase 25: Custom Authentication & Project Management System
 
 ### Phase 1: Database Schema & Auth Backend

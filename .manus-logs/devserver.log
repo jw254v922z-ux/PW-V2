@@ -1423,3 +1423,9 @@
 [2026-03-06T09:32:15.468Z] 4:32:15 AM [vite] (client) hmr update /src/pages/MapView.tsx, /src/index.css
 [2026-03-06T09:33:12.913Z] 4:33:12 AM [vite] (client) hmr update /src/pages/MapView.tsx, /src/index.css
 [2026-03-06T09:33:19.347Z] [Auth] Missing session cookie
+[2026-03-06T15:50:07.843Z] [Auth] Missing session cookie
+[2026-03-06T15:51:36.638Z] 10:51:36 AM [vite] (client) hmr update /src/pages/Dashboard.tsx, /src/index.css
+[2026-03-06T15:51:37.373Z] [Auth] Missing session cookie
+[2026-03-06T15:51:53.405Z] [Auth] Missing session cookie
+[2026-03-06T15:52:15.448Z] 10:52:15 AM [vite] (client) hmr update /src/pages/MapView.tsx, /src/index.css
+[2026-03-06T15:52:23.496Z] [Auth] Missing session cookie
