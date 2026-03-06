@@ -1,0 +1,4 @@
+.manus-logs/browserConsole.log
+.manus-logs/devserver.log
+.manus-logs/networkRequests.log
+.manus-logs/sessionReplay.log
