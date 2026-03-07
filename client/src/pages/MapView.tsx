@@ -337,6 +337,21 @@ export default function MapViewPage() {
                 >
                   👁️ View Mode
                 </Button>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    if (pvPoints.length >= 3) {
+                      completePVArea();
+                      toast.success("PV Area completed!");
+                    } else {
+                      toast.error("Need at least 3 points to complete PV area");
+                    }
+                  }}
+                  disabled={pvCompleted || pvPoints.length < 3}
+                >
+                  ✓ Complete PV Area
+                </Button>
               </CardContent>
             </Card>
 
@@ -515,6 +530,14 @@ export default function MapViewPage() {
                   Reset Cable Route
                 </Button>
               )}
+              <Button
+                variant="outline"
+                className="w-full mt-4"
+                onClick={() => setLocation("/")}
+              >
+                <ArrowRight className="w-4 h-4 mr-2" />
+                Back to Calculator
+              </Button>
             </div>
           </div>
         </div>

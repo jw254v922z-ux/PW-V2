@@ -804,7 +804,7 @@ export default function Dashboard() {
                     onChange={(e) => handleInputChange('discountRate', parseFloat(e.target.value))}
                     step="0.1"
                   />
-                  <p className="text-xs text-slate-500 mt-1">{inputs.discountRate.toFixed(2)}%</p>
+                  <p className="text-xs text-slate-500 mt-1">{(inputs.discountRate * 100).toFixed(2)}%</p>
                 </div>
                 <div>
                   <Label>Panel Degradation (%)</Label>
