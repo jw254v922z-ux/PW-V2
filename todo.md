@@ -252,8 +252,8 @@
 
 
 ## Current Issues to Fix
-- [ ] Fix cable route distance not updating calculator
-- [ ] Fix map screenshot showing empty in report page
+- [x] Fix cable route distance not updating calculator - RESOLVED: Added Complete Cable Route button and verified distance flows to calculator
+- [x] Fix map screenshot showing empty in report page - RESOLVED: Implemented live Leaflet map embedding in Report page instead of screenshot
 
 ## Phase 25: Custom Authentication & Project Management System
 

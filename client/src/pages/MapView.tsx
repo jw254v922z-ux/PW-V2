@@ -352,6 +352,21 @@ export default function MapViewPage() {
                 >
                   ✓ Complete PV Area
                 </Button>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    if (cablePoints.length >= 2) {
+                      completeCableRoute();
+                      toast.success("Cable Route completed!");
+                    } else {
+                      toast.error("Need at least 2 points to complete cable route");
+                    }
+                  }}
+                  disabled={cableCompleted || cablePoints.length < 2}
+                >
+                  ✓ Complete Cable Route
+                </Button>
               </CardContent>
             </Card>
 

@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatCurrency, formatPercentage } from '@/lib/formatters';
+import { ReportMap } from '@/components/ReportMap';
 
 interface ReportData {
   projectName: string;
@@ -247,18 +248,16 @@ export default function Report() {
           <h2 className="text-2xl font-bold text-blue-900 mb-6 border-b-2 border-yellow-500 pb-3">
             Site Location Map
           </h2>
-          {mapScreenshot ? (
+          {drawnPolygons && (drawnPolygons.pvArea || drawnPolygons.cableRoute) ? (
             <div className="bg-gray-100 rounded-lg overflow-hidden border border-gray-300">
-              <img
-                src={mapScreenshot}
-                alt="Site location map"
-                className="w-full h-auto"
-                style={{ maxHeight: '500px', objectFit: 'contain' }}
+              <ReportMap
+                pvAreaCoordinates={drawnPolygons.pvArea?.coordinates}
+                cableRouteCoordinates={drawnPolygons.cableRoute?.coordinates}
               />
             </div>
           ) : (
             <div className="bg-gray-100 rounded-lg p-8 text-center border border-gray-300">
-              <p className="text-gray-600">Map screenshot not available - visit the Map page to draw site boundaries</p>
+              <p className="text-gray-600">Map not available - visit the Map page to draw site boundaries</p>
             </div>
           )}
           {drawnPolygons && drawnPolygons.pvArea && (
