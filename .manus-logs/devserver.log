@@ -4,3 +4,9 @@
 [2026-03-08T07:23:13.318Z] 3:23:13 AM [vite] (client) hmr update /src/index.css, /src/pages/Dashboard.tsx
 [2026-03-08T07:23:13.325Z] 3:23:13 AM [vite] (client) hmr update /src/pages/MapView.tsx, /src/index.css
 [2026-03-08T07:23:13.326Z] 3:23:13 AM [vite] (client) hmr update /src/index.css, /src/pages/Report.tsx
+[2026-03-08T08:02:53.117Z] The file does not exist at "/home/ubuntu/private-wire-calc-v3/node_modules/.vite/deps/chunk-GPKBXHSX.js" which is in the optimize deps directory. The dependency might be incompatible with the dep optimizer. Try adding it to `optimizeDeps.exclude`.
+[2026-03-08T08:02:53.118Z] The file does not exist at "/home/ubuntu/private-wire-calc-v3/node_modules/.vite/deps/chunk-NESFH22N.js" which is in the optimize deps directory. The dependency might be incompatible with the dep optimizer. Try adding it to `optimizeDeps.exclude`.
+[2026-03-08T08:02:53.120Z] The file does not exist at "/home/ubuntu/private-wire-calc-v3/node_modules/.vite/deps/chunk-3EIKJNJ4.js" which is in the optimize deps directory. The dependency might be incompatible with the dep optimizer. Try adding it to `optimizeDeps.exclude`.
+[2026-03-08T08:02:53.124Z] The file does not exist at "/home/ubuntu/private-wire-calc-v3/node_modules/.vite/deps/chunk-R4MYRNLW.js" which is in the optimize deps directory. The dependency might be incompatible with the dep optimizer. Try adding it to `optimizeDeps.exclude`.
+[2026-03-08T08:02:53.124Z] The file does not exist at "/home/ubuntu/private-wire-calc-v3/node_modules/.vite/deps/chunk-TDLRR3RP.js" which is in the optimize deps directory. The dependency might be incompatible with the dep optimizer. Try adding it to `optimizeDeps.exclude`.
+[2026-03-08T08:02:53.125Z] The file does not exist at "/home/ubuntu/private-wire-calc-v3/node_modules/.vite/deps/chunk-5KOSQUMB.js" which is in the optimize deps directory. The dependency might be incompatible with the dep optimizer. Try adding it to `optimizeDeps.exclude`.
