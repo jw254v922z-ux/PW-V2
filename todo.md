@@ -254,6 +254,10 @@
 ## Current Issues to Fix
 - [x] Fix cable route distance not updating calculator - RESOLVED: Added Complete Cable Route button and verified distance flows to calculator
 - [x] Fix map screenshot showing empty in report page - RESOLVED: Implemented live Leaflet map embedding in Report page instead of screenshot
+- [x] Add "Complete Cable Route" button - RESOLVED: Button added and working correctly
+- [x] Prevent premature redirect on Apply buttons - RESOLVED: Only redirects when both PV and cable are complete
+- [x] Remove screenshot button - RESOLVED: Removed from MapView.tsx
+- [x] Ensure live map displays in report - RESOLVED: ReportMap component created and displaying correctly
 
 ## Phase 25: Custom Authentication & Project Management System
 

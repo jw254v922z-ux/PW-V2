@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { calculateSolarModel, defaultInputs, SolarInputs, SolarResults } from "@/lib/calculator";
 import { getSourceDetails } from '@/lib/sources';
 import { cn } from "@/lib/utils";
-import { formatCurrency, formatNumberWithCommas, formatDecimal, formatPercentage } from "@/lib/formatters";
+import { formatCurrency, formatNumberWithCommas } from "@/lib/formatters";
 import { AlertCircle, Info, BatteryCharging, Coins, Download, Factory, Save, Trash2, Zap, LogOut, Leaf, TrendingUp, MapPin, FileText } from "lucide-react";
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
@@ -431,7 +431,7 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-slate-900">£{formatNumberWithCommas(results.summary.lcoe)}/MWh</p>
+              <p className="text-2xl font-bold text-slate-900">£{results.summary.lcoe.toFixed(0)}/MWh</p>
             </CardContent>
           </Card>
           <Card>
@@ -442,7 +442,7 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-slate-900">{formatPercentage(results.summary.irr)}</p>
+              <p className="text-2xl font-bold text-slate-900">{(results.summary.irr * 100).toFixed(2)}%</p>
             </CardContent>
           </Card>
           <Card>
@@ -453,7 +453,7 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-slate-900">{results.summary.paybackPeriod > inputs.projectLife ? '> Project Life' : `${formatDecimal(results.summary.paybackPeriod, 1)} years`}</p>
+              <p className="text-2xl font-bold text-slate-900">{results.summary.paybackPeriod > inputs.projectLife ? '> Project Life' : `${results.summary.paybackPeriod.toFixed(1)} years`}</p>
             </CardContent>
           </Card>
           <Card>
@@ -481,7 +481,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="text-sm text-slate-600">IRR</p>
-                <p className="text-2xl font-bold text-slate-900">{formatPercentage(results.summary.irr)}</p>
+                <p className="text-2xl font-bold text-slate-900">{(results.summary.irr * 100).toFixed(2)}%</p>
               </div>
             </CardContent>
           </Card>
@@ -804,7 +804,7 @@ export default function Dashboard() {
                     onChange={(e) => handleInputChange('discountRate', parseFloat(e.target.value))}
                     step="0.1"
                   />
-                  <p className="text-xs text-slate-500 mt-1">{(inputs.discountRate * 100).toFixed(2)}%</p>
+                  <p className="text-xs text-slate-500 mt-1">{inputs.discountRate.toFixed(2)}%</p>
                 </div>
                 <div>
                   <Label>Panel Degradation (%)</Label>

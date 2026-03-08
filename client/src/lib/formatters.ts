@@ -39,20 +39,3 @@ export function formatDecimal(value: number, decimals: number = 2): string {
     maximumFractionDigits: decimals,
   });
 }
-
-/**
- * Format a percentage value
- * @param value - The value to format (can be decimal like 0.10 or 10)
- * @param decimals - Number of decimal places (default: 2)
- * @returns Formatted percentage string (e.g., "10.00%")
- */
-export function formatPercentage(value: number, decimals: number = 2): string {
-  // If value is a small decimal (< 1), it's already in decimal form (0.10 = 10%)
-  // If value is >= 1, it's already in percentage form
-  const percentValue = value < 1 ? value : value / 100;
-  return new Intl.NumberFormat("en-GB", {
-    style: "percent",
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  }).format(percentValue);
-}
