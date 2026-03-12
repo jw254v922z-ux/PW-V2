@@ -7,10 +7,10 @@ export default function Home() {
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
   const [selectedFeature, setSelectedFeature] = useState<any>(null);
 
-  // Load sample GeoJSON data
+  // Load UK planning zones data
   useEffect(() => {
-    // Sample GeoJSON with planning zones
-    const sampleData = {
+    // UK planning zones with realistic coordinates
+    const ukPlanningData = {
       type: 'FeatureCollection',
       features: [
         {
@@ -18,20 +18,22 @@ export default function Home() {
           id: '1',
           properties: {
             id: '1',
-            name: 'Downtown Core',
-            zone: 'Commercial',
-            density: 'High',
+            name: 'London City Centre',
+            region: 'Greater London',
+            useClass: 'Mixed-Use',
+            density: 'Very High',
             status: 'Approved',
+            council: 'City of London',
           },
           geometry: {
             type: 'Polygon',
             coordinates: [
               [
-                [-74.0, 40.7],
-                [-73.95, 40.7],
-                [-73.95, 40.75],
-                [-74.0, 40.75],
-                [-74.0, 40.7],
+                [-0.1, 51.51],
+                [-0.08, 51.51],
+                [-0.08, 51.52],
+                [-0.1, 51.52],
+                [-0.1, 51.51],
               ],
             ],
           },
@@ -41,20 +43,22 @@ export default function Home() {
           id: '2',
           properties: {
             id: '2',
-            name: 'Residential District A',
-            zone: 'Residential',
-            density: 'Medium',
+            name: 'Manchester Business District',
+            region: 'Greater Manchester',
+            useClass: 'Commercial',
+            density: 'High',
             status: 'Approved',
+            council: 'Manchester City Council',
           },
           geometry: {
             type: 'Polygon',
             coordinates: [
               [
-                [-74.05, 40.65],
-                [-74.0, 40.65],
-                [-74.0, 40.7],
-                [-74.05, 40.7],
-                [-74.05, 40.65],
+                [-2.25, 53.47],
+                [-2.23, 53.47],
+                [-2.23, 53.49],
+                [-2.25, 53.49],
+                [-2.25, 53.47],
               ],
             ],
           },
@@ -64,20 +68,22 @@ export default function Home() {
           id: '3',
           properties: {
             id: '3',
-            name: 'Industrial Zone',
-            zone: 'Industrial',
-            density: 'Low',
-            status: 'Pending',
+            name: 'Birmingham Residential',
+            region: 'West Midlands',
+            useClass: 'Residential',
+            density: 'Medium',
+            status: 'Approved',
+            council: 'Birmingham City Council',
           },
           geometry: {
             type: 'Polygon',
             coordinates: [
               [
-                [-73.9, 40.65],
-                [-73.85, 40.65],
-                [-73.85, 40.7],
-                [-73.9, 40.7],
-                [-73.9, 40.65],
+                [-1.92, 52.5],
+                [-1.9, 52.5],
+                [-1.9, 52.52],
+                [-1.92, 52.52],
+                [-1.92, 52.5],
               ],
             ],
           },
@@ -87,20 +93,22 @@ export default function Home() {
           id: '4',
           properties: {
             id: '4',
-            name: 'Waterfront Development',
-            zone: 'Mixed-Use',
+            name: 'Leeds City Centre',
+            region: 'West Yorkshire',
+            useClass: 'Mixed-Use',
             density: 'High',
-            status: 'Approved',
+            status: 'Pending',
+            council: 'Leeds City Council',
           },
           geometry: {
             type: 'Polygon',
             coordinates: [
               [
-                [-74.0, 40.6],
-                [-73.95, 40.6],
-                [-73.95, 40.65],
-                [-74.0, 40.65],
-                [-74.0, 40.6],
+                [-1.55, 53.8],
+                [-1.53, 53.8],
+                [-1.53, 53.82],
+                [-1.55, 53.82],
+                [-1.55, 53.8],
               ],
             ],
           },
@@ -110,20 +118,22 @@ export default function Home() {
           id: '5',
           properties: {
             id: '5',
-            name: 'Green Space Reserve',
-            zone: 'Parks',
-            density: 'Low',
+            name: 'Bristol Waterfront',
+            region: 'Bristol',
+            useClass: 'Leisure & Culture',
+            density: 'Medium',
             status: 'Approved',
+            council: 'Bristol City Council',
           },
           geometry: {
             type: 'Polygon',
             coordinates: [
               [
-                [-73.85, 40.7],
-                [-73.8, 40.7],
-                [-73.8, 40.75],
-                [-73.85, 40.75],
-                [-73.85, 40.7],
+                [-2.6, 51.45],
+                [-2.58, 51.45],
+                [-2.58, 51.47],
+                [-2.6, 51.47],
+                [-2.6, 51.45],
               ],
             ],
           },
@@ -133,20 +143,72 @@ export default function Home() {
           id: '6',
           properties: {
             id: '6',
-            name: 'Residential District B',
-            zone: 'Residential',
-            density: 'Medium',
+            name: 'Edinburgh New Town',
+            region: 'Edinburgh',
+            useClass: 'Residential',
+            density: 'High',
             status: 'Pending',
+            council: 'City of Edinburgh Council',
           },
           geometry: {
             type: 'Polygon',
             coordinates: [
               [
-                [-73.9, 40.7],
-                [-73.85, 40.7],
-                [-73.85, 40.75],
-                [-73.9, 40.75],
-                [-73.9, 40.7],
+                [-3.2, 55.95],
+                [-3.18, 55.95],
+                [-3.18, 55.97],
+                [-3.2, 55.97],
+                [-3.2, 55.95],
+              ],
+            ],
+          },
+        },
+        {
+          type: 'Feature',
+          id: '7',
+          properties: {
+            id: '7',
+            name: 'Glasgow Industrial Quarter',
+            region: 'Glasgow',
+            useClass: 'Industrial',
+            density: 'Medium',
+            status: 'Approved',
+            council: 'Glasgow City Council',
+          },
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [-4.3, 55.85],
+                [-4.28, 55.85],
+                [-4.28, 55.87],
+                [-4.3, 55.87],
+                [-4.3, 55.85],
+              ],
+            ],
+          },
+        },
+        {
+          type: 'Feature',
+          id: '8',
+          properties: {
+            id: '8',
+            name: 'Liverpool Docklands',
+            region: 'Merseyside',
+            useClass: 'Mixed-Use',
+            density: 'High',
+            status: 'Approved',
+            council: 'Liverpool City Council',
+          },
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [-2.62, 53.4],
+                [-2.6, 53.4],
+                [-2.6, 53.42],
+                [-2.62, 53.42],
+                [-2.62, 53.4],
               ],
             ],
           },
@@ -154,7 +216,7 @@ export default function Home() {
       ],
     };
 
-    setGeoData(sampleData);
+    setGeoData(ukPlanningData);
   }, []);
 
   // Get filtered features for map
@@ -196,9 +258,9 @@ export default function Home() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <div className="bg-white border-b border-border px-6 py-4 shadow-sm">
-          <h1 className="text-2xl font-bold text-foreground">Spatial Planning Map</h1>
+          <h1 className="text-2xl font-bold text-foreground">UK Spatial Planning Map</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Interactive map for viewing and filtering spatial planning data
+            Interactive map for viewing and filtering UK planning zones and development areas
           </p>
         </div>
 

@@ -24,7 +24,7 @@ export default function SpatialMap({ geoData, filteredFeatures, onFeatureClick }
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    mapRef.current = L.map(containerRef.current).setView([40, -95], 4);
+    mapRef.current = L.map(containerRef.current).setView([54.5, -3.5], 6);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
