@@ -1,6 +1,21 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 
+interface ConstraintLayer {
+  id: string;
+  name: string;
+  category: string;
+  color: string;
+  description: string;
+  enabled: boolean;
+  geoData?: any;
+}
+
+interface SpatialMapProps {
+  layers: ConstraintLayer[];
+  onFeatureClick?: (feature: any, layerId: string) => void;
+}
+
 // Fix Leaflet default icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -9,16 +24,10 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-interface SpatialMapProps {
-  geoData: any;
-  filteredFeatures: string[];
-  onFeatureClick?: (feature: any) => void;
-}
-
-export default function SpatialMap({ geoData, filteredFeatures, onFeatureClick }: SpatialMapProps) {
+export default function SpatialMap({ layers, onFeatureClick }: SpatialMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
+  const geoJsonLayersRef = useRef<Map<string, L.GeoJSON>>(new Map());
 
   // Initialize map
   useEffect(() => {
@@ -32,51 +41,62 @@ export default function SpatialMap({ geoData, filteredFeatures, onFeatureClick }
     }).addTo(mapRef.current);
   }, []);
 
-  // Update GeoJSON layer when data or filters change
+  // Update layers when enabled/disabled or data changes
   useEffect(() => {
-    if (!mapRef.current || !geoData) return;
+    if (!mapRef.current) return;
 
-    // Remove old GeoJSON layer
-    if (geoJsonLayerRef.current) {
-      mapRef.current.removeLayer(geoJsonLayerRef.current);
-    }
+    layers.forEach((layer) => {
+      const existingLayer = geoJsonLayersRef.current.get(layer.id);
 
-    // Create new GeoJSON layer
-    geoJsonLayerRef.current = L.geoJSON(geoData, {
-      style: (feature: any) => {
-        const isFiltered = filteredFeatures.includes(feature?.properties?.id || '');
-        return {
-          color: isFiltered ? '#10B981' : '#D1D5DB',
-          weight: isFiltered ? 3 : 1,
-          opacity: isFiltered ? 1 : 0.5,
-          fillOpacity: isFiltered ? 0.3 : 0.1,
-        };
-      },
-      onEachFeature: (feature: any, layer: any) => {
-        layer.on('click', () => {
-          if (onFeatureClick) {
-            onFeatureClick(feature);
-          }
-        });
-
-        // Create popup
-        const props = feature.properties || {};
-        let popupContent = '<div class="text-sm p-2">';
-        for (const [key, value] of Object.entries(props)) {
-          popupContent += `<p class="mb-1"><strong>${key}:</strong> ${value}</p>`;
+      if (layer.enabled && layer.geoData) {
+        // Add or update layer
+        if (existingLayer) {
+          mapRef.current!.removeLayer(existingLayer);
         }
-        popupContent += '</div>';
 
-        layer.bindPopup(popupContent);
-      },
-    }).addTo(mapRef.current);
+        const geoJsonLayer = L.geoJSON(layer.geoData, {
+          style: () => ({
+            color: layer.color,
+            weight: 2,
+            opacity: 0.7,
+            fillOpacity: 0.3,
+          }),
+          onEachFeature: (feature: any, leafletLayer: any) => {
+            leafletLayer.on('click', () => {
+              if (onFeatureClick) {
+                onFeatureClick(feature, layer.id);
+              }
+            });
 
-    // Fit bounds to features
-    const bounds = geoJsonLayerRef.current.getBounds();
-    if (bounds.isValid()) {
-      mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+            // Create popup
+            const props = feature.properties || {};
+            let popupContent = `<div class="text-sm p-2"><strong>${layer.name}</strong>`;
+            for (const [key, value] of Object.entries(props)) {
+              popupContent += `<p class="mb-1"><strong>${key}:</strong> ${value}</p>`;
+            }
+            popupContent += '</div>';
+
+            leafletLayer.bindPopup(popupContent);
+          },
+        }).addTo(mapRef.current as L.Map);
+
+        geoJsonLayersRef.current.set(layer.id, geoJsonLayer);
+      } else if (!layer.enabled && existingLayer) {
+        // Remove layer
+        mapRef.current?.removeLayer(existingLayer);
+        geoJsonLayersRef.current.delete(layer.id);
+      }
+    });
+
+    // Fit bounds to all visible layers
+    const allLayers = Array.from(geoJsonLayersRef.current.values());
+    if (allLayers.length > 0 && mapRef.current) {
+      const group = new L.FeatureGroup(allLayers);
+      const bounds = group.getBounds();
+      if (bounds.isValid()) {
+        mapRef.current!.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });     }
     }
-  }, [geoData, filteredFeatures, onFeatureClick]);
+  }, [layers, onFeatureClick]);
 
   return <div ref={containerRef} className="w-full h-full rounded-lg overflow-hidden" />;
 }
