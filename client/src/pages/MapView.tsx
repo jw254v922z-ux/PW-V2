@@ -410,7 +410,6 @@ export default function MapViewPage() {
                           allowTaint: true,
                           useCORS: true,
                           logging: false,
-                          timeout: 5000,
                           ignoreElements: (element) => {
                             // Ignore Leaflet control elements
                             return element.classList.contains('leaflet-control') ||

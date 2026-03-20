@@ -37,3 +37,8 @@
 [2026-03-08T08:35:40.151Z] The file does not exist at "/home/ubuntu/private-wire-calc-v3/node_modules/.vite/deps/chunk-TDLRR3RP.js" which is in the optimize deps directory. The dependency might be incompatible with the dep optimizer. Try adding it to `optimizeDeps.exclude`.
 [2026-03-08T08:35:40.152Z] The file does not exist at "/home/ubuntu/private-wire-calc-v3/node_modules/.vite/deps/chunk-5KOSQUMB.js" which is in the optimize deps directory. The dependency might be incompatible with the dep optimizer. Try adding it to `optimizeDeps.exclude`.
 [2026-03-08T08:35:40.154Z] The file does not exist at "/home/ubuntu/private-wire-calc-v3/node_modules/.vite/deps/chunk-VSPPDFZ7.js" which is in the optimize deps directory. The dependency might be incompatible with the dep optimizer. Try adding it to `optimizeDeps.exclude`.
+[2026-03-20T19:44:25.707Z] 3:44:25 PM [vite] (client) hmr update /src/pages/MapView.tsx, /src/index.css
+[2026-03-20T19:44:25.707Z] 3:44:25 PM [vite] (client) hmr update /src/pages/Report.tsx, /src/index.css
+[2026-03-20T19:44:25.813Z] 3:44:25 PM [vite] (client) hmr update /src/index.css
+[2026-03-20T19:45:44.123Z] 3:45:44 PM [vite] (client) hmr update /src/pages/Report.tsx, /src/index.css
+[2026-03-20T19:45:59.527Z] 3:45:59 PM [vite] (client) hmr update /src/pages/MapView.tsx, /src/index.css
